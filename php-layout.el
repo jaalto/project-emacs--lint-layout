@@ -122,7 +122,7 @@
   "Return empty line or `point-max'."
   (save-excursion
     (or (re-search-forward "^[ \t]*$" nil t)
-	(point-max)))
+	(point-max))))
 
 (defun  my-lint-layout-current-line-number ()
   "Return line number. Lines are counted from 1..x"
@@ -420,7 +420,7 @@ See `my-lint-layout-buffer-name'."
        line prefix))))
 
 (defun my-php-layout-check-whitespace (&optional prefix)
-  "Check Whitespace documentation."
+  "Check whitespace problems."
   (let (line)
     (save-excursion
       (my-php-layout-extra-newlines " at beginning of file" prefix)
@@ -439,7 +439,7 @@ See `my-lint-layout-buffer-name'."
 	 (t
 	  (setq line (my-lint-layout-current-line-number))
 	  (my-lint-layout-message
-	   "[newlines] missing LF-character from the last line of file"
+	   "[newlines] missing newline from last line of file"
 	   line prefix)))))))
 
 (defun my-php-layout-check-line-length (&optional prefix)
@@ -561,15 +561,55 @@ See `my-lint-layout-buffer-name'."
 (defconst my-layout-changelog-item-regexp
   "^[ \t][*]\\( *\\)\\([^ :()\t\r\n]+\\)")
 
-(defun my-layout-changelog-file-bullet (&optional prefix)
+(defconst my-layout-changelog-wordlist-regexp
+  "\\(\
+\\<[a-z]+ed\\>\
+\\|<[a-z]+ing\\>\
+\\)")
+
+(defun my-layout-word-tense (word message) ;Primitive
+  "Check non-active tense."
+  (when (and word
+	     (string-match "\\(ed\\|ing\\)$" word))
+    (my-lint-layout-message
+     message
+     (my-lint-layout-current-line-number)
+     prefix)))
+
+(defun my-layout-changelog-wording (&optional prefix)
+  "Search for words in non-active tense."
+  (while (re-search-forward my-layout-changelog-wordlist-regexp nil t)
+    (my-lint-layout-message
+     (format "[changelog] word possibly in wrong tense '%s'"
+	     (match-string 0))
+     (my-lint-layout-current-line-number)
+     prefix)))
+
+(defun my-layout-changelog-file-items (&optional prefix)
   "Check ChangeLog syntax. The wording: Add, Modify, Change ..."
-  (let (change)
-    (while (re-search-forward "(\\([^)\r\n]+):" end t)
+  (let (change
+	word)
+    (while (re-search-forward "(\\([^)\r\n]+\\)):" nil t)
+      (setq change (match-string 1)
+	    word   (and (looking-at " *\\([^ \t\r\n]+\\)")
+			(match-string 1)))
+      (when word
+	(my-layout-word-tense
+	 word
+	 (format "[changelog] change marker, wrong tense of verb '%s'" word)))
       (when (looking-at "  ")
 	(my-lint-layout-message
-	 "[changelog] Extra spaces after ":" near change marker %s" change"
+	 (format
+	  "[changelog] change marker, extra spaces after '(%s):'"
+	  change)
 	 (my-lint-layout-current-line-number)
-	 prefix)))))
+	 prefix))
+      (unless (looking-at "[ \r\n]")
+	(my-lint-layout-message
+	 (format
+	  "[changelog] change marker, need one space after '(%s):'"
+	  change)
+	 (my-lint-layout-current-line-number))))))
 
 (defun my-layout-changelog-file-bullet (&optional prefix)
   "Check ChangeLog syntax. The filename line:
@@ -578,32 +618,40 @@ See `my-lint-layout-buffer-name'."
 
 Optional PREFIX is used add filename to the beginning of line."
   (let (indent
+	word
 	file)
     (my-lint-layout-generic-mixed-eol-crlf prefix)
     (while (re-search-forward my-layout-changelog-item-regexp nil t)
       (setq indent (match-string 1)
-	    file   (match-string 2))
+	    file   (match-string 2)
+	    word   (or (and (looking-at
+			     ":.*([^)\r\n]+)[: ]+\\([^ \t\r\n]+\\)")
+			    (match-string 1))
+		       (and (looking-at ": *\\([^ \t\r\n]+\\)")
+			    (match-string 1))))
       (unless (looking-at ":")
 	(my-lint-layout-message
-	 "[changelog] filename does not end to colon ':'"
+	 "[changelog] at '*', no colon ':' immediately after filename"
 	 (my-lint-layout-current-line-number)
 	 prefix))
+      (when (looking-at ":  ")
+	(my-lint-layout-message
+	 "[changelog] at '*', extra space after colon ':'"
+	 (my-lint-layout-current-line-number)
+	 prefix))
+      (unless (looking-at ":[ \r\n]")
+	(my-lint-layout-message
+	 "[changelog] at '*', need one space after colon ':'"
+	 (my-lint-layout-current-line-number)
+	 prefix))
+      (when word
+	(my-layout-word-tense
+	 word
+	 (format "[changelog] at '*', wrong tense of verb '%s'" word)))
       (when (and (string-match " " indent)
 		 (not (string= " " indent)))
 	(my-lint-layout-message
-	 "[changelog] no exactly one space after '*'"
-	 (my-lint-layout-current-line-number)
-	 prefix))
-      (when (and (not (string-match " " indent))
-		 (not (string= " " indent)))
-	(my-lint-layout-message
-	 "[changelog] '*' does not have following space"
-	 (my-lint-layout-current-line-number)
-	 prefix))
-      (when (and (not (string-match " " indent))
-		 (not (string= " " indent)))
-	(my-lint-layout-message
-	 "[changelog] '*' does not have following space"
+	 "[changelog] not exactly one space after '*' character"
 	 (my-lint-layout-current-line-number)
 	 prefix))
       (forward-line 1))))
@@ -612,7 +660,25 @@ Optional PREFIX is used add filename to the beginning of line."
   "Check ChangeLog syntax.
 Optional PREFIX is used add filename to the beginning of line."
   (my-layout-changelog-file-bullet prefix)
+  (my-layout-changelog-file-items)
   (my-layout-changelog-wording prefix))
+
+(defun my-layout-changelog-check-main-interactive (&optional prefix)
+  "Call my-layout-changelog-check-main and other relevant checks."
+  (interactive)
+  (catch 'done
+    (unless (string-match "ChangeLog" (buffer-name))
+      (or (y-or-n-p "Cursor possibly not in ChangeLog buffer. Continue? ")
+	  (throw 'done t)))
+    (save-excursion
+      (goto-char (point-min))
+      (my-lint-layout-result-erase-buffer)
+      (my-layout-changelog-check-main)
+      (my-php-layout-check-whitespace)
+      (my-php-layout-check-line-length))
+    (with-current-buffer my-lint-layout-buffer-name
+      (sort-lines nil (point-min) (point-max)))
+    (display-buffer my-lint-layout-buffer-name)))
 
 ;;; ........................................................... &brace ...
 
