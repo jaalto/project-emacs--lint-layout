@@ -291,6 +291,18 @@ See `my-lint-layout-buffer-name'."
        ( my-lint-layout-current-line-number)
        prefix))))
 
+(defun my-lint-layout-generic-xml-tags-lazy (&optional prefix)
+  "Check lazy `<?' when it should have `<?php'."
+  (let (tag)
+    (while (re-search-forward my-lint-layout-generic-xml-tag-regexp nil t)
+      (setq tag (match-string 0))
+      (when (string= tag "<?")
+	(unless (looking-at "php")
+	  (my-lint-layout-message
+	   "Unknown opening xml tag. Expected <?php"
+	   (my-lint-layout-current-line-number)
+	   prefix))))))
+
 (defun my-lint-layout-generic-xml-tags-check-main (&optional prefix)
   "Check multiple invocations like:
 <?
@@ -318,7 +330,9 @@ See `my-lint-layout-buffer-name'."
 		(my-lint-layout-current-line-string)
 		(looking-at "[*/#]\\|[<>][?]"))
 	(my-lint-layout-message
-	 "[newlines] no empty line found between control statement and code above"
+	 (concat
+	  "[newlines] no empty line found between"
+	  "control statement and code above")
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
 
@@ -1323,6 +1337,7 @@ Optional PREFIX is used add filename to the beginning of line."
   (dolist (function
 	   '(my-lint-layout-generic-class-count
 	     my-lint-layout-generic-xml-tags-check-main
+	     my-lint-layout-generic-xml-tags-lazy
 	     my-lint-layout-php-multiple-print
 	     my-php-layout-check-statement-start
 	     my-php-layout-check-comment-statements
