@@ -631,6 +631,125 @@ See `my-lint-layout-buffer-name'."
   (my-lint-layout-point-min
     (my-php-layout-check-line-length)))
 
+;;; ..................................................... &gpl-license ...
+
+(defsubst my-layout-license-gpl-search-forward ()
+  "Position point to License line."
+  (re-search-forward "\\<GNU General Public License\\>" nil t))
+
+(defun my-layout-license-not-exists (&optional prefix)
+  "Check if License exists."
+  (unless (my-layout-license-gpl-search-forward)
+    (my-lint-layout-message
+     "[licence] GNU General Public License not found."
+     1
+     prefix)
+    t))
+
+(defun my-layout-license-text (text &optional prefix)
+  "Check that License TEXT exists."
+  (unless (re-search-forward (regexp-quote text) nil t)
+    (my-lint-layout-message
+     (format "[licence] Licence text not found: %s..." text)
+     1
+     prefix)))
+
+(defun my-layout-license-check-main (&optional prefix)
+  "Check License syntax.
+Optional PREFIX is used add filename to the beginning of line."
+  (if (my-layout-license-not-exists prefix)
+      t
+    ;; The order is important
+    (my-layout-license-text
+     "published by the Free Software Foundation" prefix)
+    (let (case-fold-search)
+      (my-layout-license-text
+       "WITHOUT ANY WARRANTY" prefix))
+    (my-layout-license-text
+     "You should have received a copy" prefix)
+    (my-layout-license-text
+     "http://www.gnu.org/licenses" prefix)))
+
+(defun my-layout-license-check-buffer (&optional prefix)
+  "Check from `point-min' with `my-layout-license-check-main'."
+  (my-lint-layout-point-min
+    (my-layout-license-check-main)))
+
+(defun my-layout-license-check-main-interactive (&optional prefix)
+  "Call my-layout-license-check-main and other relevant checks."
+  (interactive)
+  (my-lint-layout-with-interactive
+    (my-layout-license-check-buffer)))
+
+;;; ....................................................... &copyright ...
+
+(defsubst my-layout-copyright-line-p ()
+  "Check if current point is copyright line.
+Should be called right after `my-layout-copyright-search-forward'."
+  (not (looking-at ".*information")))
+
+(defsubst my-layout-copyright-search-forward ()
+  "Position point to 'Copyright' line."
+  (let (moved)
+    (while (and (setq moved
+		      (re-search-forward "\\<copyright\\>" nil t))
+		(not (my-layout-copyright-line-p))))
+    (and moved
+	 (my-layout-copyright-line-p))))
+
+(defun my-layout-copyright-not-exists (&optional prefix)
+  "Check if Copyright exists."
+  (unless (my-layout-copyright-search-forward)
+    (my-lint-layout-message
+     "[copyright] Not found"
+     1
+     prefix)
+    t))
+
+(defun my-layout-copyright-line-syntax (&optional prefix)
+  "Check Copyright line syntax."
+  (let ((line (my-lint-layout-current-line-number)))
+    (unless (looking-at " +(C)")
+      (my-lint-layout-message
+       "[copyright] missing: (C)"
+       line
+       prefix))
+    (unless (looking-at ".*[0-9][0-9][0-9][0-9]")
+      (my-lint-layout-message
+       "[copyright] missing year: YYYY"
+       line
+       prefix))
+    (unless (looking-at ".*<.+>")
+      (my-lint-layout-message
+       "[copyright] missing email address: <foo@bar.com>"
+       line
+       prefix))
+    (when (looking-at ".*,")
+      (my-lint-layout-message
+       "[copyright] Possibly many persons. Use separate Copyright lines."
+       line
+       prefix))))
+
+(defun my-layout-copyright-check-main (&optional prefix)
+  "Check Copyright syntax.
+Optional PREFIX is used add filename to the beginning of line."
+  (if (my-layout-copyright-not-exists prefix)
+      t
+    (my-layout-copyright-line-syntax prefix)
+    (while (my-layout-copyright-search-forward)
+      (my-layout-copyright-line-syntax prefix))))
+
+(defun my-layout-copyright-check-buffer (&optional prefix)
+  "Check from `point-min' with `my-layout-copyright-check-main'."
+  (my-lint-layout-point-min
+    (my-layout-copyright-check-main)))
+
+(defun my-layout-copyright-check-main-interactive (&optional prefix)
+  "Call my-layout-copyright-check-main and other relevant checks."
+  (interactive)
+  (my-lint-layout-with-interactive
+    (my-layout-copyright-check-buffer)))
+
 ;;; ....................................................... &changelog ...
 
 (defconst my-layout-changelog-item-regexp
