@@ -650,7 +650,7 @@ See `my-lint-layout-buffer-name'."
   "Check that License TEXT exists."
   (unless (re-search-forward (regexp-quote text) nil t)
     (my-lint-layout-message
-     (format "[licence] Licence text not found: %s..." text)
+     (format "[licence] text not found: %s..." text)
      1
      prefix)))
 
@@ -726,7 +726,7 @@ Should be called right after `my-layout-copyright-search-forward'."
        prefix))
     (when (looking-at ".*,")
       (my-lint-layout-message
-       "[copyright] Possibly many persons. Use separate Copyright lines."
+       "[copyright] Each person; separate Copyright line"
        line
        prefix))))
 
