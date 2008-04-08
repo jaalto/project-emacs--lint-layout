@@ -596,14 +596,15 @@ See `my-lint-layout-buffer-name'."
 (defun my-php-layout-check-whitespace (&optional prefix)
   "Check whitespace problems: eol, bob, eob from current point."
   (save-excursion
-    (save-excursion (my-php-layout-whitespace-multiple-newlines))
-    (my-php-layout-whitespace-trailing)
-    (my-php-layout-whitespace-at-eob)))
+    (save-excursion
+      (my-php-layout-whitespace-multiple-newlines prefix))
+    (my-php-layout-whitespace-trailing prefix)
+    (my-php-layout-whitespace-at-eob prefix)))
 
 (defun my-php-layout-check-whitespace-buffer (&optional prefix)
   "Check from `point-min' with `my-php-layout-check-whitespace'."
   (my-lint-layout-point-min
-    (my-php-layout-check-whitespace)))
+    (my-php-layout-check-whitespace prefix)))
 
 (defun my-php-layout-check-whitespace-buffer-interactive ()
   "Run `my-php-layout-check-whitespace-buffer' and show results."
