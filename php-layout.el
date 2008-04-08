@@ -108,6 +108,25 @@
   `(let (case-fold-search)
      ,@body))
 
+(put 'my-lint-layout-point-min 'lisp-indent-function 0)
+(defmacro my-lint-layout-point-min (&rest body)
+  "Run BODY with `case-fold-search' set to nil."
+  `(save-excursion
+    (goto-char (point-min))
+    ,@body))
+
+(put 'my-lint-layout-with-interactive 'lisp-indent-function 0)
+(defmacro my-lint-layout-with-interactive (&rest body)
+  "Run BODY from `point-min' and show `my-lint-layout-buffer-name'."
+  `(progn
+     (my-lint-layout-result-erase-buffer)
+     (save-excursion
+       (goto-char (point-min))
+       ,@body)
+     (with-current-buffer my-lint-layout-buffer-name
+       (sort-lines nil (point-min) (point-max)))
+     (display-buffer my-lint-layout-buffer-name)))
+
 (defsubst my-lint-layout-prefix (prefix)
   "If PREFIX, add it as filename to the beginning."
   (if prefix
@@ -331,7 +350,7 @@ See `my-lint-layout-buffer-name'."
 		(looking-at "[*/#]\\|[<>][?]"))
 	(my-lint-layout-message
 	 (concat
-	  "[newlines] no empty line found between"
+	  "[newline] no empty line found between"
 	  "control statement and code above")
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
@@ -354,7 +373,7 @@ See `my-lint-layout-buffer-name'."
 	       str)
 	(setq line (my-lint-layout-current-line-number))
 	(my-lint-layout-message
-	 "[newlines] no empty line found between '}' and next code line"
+	 "[newline] no empty line found between '}' and next code line"
 	 line
        prefix)))))
 
@@ -416,58 +435,12 @@ See `my-lint-layout-buffer-name'."
 	  (my-lint-layout-message
 	   "[phpdoc] function not documented"
 	   line prefix))
-	 ((my-lint-layout-type-include-string-p str))  ; Skip on "function files"
+	 ;; Skip "function files"
+	 ((my-lint-layout-type-include-string-p str))
 	 ((my-lint-layout-type-statement-string-p str)
 	  (my-lint-layout-message
 	   "[phpdoc] variable not documented"
 	   line prefix)))))))
-
-(defun my-php-layout-extra-newlines (&optional msg prefix)
-  "Check extra newlines at point."
-  (when (looking-at "\\(\\(?:[ \t]*\r?\n\\)+\\)")
-    (let ((str (match-string 0))
-	  (line (my-lint-layout-current-line-number)))
-      (my-lint-layout-message
-       (format "[newlines] extra %d%s"
-	       (my-lint-layout-count-lines-in-string str)
-	       (or msg ""))
-       line prefix))))
-
-(defun my-php-layout-check-whitespace (&optional prefix)
-  "Check whitespace problems."
-  (let (line)
-    (save-excursion
-      (my-php-layout-extra-newlines " at beginning of file" prefix)
-      (while (re-search-forward "[ \t]+$" nil t)
-	(setq line (my-lint-layout-current-line-number))
-	(my-lint-layout-message
-	 "trailing whitepace(s) at end of line"
-	 line prefix))
-      (goto-char (point-max))
-      (when (re-search-backward "[^ \t\r\n]\\(\n\\)?" nil t)
-	(cond
-	 ((string= "\n" (match-string 1))
-	  ;; eob trailing newlines?
-	  (forward-line 1)
-	  (my-php-layout-extra-newlines " at end of file" prefix))
-	 (t
-	  (setq line (my-lint-layout-current-line-number))
-	  (my-lint-layout-message
-	   "[newlines] missing newline from last line of file"
-	   line prefix)))))))
-
-(defun my-php-layout-check-line-length (&optional prefix)
-  "Check lines beyond `my-lint-layout-generic-line-length-max'."
-  (let* ((col my-lint-layout-generic-line-length-max)
-	 (re (concat "^"
-		     (make-string col ?\.)
-		     "\\(.+\\)")))
-    (while (re-search-forward re nil t)
-      (my-lint-layout-message
-       (format "line lenght past column %d: %s" col (match-string 1))
-       (my-lint-layout-current-line-number)
-       prefix))))
-
 
 (defsubst my-php-layout-indent-level (str)
   "Count indent."
@@ -569,6 +542,93 @@ See `my-lint-layout-buffer-name'."
 		   statement-start-col)
 	   (my-lint-layout-current-line-number)
 	   prefix)))))))
+
+;;; ...................................................... &whitespace ...
+
+(defun my-php-layout-whitespace-extra-newlines (&optional msg prefix)
+  "Check extra newlines at point."
+  (when (looking-at "\\(\\(?:[ \t]*\r?\n\\)+\\)")
+    (let ((str (match-string 0))
+	  (line (my-lint-layout-current-line-number)))
+      (my-lint-layout-message
+       (format "[newline] extra newline %d%s"
+	       (my-lint-layout-count-lines-in-string str)
+	       (or msg ""))
+       line prefix))))
+
+(defun my-php-layout-whitespace-trailing (&optional prefix)
+  "Check trailing whitespace."
+  (let (line)
+    (while (re-search-forward "[ \t]+$" nil t)
+      (setq line (my-lint-layout-current-line-number))
+      (my-lint-layout-message
+       "[whitespace] trailing whitepace at end of line"
+       line prefix))))
+
+(defun my-php-layout-whitespace-multiple-newlines (&optional prefix)
+  "Check multiple newlines."
+  (let (line)
+    (while (re-search-forward "^[ \t]*\r?\n\\([ \t]*\r?\n\\)+" nil t)
+      (my-lint-layout-message
+       (format "[newline] extra newline(s) %d found above"
+	       (1- (my-lint-layout-count-lines-in-string
+		    (match-string 0))))
+       (my-lint-layout-current-line-number)
+       prefix))))
+
+(defun my-php-layout-whitespace-at-eob (&optional prefix)
+  "Check multiple newlines."
+  (let (line)
+    (goto-char (point-max))
+    (when (re-search-backward "[^ \t\r\n]\\(\n\\)?" nil t)
+      (cond
+       ((string= "\n" (match-string 1))
+	;; eob trailing newlines?
+	(forward-line 1)
+	(my-php-layout-whitespace-extra-newlines
+	 " at end of file" prefix))
+       (t
+	(setq line (my-lint-layout-current-line-number))
+	(my-lint-layout-message
+	 "[newline] missing newline from last line of file"
+	 line prefix))))))
+
+(defun my-php-layout-check-whitespace (&optional prefix)
+  "Check whitespace problems: eol, bob, eob from current point."
+  (save-excursion
+    (save-excursion (my-php-layout-whitespace-multiple-newlines))
+    (my-php-layout-whitespace-trailing)
+    (my-php-layout-whitespace-at-eob)))
+
+(defun my-php-layout-check-whitespace-buffer (&optional prefix)
+  "Check from `point-min' with `my-php-layout-check-whitespace'."
+  (my-lint-layout-point-min
+    (my-php-layout-check-whitespace)))
+
+(defun my-php-layout-check-whitespace-buffer-interactive ()
+  "Run `my-php-layout-check-whitespace-buffer' and show results."
+  (interactive)
+  (my-lint-layout-with-interactive
+    (my-php-layout-check-whitespace-buffer)))
+
+;;; .......................................................... &length ...
+
+(defun my-php-layout-check-line-length (&optional prefix)
+  "Check lines beyond `my-lint-layout-generic-line-length-max'."
+  (let* ((col my-lint-layout-generic-line-length-max)
+	 (re (concat "^"
+		     (make-string col ?\.)
+		     "\\(.+\\)")))
+    (while (re-search-forward re nil t)
+      (my-lint-layout-message
+       (format "line lenght past column %d: %s" col (match-string 1))
+       (my-lint-layout-current-line-number)
+       prefix))))
+
+(defun my-php-layout-check-line-length-buffer (&optional prefix)
+  "Check from `point-min' with `my-php-layout-check-line-length'."
+  (my-lint-layout-point-min
+    (my-php-layout-check-line-length)))
 
 ;;; ....................................................... &changelog ...
 
@@ -677,22 +737,22 @@ Optional PREFIX is used add filename to the beginning of line."
   (my-layout-changelog-file-items)
   (my-layout-changelog-wording prefix))
 
+(defun my-layout-changelog-check-standard-main (&optional prefix)
+  "Check ChangeLog syntax. With standard checks."
+  (my-layout-changelog-check-main)
+  (my-php-layout-check-whitespace-buffer)
+  (my-php-layout-check-line-length))
+
 (defun my-layout-changelog-check-main-interactive (&optional prefix)
   "Call my-layout-changelog-check-main and other relevant checks."
   (interactive)
   (catch 'done
-    (unless (string-match "ChangeLog" (buffer-name))
+    (when (and (interactive-p)
+	       (not (string-match "ChangeLog" (buffer-name))))
       (or (y-or-n-p "Cursor possibly not in ChangeLog buffer. Continue? ")
 	  (throw 'done t)))
-    (save-excursion
-      (goto-char (point-min))
-      (my-lint-layout-result-erase-buffer)
-      (my-layout-changelog-check-main)
-      (my-php-layout-check-whitespace)
-      (my-php-layout-check-line-length))
-    (with-current-buffer my-lint-layout-buffer-name
-      (sort-lines nil (point-min) (point-max)))
-    (display-buffer my-lint-layout-buffer-name)))
+    (my-lint-layout-with-interactive
+      (my-layout-changelog-check-standard-main))))
 
 ;;; ........................................................... &brace ...
 
@@ -777,13 +837,13 @@ Optional PREFIX is used add filename to the beginning of line."
   "Display message for TYPE at code LINE with optional COUNT lines."
   (let ((list
 	 '((beg
-	    "[newlines] extra %d above. See previous brace '{'")
+	    "[newline] extra %d above. See previous brace '{'")
 	   (end
-	    "[newlines] extra %d before ending brace '}'")
+	    "[newline] extra %d before ending brace '}'")
 	   (function-before
-	    "[newlines] extra %d before function definition")
+	    "[newline] extra %d before function definition")
 	   (empty
-	    "[newlines] empty brace block found")))
+	    "[newline] empty brace block found")))
 	elt)
     (when (setq elt (assoc type list))
       (multiple-value-bind (dummy format) elt
@@ -1289,7 +1349,7 @@ Optional PREFIX is used add filename to the beginning of line."
 		;;  * Documentation
 		;;  */
 		(my-lint-layout-message
-		 "[newlines] no empty line before documentation block"
+		 "[newline] no empty line before documentation block"
 		 (1+ (my-lint-layout-current-line-number))
 		 prefix))
 	      (forward-line 2)
