@@ -307,9 +307,9 @@ See `my-lint-layout-buffer-name'."
    (list
     (concat
      "^[ \]*"
-     "\\(class\\|function\\|if\\|while\\|abstract\\|interface\\|foreach\\)"
-     ".*(")
-    "Misspelled keyword, expect lowercase"
+     "\\(class\\|function\\|if\\|elsewhile\\|abstract\\|interface\\|foreach\\)"
+     "\\>")
+    "Possibly misspelled keyword, expect lowercase"
     nil
     '(lambda ()
        (let* ((str   (match-string 0))

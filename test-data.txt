@@ -71,6 +71,7 @@ if ( ! @mysql_select_db(DBNAME, $this->conn) )
 $this->conn = @mysql_connect(DBHOST, DBUSER, DBPASS);
 if ( ! $this->conn )
 
+function printFooter()
 "string".$var   OR   $var."string"
 [".get_object_vars($resultObject)."]"
 print $user->getFirstName()." ".
