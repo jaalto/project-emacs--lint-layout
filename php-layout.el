@@ -165,6 +165,10 @@
 	(incf i)))
     i))
 
+(defsubst my-lint-layout-buffer-data-p ()
+  "Check that buffer contains text."
+  (string-match "[^ \t\r\n]" (buffer-string)))
+
 (defsubst my-lint-layout-count-lines-in-string (str)
   "Count lines in STR."
   (length (replace-regexp-in-string "[^\n]" "" str)))
@@ -918,18 +922,19 @@ See `my-lint-layout-buffer-name'."
 (defun my-layout-license-check-main (&optional prefix)
   "Check License syntax.
 Optional PREFIX is used add filename to the beginning of line."
-  (if (my-layout-license-not-exists prefix)
-      t
-    ;; The order is important
-    (my-layout-license-text
-     "published by the Free Software Foundation" prefix)
-    (let (case-fold-search)
+  (when (my-lint-layout-buffer-data-p)
+    (if (my-layout-license-not-exists prefix)
+	t
+      ;; The order is important
       (my-layout-license-text
-       "WITHOUT ANY WARRANTY" prefix))
-    (my-layout-license-text
-     "You should have received a copy" prefix)
-    (my-layout-license-text
-     "http://www.gnu.org/licenses" prefix)))
+       "published by the Free Software Foundation" prefix)
+      (let (case-fold-search)
+	(my-layout-license-text
+	 "WITHOUT ANY WARRANTY" prefix))
+      (my-layout-license-text
+       "You should have received a copy" prefix)
+      (my-layout-license-text
+       "http://www.gnu.org/licenses" prefix))))
 
 (defun my-layout-license-check-buffer (&optional prefix)
   "Check from `point-min' with `my-layout-license-check-main'."
