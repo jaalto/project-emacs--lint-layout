@@ -289,9 +289,9 @@ See `my-lint-layout-buffer-name'."
      "Possibly K&R brace style, expected line-up")
    '("[a-z].*}[ \t\r\n]*$"
      "Possibly K&R brace style, expected line-up")
-   '("^[ \t]*function[ \t].*[a-z0-9_]("
+   '("^[ \t]*function[ \t]+[a-z0-9_]+("
      "In funcdef, no space before starting '('")
-   '("^[ \t]*function[ \t].*[a-z0-9]_.*("
+   '("^[ \t]*function[ \t][a-z0-9]+_[^ \t]*[ \t]*("
      "In funcdef, name not CamelCase"))
   "Check Modern layout style.")
 
@@ -393,7 +393,17 @@ See `my-lint-layout-buffer-name'."
 
    '("[!=]=[ \t]*\\(null\\|true\\|false\\)"
      "Possibly unnecessary test against literal"
-     "assert")
+     nil
+     (lambda ()
+       (not
+	(or
+	 (string-match "assert"
+		       (my-lint-layout-current-line-string))
+	 (save-excursion
+	   (forward-line -1)
+	   (string-match "assert"
+			 (my-lint-layout-current-line-string)))))))
+
    '("\\<function[ \t]+\\(de\\|con\\)struct"
      "Possibly mispelled __(de|con)structor"))
   "Search ((REGEXP MESSAGE [NOT-REGEXP] [FUNC]) ..).")
@@ -494,7 +504,8 @@ See `my-lint-layout-buffer-name'."
       (when (string= tag "<?")
 	(unless (looking-at "php")
 	  (my-lint-layout-message
-	   "Unknown opening xml tag. Expected <?php"
+	   (format "Unknown opening xml tag. Expected <?php: %s"
+		   (my-lint-layout-current-line-string))
 	   (my-lint-layout-current-line-number)
 	   prefix))))))
 
