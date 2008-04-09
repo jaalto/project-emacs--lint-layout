@@ -1,0 +1,103 @@
+// PHP test cases
+// M-x my-php-layout-check-regexp-occur-main
+
+# not allowed comment style
+
+/**
+ *  Reservation
+ *
+ *  Copyright information
+ *
+ *      Copyright Peter Pan
+ *      Copyright (C) Peter Pan
+ *      Copyright (C) Peter Pan, Another Person Here
+ *      Copyright (C) 2008 Peter Pan
+ *      Copyright (C) 2008 Peter Pan <firstname.lastname@example.com>
+ *
+ *  License
+ *
+ *      This file is part of Hotel Sunshine - program.
+ *
+ *      Hotel Sunshine is free software; you can redistribute it and/or
+ *      modify it under the terms of the GNU General Public License as
+ *      published by the Free Software Foundation; either version 2 of
+ *      the License, or (at your option) any later version.
+ *
+ *      This program is distributed in the hope that it will be useful, but
+ *      WITHOUT ANY WARRANTY; without even the implied warranty of
+ *      MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+ *      General Public License for more details.
+ *
+ *      You should have received a copy of the GNU General Public License
+ *      along with this program.  If not, see <http://www.gnu.org/licenses/>.
+ *
+ * @package    hotelsunshine
+ * @author     Henri Kontio
+ * @copyright  2008 Henri Kontio
+ * @license    GPL v2 or any later version
+ * @version    2008-04-08
+ */
+
+date()
+
+echo "asdads"
+echo 'lasasd'
+echo $sdfsdf
+echo("asdasd")
+
+@ereg(sadasd)
+
+
+while(1)
+while (1)
+while ( 1)
+while ( 1 )
+
+$a= 1
+$a =123
+a || b
+
+if (a = b)
+
+$this->call (param)
+$this->debugArray ($this->classId ...)
+
+IF ()
+
+// Extra space before closing ')'
+call( ad );
+call( more(ad ));
+
+"string".$var   OR   $var."string"
+[".get_object_vars($resultObject)."]"
+print $user->getFirstName()." ".
+
+
+class
+class
+
+if ( $query and mysql_result == false )
+if ( value and $var )
+if ( $TEST  and  realpath ($_SERVER["PHP_SELF"]) == __FILE__ )
+
+// misspelled
+else if (test)
+
+if ( K&R ) {
+  code
+} elseif ( this ) {
+  code
+}
+elseif ( this ) {
+  code
+}
+elseif ( this )
+{
+  code
+}
+
+function def_inition ( param, param)
+function def( param, param)
+function def ( param, param)
+function def (param, param )
+function def ( )
