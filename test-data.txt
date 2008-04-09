@@ -74,6 +74,8 @@ if ( ! $this->conn )
 function printFooter()
 
 while ($month <= 12)
+$this->assertTrue( $this->data->isEmpty(" ")      == true );
+
 "string".$var   OR   $var."string"
 [".get_object_vars($resultObject)."]"
 print $user->getFirstName()." ".

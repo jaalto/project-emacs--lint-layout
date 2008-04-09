@@ -351,7 +351,7 @@ See `my-lint-layout-buffer-name'."
    ;; code );
    '("[a-z][_a-z0-9]+([^)]*[ \t]+)\\|[ \t]);"
      "In funcall, extra space before ending ')'"
-     "\\<\\(if\\|foreach\\|while\\)")
+     "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
    ;; function ( param, def)
    '("^[ \t]*function[ \t]*.*([ \t]"
