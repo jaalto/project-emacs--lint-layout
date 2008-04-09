@@ -328,7 +328,7 @@ See `my-lint-layout-buffer-name'."
      "POSIX standard strftime() recommended for")
 
    '("^[ \t]*else[ \t]*if\\>"
-     "Misspelled elseif")
+     "Standard keyword elseif not used")
 
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[$a-z][ \t]*=[ \t]*[$a-z]"
      "Assignment inside statement"
@@ -339,7 +339,7 @@ See `my-lint-layout-buffer-name'."
      "In statement, no space after keyword and '(': ")
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t])[ \t]*$"
      "In statement, no space before closing ')': ")
-   '("this->[^][ )\t\r\n]+[ \t]"
+   '("this->[^][ )=\t\r\n]+[ \t]"
      "In funcall, possibly extra space before '('")
 
    ;; code );

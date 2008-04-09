@@ -68,6 +68,7 @@ IF ()
 call( ad );
 call( more(ad ));
 if ( ! @mysql_select_db(DBNAME, $this->conn) )
+$this->conn = @mysql_connect(DBHOST, DBUSER, DBPASS);
 
 "string".$var   OR   $var."string"
 [".get_object_vars($resultObject)."]"
