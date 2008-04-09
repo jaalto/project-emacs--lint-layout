@@ -331,7 +331,7 @@ See `my-lint-layout-buffer-name'."
    '("\\<date(.*)"
      "POSIX standard strftime() recommended for")
 
-   '("^[ \t]*else[ \t]*if\\>"
+   '("^[ \t]*else[ \t]+if\\>"
      "Standard elseif keyword not used")
 
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[$a-z][ \t]*=[ \t]*[$a-z]"
@@ -1001,7 +1001,7 @@ Should be called right after `my-layout-copyright-search-forward'."
        prefix))
     (unless (looking-at ".*[0-9][0-9][0-9][0-9]")
       (my-lint-layout-message
-       (format "[copyright] missing year YYYY: %s" string)
+       (format "[copyright] missing year: %s" string)
        line
        prefix))
     (when (and (not (looking-at ".*<.+>"))
