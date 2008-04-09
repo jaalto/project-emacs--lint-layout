@@ -295,6 +295,12 @@ See `my-lint-layout-buffer-name'."
      "In funcdef, name not CamelCase"))
   "Check Modern layout style.")
 
+;; NOTES:
+;; *) It's okay to use "@" suppression
+;;
+;;  $this->conn = @mysql_connect(DBHOST, DBUSER, DBPASS);
+;;  if ( ! $this->conn )
+
 (defconst my-php-layout-check-regexp-occur-list
   (list
 
@@ -316,8 +322,6 @@ See `my-lint-layout-buffer-name'."
      "Not a recommended comment style")
    '("^[ \t]*var[ \t]"
      "Old vardef. Migrate to syntax public|protected: ")
-   '("^[ \t]*@[a-z].*("
-     "Possible dangerous error suppression call")
    '("\\<ereg[_a-z]*(.*)"
      "preg*() function family recommended for")
    '("\\<include[_a-z][( \t]*[\"\'$]"
@@ -328,7 +332,7 @@ See `my-lint-layout-buffer-name'."
      "POSIX standard strftime() recommended for")
 
    '("^[ \t]*else[ \t]*if\\>"
-     "Standard keyword elseif not used")
+     "Standard elseif keyword not used")
 
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[$a-z][ \t]*=[ \t]*[$a-z]"
      "Assignment inside statement"
