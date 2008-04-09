@@ -993,7 +993,7 @@ Should be called right after `my-layout-copyright-search-forward'."
        (format "[copyright] missing year YYYY: %s" string)
        line
        prefix))
-    (when (and (looking-at ".*<.+>")
+    (when (and (not (looking-at ".*<.+>"))
 	       ;;  Tag "@copyright ....."
 	       (not (string-match "@copyright" string)))
       (my-lint-layout-message
