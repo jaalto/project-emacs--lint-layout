@@ -67,6 +67,7 @@ IF ()
 // Extra space before closing ')'
 call( ad );
 call( more(ad ));
+if ( ! @mysql_select_db(DBNAME, $this->conn) )
 
 "string".$var   OR   $var."string"
 [".get_object_vars($resultObject)."]"

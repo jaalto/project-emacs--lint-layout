@@ -304,7 +304,6 @@ See `my-lint-layout-buffer-name'."
     '(lambda ()
        (let* ((str   (match-string 0))
 	      (lower (downcase str)))
-	 (message "XX: %s = %s" str lower)
 	 (not (string= str lower)))))
 
    '("[|][|]\\|&&"
@@ -331,13 +330,13 @@ See `my-lint-layout-buffer-name'."
      "Assignment inside statement"
      "mysql")
    '("\\<\\(if\\|foreach\\|while\\)("
-     "No space before '(' in statement: ")
+     "In statement, no space before keyword and '(': ")
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*([^ )\t\r\n]"
-     "No space after '(' in statement: ")
-   '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t])"
-     "No space before closing ')' in statement: ")
-   '("this->[^ \t\r\n]+[ \t]"
-     "Extra space near funcall, before '('")
+     "In statement, no space after keyword and '(': ")
+   '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t])[ \t]*$"
+     "In statement, no space before closing ')': ")
+   '("this->[^][ )\t\r\n]+[ \t]"
+     "In funcall, possibly extra space before '('")
 
    ;; code );
    '("[a-z][_a-z0-9]+([^)]*[ \t]+)\\|[ \t]);"
