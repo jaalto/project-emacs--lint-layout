@@ -339,7 +339,9 @@ See `my-lint-layout-buffer-name'."
      "mysql")
    '("\\<\\(if\\|foreach\\|while\\)("
      "In statement, no space before keyword and '(': ")
-   '("\\<\\(if\\|foreach\\|while\\)[ \t]*([^ )\t\r\n]"
+   '("\\<\\(if\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
+     "In statement, no space after starting '(': ")
+   '("\\<\\(if\\|foreach\\|while\\)[ \t]*([^ $)\t\r\n]"
      "In statement, no space after keyword and '(': ")
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t])[ \t]*$"
      "In statement, no space before closing ')': ")
