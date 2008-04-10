@@ -1067,7 +1067,7 @@ Should be called right after `my-layout-copyright-search-forward'."
        prefix))
     (when (and (looking-at ".*<\\(.+\\)>")
 	       (string-match
-		"first\\|last\\|foo\\|bar\\|quux\\|example"
+		"foo\\|bar\\|quux\\|example"
 		(match-string 1)))
       (my-lint-layout-message
        (format "[copyright] email is template: %s" string)
