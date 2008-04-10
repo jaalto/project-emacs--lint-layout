@@ -75,6 +75,39 @@ function printFooter()
 
 while ($month <= 12)
 $this->assertTrue( $this->data->isEmpty(" ")      == true );
+function applyTemplate ($filename, $vars = array())
+elseif ( array_key_exists($field, $_POST) )
+
+
+        print "<?xml version=\"1.0\" encoding=\"utf-8\"?>\n" .
+        "<!DOCTYPE html PUBLIC \"-//W3C//DTD XHTML 1.0 Strict//EN\"\n" .
+        "\"http://www.w3.org/TR/xhtml1/DTD/xhtml1-strict.dtd\">\n" .
+        "<html xmlns=\"http://www.w3.org/1999/xhtml\">\n" .
+        "<head>\n" .
+        "<meta http-equiv=\"Content-Type\" content=\"text/html; charset=utf-8\" />\n" .
+        "<meta name=\"description\" content=\"\" />\n" .
+        "<meta name=\"keywords\" content=\"\" />\n" .
+        "<meta name=\"author\" content=\"Foo bar\" />\n" .
+        "<link href=\"\" rel=\"stylesheet\" type=\"text/css\" />\n" .
+        "<title>Hotel Sunshine</title>\n" .
+        "</head>\n" .
+        "<body>\n" .
+        "<div id=\"wrapper\">\n";
+
+
+2008-04-03  Jari Aalto  <jari.aalto@tamk.fi>
+
+	* doc (dir): New directory.
+
+	* doc/dev:  (dir): New directory.
+
+	* doc/dev: (dir):  New directory.
+
+        * application/lib/.keep: (file) New file
+
+        * application/data/.keep: (file) New file
+
+        * application/conf/.keep: (file) New file
 
 "string".$var   OR   $var."string"
 [".get_object_vars($resultObject)."]"

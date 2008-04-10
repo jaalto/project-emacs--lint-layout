@@ -461,26 +461,6 @@ See `my-lint-layout-buffer-name'."
      ((or class iface)
       (goto-char (or class iface))))))
 
-(defun my-lint-layout-generic-mixed-eol-crlf (&optional prefix)
-  "Check mixed CR/LF combination at end of line."
-  (save-excursion
-    (when (search-forward "\r" nil t)
-      (my-lint-layout-message
-       "[file-format] mixed CR and LF at the end of line (first occurrance)"
-       (my-lint-layout-current-line-number)
-       prefix))))
-
-(defun my-lint-layout-php-multiple-print (&optional prefix)
-  "Check multiple print statements."
-  (save-excursion
-    (while (re-search-forward
-	    ;;  3 x threshold
-	    "^[ \t]*print.*\n[ \t]*print.*\n[ \t]*print" nil t)
-      (my-lint-layout-message
-       "Multiple print*() calls. Possible alternative: HERE syntax"
-       (my-lint-layout-current-line-number)
-       prefix))))
-
 (defun my-lint-layout-generic-class-count (&optional prefix)
   "Count Classes and interfaces in one file"
   (let (count)
@@ -496,18 +476,69 @@ See `my-lint-layout-buffer-name'."
        (my-lint-layout-current-line-number)
        prefix))))
 
-(defun my-lint-layout-generic-xml-tags-lazy (&optional prefix)
-  "Check lazy `<?' when it should have `<?php'."
+
+;;; ........................................................... &print ...
+
+(defun my-php-layout-check-multiple-print (&optional prefix)
+  "Check multiple print statements."
+  (save-excursion
+    (while (re-search-forward
+	    ;;  3 x threshold
+	    "^[ \t]*print.*\n[ \t]*print.*\n[ \t]*print" nil t)
+      (my-lint-layout-message
+       "Multiple print*() calls. Possible alternative: HERE syntax"
+       (my-lint-layout-current-line-number)
+       prefix))))
+
+(defsubst my-php-layout-print-command-forward ()
+  "Search print or echo command. Return beginning point of match."
+  (let (beg)
+    (when (re-search-forward
+	   ;; text/html; charset=utf-8
+	   "^[ \t]*\\(print\\|echo\\)[ \t]*[(\"][^;]+;" nil 'noerr)
+      (setq beg (match-beginning 0))
+      (unless (looking-at ";[ \t]*$")
+	(when (re-search-forward ";[ \t]*$" nil 'noerr)))
+      beg)))
+
+(defun my-php-layout-check-multiline-print (&optional prefix)
+  "Check long print statements, when there is no $var anywhere.
+
+print 'this' .
+      'and' .
+      ....
+      ;
+"
+  (let (beg str lines)
+    (while (setq beg (my-php-layout-print-command-forward))
+      (setq str (buffer-substring beg (point)))
+      (unless (string-match "[$]" str) ;No variables used
+	(setq lines (my-lint-layout-count-lines-in-string str))
+	(when (> lines 3)
+	  (my-lint-layout-message
+	   "Inefficient output, better use HERE doc syntax (<<<)"
+	   (- (my-lint-layout-current-line-number) lines)
+	   prefix))))))
+
+;;; ............................................................. &xml ...
+
+(defun my-lint-layout-check-xml-tags-lazy (tag &optional prefix)
+  "Check lazy `<?' when it should read `<?TAG'."
   (let (tag)
     (while (re-search-forward my-lint-layout-generic-xml-tag-regexp nil t)
       (setq tag (match-string 0))
       (when (string= tag "<?")
-	(unless (looking-at "php")
+	(unless (looking-at tag)
 	  (my-lint-layout-message
-	   (format "Unknown opening xml tag. Expected <?php: %s"
+	   (format "Unknown opening xml tag. Expected <?%s: %s"
+		   tag
 		   (my-lint-layout-current-line-string))
 	   (my-lint-layout-current-line-number)
 	   prefix))))))
+
+(defun my-php-layout-check-xml-tags-lazy (&optional prefix)
+  "Check <?php tag."
+  (my-lint-layout-check-xml-tags-lazy "php"))
 
 (defun my-lint-layout-generic-xml-tags-check-main (&optional prefix)
   "Check multiple invocations like:
@@ -809,7 +840,7 @@ See `my-lint-layout-buffer-name'."
   (regexp-quote "End of file")
   "End of file marker text.")
 
-(defun my-php-layout-check-eof-marker (&optional prefix)
+(defun my-lint-layout-check-eof-marker (&optional prefix)
   "Check EOF marker."
   (save-excursion
     (goto-char (point-max))
@@ -820,14 +851,14 @@ See `my-lint-layout-buffer-name'."
 		    (* 4 80))
 	       'noerr)
 	(my-lint-layout-message
-	 (format "[misc] No exact EOF marker found: '%s'"
+	 (format "[misc] No exact EOF text found: '%s'"
 		 my-lint-layout-eof-regexp)
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
 
 ;;; ...................................................... &whitespace ...
 
-(defun my-php-layout-whitespace-extra-newlines (&optional msg prefix)
+(defun my-lint-layout-whitespace-extra-newlines (&optional msg prefix)
   "Check extra newlines at point."
   (when (looking-at "\\(\\(?:[ \t]*\r?\n\\)+\\)")
     (let ((str (match-string 0))
@@ -838,7 +869,7 @@ See `my-lint-layout-buffer-name'."
 	       (or msg ""))
        line prefix))))
 
-(defun my-php-layout-whitespace-trailing (&optional prefix)
+(defun my-lint-layout-whitespace-trailing (&optional prefix)
   "Check trailing whitespace."
   (let (line)
     (while (re-search-forward "[ \t]+$" nil t)
@@ -847,7 +878,7 @@ See `my-lint-layout-buffer-name'."
        "[whitespace] trailing whitepace at end of line"
        line prefix))))
 
-(defun my-php-layout-whitespace-multiple-newlines (&optional prefix)
+(defun my-lint-layout-whitespace-multiple-newlines (&optional prefix)
   "Check multiple newlines."
   (let (line)
     (while (re-search-forward "^[ \t]*\r?\n\\([ \t]*\r?\n\\)+" nil t)
@@ -858,7 +889,7 @@ See `my-lint-layout-buffer-name'."
        (my-lint-layout-current-line-number)
        prefix))))
 
-(defun my-php-layout-whitespace-at-eob (&optional prefix)
+(defun my-lint-layout-whitespace-at-eob (&optional prefix)
   "Check multiple newlines."
   (let (line)
     (goto-char (point-max))
@@ -867,7 +898,7 @@ See `my-lint-layout-buffer-name'."
        ((string= "\n" (match-string 1))
 	;; eob trailing newlines?
 	(forward-line 1)
-	(my-php-layout-whitespace-extra-newlines
+	(my-lint-layout-whitespace-extra-newlines
 	 " at end of file" prefix))
        (t
 	(setq line (my-lint-layout-current-line-number))
@@ -875,28 +906,51 @@ See `my-lint-layout-buffer-name'."
 	 "[newline] missing newline from last line of file"
 	 line prefix))))))
 
-(defun my-php-layout-check-whitespace (&optional prefix)
+(defun my-lint-layout-check-whitespace (&optional prefix)
   "Check whitespace problems: eol, bob, eob from current point."
   (save-excursion
     (save-excursion
-      (my-php-layout-whitespace-multiple-newlines prefix))
-    (my-php-layout-whitespace-trailing prefix)
-    (my-php-layout-whitespace-at-eob prefix)))
+      (my-lint-layout-whitespace-multiple-newlines prefix))
+    (my-lint-layout-whitespace-trailing prefix)
+    (my-lint-layout-whitespace-at-eob prefix)))
 
-(defun my-php-layout-check-whitespace-buffer (&optional prefix)
-  "Check from `point-min' with `my-php-layout-check-whitespace'."
+(defun my-lint-layout-check-whitespace-buffer (&optional prefix)
+  "Check from `point-min' with `my-lint-layout-check-whitespace'."
   (my-lint-layout-point-min
-    (my-php-layout-check-whitespace prefix)))
+    (my-lint-layout-check-whitespace prefix)))
 
-(defun my-php-layout-check-whitespace-buffer-interactive ()
-  "Run `my-php-layout-check-whitespace-buffer' and show results."
+(defun my-lint-layout-check-whitespace-buffer-interactive ()
+  "Run `my-lint-layout-check-whitespace-buffer' and show results."
   (interactive)
   (my-lint-layout-with-interactive
-    (my-php-layout-check-whitespace-buffer)))
+    (my-lint-layout-check-whitespace-buffer)))
+
+;;; ............................................................ &crlf ...
+
+(defsubst my-lint-layout-line-ending-lf-1-p ()
+  "Check if point forward contains one line with LF line ending."
+  (re-search-forward "^\n\\|[^\r\n]\n" nil 'noerr))
+
+(defun my-lint-layout-line-ending-lf-p ()
+  "Check if buffer contains one line with LF line ending."
+  (my-lint-layout-point-min
+    (my-lint-layout-line-ending-lf-1-p)))
+
+(defun my-lint-layout-generic-check-mixed-eol-crlf (&optional prefix)
+  "Check mixed CR/LF combination in buffer."
+  (save-excursion
+    (goto-char (point-min))
+    (when (my-lint-layout-line-ending-lf-1-p)
+      (goto-char (point-min))
+      (when (search-forward "\r" nil t)
+	(my-lint-layout-message
+	 "[file-format] CR LF at the end of line (first occurrance)"
+	 (my-lint-layout-current-line-number)
+	 prefix)))))
 
 ;;; .......................................................... &length ...
 
-(defun my-php-layout-check-line-length (&optional prefix)
+(defun my-lint-layout-check-line-length (&optional prefix)
   "Check lines beyond `my-lint-layout-generic-line-length-max'."
   (let* ((col my-lint-layout-generic-line-length-max)
 	 (re (concat "^"
@@ -908,10 +962,10 @@ See `my-lint-layout-buffer-name'."
        (my-lint-layout-current-line-number)
        prefix))))
 
-(defun my-php-layout-check-line-length-buffer (&optional prefix)
-  "Check from `point-min' with `my-php-layout-check-line-length'."
+(defun my-lint-layout-check-line-length-buffer (&optional prefix)
+  "Check from `point-min' with `my-lint-layout-check-line-length'."
   (my-lint-layout-point-min
-    (my-php-layout-check-line-length)))
+    (my-lint-layout-check-line-length)))
 
 ;;; ..................................................... &gpl-license ...
 
@@ -1110,8 +1164,8 @@ Optional PREFIX is used add filename to the beginning of line."
 Optional PREFIX is used add filename to the beginning of line."
   (let (indent
 	word
-	file)
-    (my-lint-layout-generic-mixed-eol-crlf prefix)
+	file
+	no-colon-p)
     (while (re-search-forward my-layout-changelog-item-regexp nil t)
       (setq indent (match-string 1)
 	    file   (match-string 2)
@@ -1121,16 +1175,23 @@ Optional PREFIX is used add filename to the beginning of line."
 		       (and (looking-at ": *\\([^ \t\r\n]+\\)")
 			    (match-string 1))))
       (unless (looking-at ":")
+	(setq no-colon-p t)
 	(my-lint-layout-message
-	 "[changelog] at *, no colon ':' immediately after filename"
+	 "[changelog] at *, no colon ':' immediately after pathname"
 	 (my-lint-layout-current-line-number)
 	 prefix))
       (when (looking-at ":  ")
 	(my-lint-layout-message
-	 "[changelog] at *, extra space after colon ':'"
+	 "[changelog] at *, extra space after path colon ':'"
 	 (my-lint-layout-current-line-number)
 	 prefix))
-      (unless (looking-at ":[ \r\n]")
+      (when (looking-at ":[ \t]*([^)\r\n]+):  ")
+	(my-lint-layout-message
+	 "[changelog] at *, extra space after (marker) colon ':'"
+	 (my-lint-layout-current-line-number)
+	 prefix))
+      (when (and (null no-colon-p)
+		 (not (looking-at ":[ \r\n]")))
 	(my-lint-layout-message
 	 "[changelog] at *, need one space after colon ':'"
 	 (my-lint-layout-current-line-number)
@@ -1150,6 +1211,7 @@ Optional PREFIX is used add filename to the beginning of line."
 (defun my-layout-changelog-check-main (&optional prefix)
   "Check ChangeLog syntax.
 Optional PREFIX is used add filename to the beginning of line."
+  (my-lint-layout-generic-check-mixed-eol-crlf prefix)
   (my-layout-changelog-file-bullet prefix)
   (my-layout-changelog-file-items prefix)
   (my-layout-changelog-wording prefix))
@@ -1157,19 +1219,14 @@ Optional PREFIX is used add filename to the beginning of line."
 (defun my-layout-changelog-check-standard-main (&optional prefix)
   "Check ChangeLog syntax. With standard checks."
   (my-layout-changelog-check-main prefix)
-  (my-php-layout-check-whitespace-buffer prefix)
-  (my-php-layout-check-line-length prefix))
+  (my-lint-layout-check-whitespace-buffer prefix)
+  (my-lint-layout-check-line-length prefix))
 
 (defun my-layout-changelog-check-main-interactive ()
   "Call my-layout-changelog-check-main and other relevant checks."
   (interactive)
-  (catch 'done
-    (when (and (interactive-p)
-	       (not (string-match "ChangeLog" (buffer-name))))
-      (or (y-or-n-p "Cursor possibly not in ChangeLog buffer. Continue? ")
-	  (throw 'done t)))
-    (my-lint-layout-with-interactive
-      (my-layout-changelog-check-standard-main))))
+  (my-lint-layout-with-interactive
+    (my-layout-changelog-check-standard-main)))
 
 ;;; ........................................................... &brace ...
 
@@ -1836,8 +1893,8 @@ Optional PREFIX is used add filename to the beginning of line."
   (dolist (function
 	   '(my-lint-layout-generic-class-count
 	     my-lint-layout-generic-xml-tags-check-main
-	     my-lint-layout-generic-xml-tags-lazy
-	     my-lint-layout-php-multiple-print
+	     my-php-layout-check-xml-tags-lazy
+	     my-php-layout-check-multiple-print
 	     my-php-layout-check-statement-start
 	     my-php-layout-check-comment-statements
 	     my-php-layout-check-control-statements
@@ -1847,10 +1904,11 @@ Optional PREFIX is used add filename to the beginning of line."
 	     my-php-layout-check-regexp-occur-main
 	     my-php-layout-check-doc-missing
 	     my-php-layout-check-doc-main
-	     my-php-layout-check-eof-marker
+	     my-php-layout-check-multiline-print
 	     my-php-layout-check-words
-	     my-php-layout-check-whitespace
-	     my-php-layout-check-line-length))
+	     my-lint-layout-check-whitespace
+	     my-lint-layout-check-eof-marker
+	     my-lint-layout-check-line-length))
     (my-php-layout-run-check
      (funcall function prefix))))
 
