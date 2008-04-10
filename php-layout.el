@@ -1635,8 +1635,8 @@ Optional PREFIX is used add filename to the beginning of line."
 (defun my-lint-layout-css-check-main (&optional prefix)
   "Check Css"
   (my-lint-layout-flet-run-at-point
-    (run 'my-lint-layout-check-comment-javadoc-invalid)
-    (run 'my-lint-layout-css-check-generic)))
+    (run 'my-lint-layout-check-comment-javadoc-invalid prefix)
+    (run 'my-lint-layout-css-check-generic prefix)))
 
 ;;; ......................................................... &line-up ...
 
@@ -1690,10 +1690,10 @@ Optional PREFIX is used add filename to the beginning of line."
       (my-lint-layout-message
        "[phpdoc] @param token not found"
        line prefix))
-    (unless (setq return (string-match "@return" str))
-      (my-lint-layout-message
-       "[phpdoc] @return token not found"
-       line prefix))
+;;     (unless (setq return (string-match "@return" str))
+;;       (my-lint-layout-message
+;;        "[phpdoc] @return token not found"
+;;        line prefix))
     (if (and (and access param)
 	     (> access param))
 	(my-lint-layout-message
