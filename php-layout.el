@@ -1536,6 +1536,13 @@ MySQL:
       (setq str (match-string 1))
       (my-lint-layout-sql-backquote str)
       (my-lint-layout-sql-comment str)
+      (my-lint-layout-with-case
+	(when (string-match "[^ \t\r\n]*[a-z]+[A-Z]+[^ \t\r\n]*" str)
+	(my-lint-layout-message
+	 (format "[sql] Portability problem in mixed case name: %s"
+		 (match-string 0 str))
+	 (my-lint-layout-current-line-number)
+	 prefix)))
       (when (string-match mysql-re str)
 	(setq non-std-kwd-p t)
 	(my-lint-layout-message
@@ -1591,7 +1598,7 @@ MySQL:
   (my-lint-layout-with-case
     (when (string-match "[A-Z]" table)
       (my-lint-layout-message
-       (format "[SQL] Portability problem near table name: %s" table)
+       (format "[SQL] portability problem, mixed case table name: %s" table)
        (my-lint-layout-current-line-number)
        prefix))))
 
