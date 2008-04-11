@@ -1498,61 +1498,69 @@ Optional PREFIX is used add filename to the beginning of line."
 (defun my-lint-layout-sql-check-keywords (&optional prefix)
   "Check SQL syntax."
   (require 'sql)
-  (let ((sql-re my-lint-layout-sql-keywords-all)
-	(type-re my-lint-layout-sql-keywords-sql92-data-types)
-	(mysql-re my-lint-layout-sql-keywords-column-mysql)
-	(step my-lint-layout-generic-indent-step)
-	non-std-kwd-p
-	str
-	tmp
-	datatype
-	word)
-      (while (re-search-forward "^\\([ \t]*[^-\r\n].*\\)" nil t)
-	(setq non-std-kwd-p nil)
-	(setq str (match-string 1))
-	(when (string-match "#\\|/[*]" str)
+  (let* ((sql-re my-lint-layout-sql-keywords-all)
+	 (type-re my-lint-layout-sql-keywords-sql92-data-types)
+	 ;;  "VARVHAR (80)"
+	 (type-re-space (concat type-re "[ \t]+([ \t]*[0-9][ \t]*)"))
+	 (mysql-re my-lint-layout-sql-keywords-column-mysql)
+	 (step my-lint-layout-generic-indent-step)
+	 non-std-kwd-p
+	 str
+	 tmp
+	 datatype
+	 word)
+    (while (re-search-forward "^\\([ \t]*[^-\r\n].*\\)" nil t)
+      (setq non-std-kwd-p nil)
+      (setq str (match-string 1))
+      (when (string-match "#\\|/[*]" str)
+	(my-lint-layout-message
+	 (format "[sql] non-standard comment syntax: %s" str)
+	 (my-lint-layout-current-line-number)
+	 prefix))
+      (when (string-match mysql-re str)
+	(setq non-std-kwd-p t)
+	(my-lint-layout-message
+	 (format "[sql] non-standard keyword: %s" (match-string 0 str))
+	 (my-lint-layout-current-line-number)
+	 prefix))
+      (when (string-match type-re-space str)
+	(my-lint-layout-message
+	 (format "[sql] extra space found near size definition: %s"
+		 (match-string 0 str))
+	 (my-lint-layout-current-line-number)
+	 prefix))
+      (setq word nil)
+      (cond
+       ((string-match "^[ \t]*\\(.+[^ \t]+\\)[ \t]+NOT[ \t]+NULL" str)
+	(setq tmp (match-string 1 str))
+	;; FIXME "FLOAT(1, 2)"
+	(when (string-match
+	       "\\(\\([a-z]+\\)\\(([ \t]*[,0-9 \t]+)\\)?\\)$"
+	       tmp)
+	  (setq word (match-string 2 tmp))))
+       ((string-match "NULL" str)
+	(when (string-match "NULL" str)	;; FIXME: NULL itself is not SQL92
+	  nil)))
+      (when word
+	(when (and (null non-std-kwd-p) ; Not yet checked
+		   (not (string-match type-re word)))
 	  (my-lint-layout-message
-	   (format "[sql] non-standard comment syntax: %s" str)
+	   (format "[sql] unknown keyword or datatype: %s" word)
 	   (my-lint-layout-current-line-number)
 	   prefix))
-	(when (string-match mysql-re str)
-	  (setq non-std-kwd-p t)
+	;; FIXME: tests only datatype now
+	(when (and (string-match sql-re word)
+		   (my-lint-layout-with-case
+		     (not (string-match sql-re word))))
 	  (my-lint-layout-message
-	   (format "[sql] non-standard keyword: %s" (match-string 0 str))
+	   (format "[sql] keyword not in uppercase: %s" word)
 	   (my-lint-layout-current-line-number)
 	   prefix))
-	(setq word nil)
-	(cond
-	 ((string-match "^[ \t]*\\(.+[^ \t]+\\)[ \t]+NOT[ \t]+NULL" str)
-	  (setq tmp (match-string 1 str))
-	  ;; FIXME "FLOAT(1, 2)"
-	  (when (string-match
-		 "\\(\\([a-z]+\\)\\(([ \t]*[,0-9 \t]+)\\)?\\)$"
-		 tmp)
-	    (setq word (match-string 2 tmp))))
-	 ((string-match "NULL" str)
-	  (when (string-match "NULL" str)  ;; FIXME: NULL itself is not SQL92
-	    nil)))
-	(when word
-	  (when (and (null non-std-kwd-p) ; Not yet checked
-		     (not (string-match type-re word)))
-	    (my-lint-layout-message
-	     (format "[sql] unknown keyword or datatype: %s" word)
-	     (my-lint-layout-current-line-number)
-	     prefix))
-	  ;; FIXME: tests only datatype now
-	  (when (and (string-match sql-re word)
-		     (my-lint-layout-with-case
-		       (not (string-match sql-re word))))
-	    (my-lint-layout-message
-	     (format "[sql] keyword not in uppercase: %s" word)
-	     (my-lint-layout-current-line-number)
-	     prefix))
-	  (unless (string-match "^[ \t]+" str)
-	    (my-lint-layout-message
-	     (format "[sql] statement not indented (by %d)" step)
-	     (my-lint-layout-current-line-number)
-	     prefix))))))
+	(unless (string-match "^[ \t]+" str)
+	  (my-lint-layout-message
+	   (format "[sql] statement not indented (by %d)" step)
+	   (my-lint-layout-current-line-number)
+	   prefix))))))
 
 (defun my-lint-layout-sql-create-table (table)
   "Check CREATE TABLE."
