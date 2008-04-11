@@ -1495,6 +1495,28 @@ Optional PREFIX is used add filename to the beginning of line."
    "\\)")
   "SQL reserved keywords.")
 
+(defsubst my-lint-layout-sql-backquote (str)
+  "Check unknown backquote character.
+MySQL:
+  CREATE TABLE  `service`
+  (
+    `id`         INT(10)      NOT NULL,
+    PRIMARY KEY  (`id`)
+  );"
+  (when (string-match "[`]" str)
+    (my-lint-layout-message
+     "[sql] non-standard backquote character"
+     (my-lint-layout-current-line-number)
+     prefix)))
+
+(defsubst my-lint-layout-sql-comment (str)
+  "Check non-standard comment syntax."
+  (when (string-match "#\\|/[*]" str)
+    (my-lint-layout-message
+     (format "[sql] non-standard comment syntax: %s" str)
+     (my-lint-layout-current-line-number)
+     prefix)))
+
 (defun my-lint-layout-sql-check-keywords (&optional prefix)
   "Check SQL syntax."
   (require 'sql)
@@ -1512,11 +1534,8 @@ Optional PREFIX is used add filename to the beginning of line."
     (while (re-search-forward "^\\([ \t]*[^-\r\n].*\\)" nil t)
       (setq non-std-kwd-p nil)
       (setq str (match-string 1))
-      (when (string-match "#\\|/[*]" str)
-	(my-lint-layout-message
-	 (format "[sql] non-standard comment syntax: %s" str)
-	 (my-lint-layout-current-line-number)
-	 prefix))
+      (my-lint-layout-sql-backquote str)
+      (my-lint-layout-sql-comment str)
       (when (string-match mysql-re str)
 	(setq non-std-kwd-p t)
 	(my-lint-layout-message
@@ -1538,9 +1557,14 @@ Optional PREFIX is used add filename to the beginning of line."
 	       "\\(\\([a-z]+\\)\\(([ \t]*[,0-9 \t]+)\\)?\\)$"
 	       tmp)
 	  (setq word (match-string 2 tmp))))
-       ((string-match "NULL" str)
+       ((and (string-match "NULL" str)
+	     (not (string-match "NOT[ \t]+NULL" str)))
 	(when (string-match "NULL" str)	;; FIXME: NULL itself is not SQL92
-	  nil)))
+	  (my-lint-layout-message
+	   (format "[sql] non-standard NULL keyword: %s"
+		   str)
+	   (my-lint-layout-current-line-number)
+	   prefix))))
       (when word
 	(when (and (null non-std-kwd-p) ; Not yet checked
 		   (not (string-match type-re word)))
@@ -1580,6 +1604,11 @@ Optional PREFIX is used add filename to the beginning of line."
       (setq line  (match-string 0)
 	    table (match-string 2))
       (my-lint-layout-sql-create-table table)
+      (when (string-match "[`]" line)
+	(my-lint-layout-message
+	 "[sql] non-standard backquote character"
+	 (my-lint-layout-current-line-number)
+	 prefix))
       (when (string-match "[(]" line)
 	(my-lint-layout-message
 	 "[sql] misplaced starting paren '(' (possibly not lined-up)"
