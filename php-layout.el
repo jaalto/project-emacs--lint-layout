@@ -903,7 +903,7 @@ Return variable content string."
   "Check EOF marker."
   (save-excursion
     (goto-char (point-max))
-    (let (case-fold-search)
+    (my-lint-layout-with-case
       (unless (re-search-backward
 	       my-lint-layout-eof-regexp
 	       (min (point-min)
@@ -1058,7 +1058,7 @@ Optional PREFIX is used add filename to the beginning of line."
       ;; The order is important
       (my-layout-license-text
        "published by the Free Software Foundation" prefix)
-      (let (case-fold-search)
+      (my-lint-layout-with-case
 	(my-layout-license-text
 	 "WITHOUT ANY WARRANTY" prefix))
       (my-layout-license-text
@@ -1502,11 +1502,13 @@ Optional PREFIX is used add filename to the beginning of line."
 	(type-re my-lint-layout-sql-keywords-sql92-data-types)
 	(mysql-re my-lint-layout-sql-keywords-column-mysql)
 	(step my-lint-layout-generic-indent-step)
+	non-std-kwd-p
 	str
 	tmp
 	datatype
 	word)
       (while (re-search-forward "^\\([ \t]*[^-\r\n].*\\)" nil t)
+	(setq non-std-kwd-p nil)
 	(setq str (match-string 1))
 	(when (string-match "#\\|/[*]" str)
 	  (my-lint-layout-message
@@ -1514,6 +1516,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	   (my-lint-layout-current-line-number)
 	   prefix))
 	(when (string-match mysql-re str)
+	  (setq non-std-kwd-p t)
 	  (my-lint-layout-message
 	   (format "[sql] non-standard keyword: %s" (match-string 0 str))
 	   (my-lint-layout-current-line-number)
@@ -1531,9 +1534,10 @@ Optional PREFIX is used add filename to the beginning of line."
 	  (when (string-match "NULL" str)  ;; FIXME: NULL itself is not SQL92
 	    nil)))
 	(when word
-	  (unless (string-match type-re word)
+	  (when (and (null non-std-kwd-p) ; Not yet checked
+		     (not (string-match type-re word)))
 	    (my-lint-layout-message
-	     (format "[sql] unknown datatype: %s" word)
+	     (format "[sql] unknown keyword or datatype: %s" word)
 	     (my-lint-layout-current-line-number)
 	     prefix))
 	  ;; FIXME: tests only datatype now
@@ -1799,7 +1803,7 @@ DATA is the full function content."
       (while (re-search-forward
 	      "[*][ \t]*@param[ \t]+\\([^ \t\r\n]+\\)" nil t)
 	(setq word (match-string 1))
-	(unless (let (case-fold-search)
+	(unless (my-lint-layout-with-case
 		  (string-match my-lint-layout-php-data-type-regexp
 				word))
 	  (let* ((case (string-match
@@ -1858,7 +1862,7 @@ DATA is the full function content."
        "[phpdoc] 1st line does not explain code that follows"
        (1+ line)
        prefix))
-    (let (case-fold-search)
+    (my-lint-layout-with-case
       (unless (looking-at "^[ \t]+[*][ \t]+[A-Z]")
 	(my-lint-layout-message
 	 "[phpdoc] decription does not start with capital letter."
@@ -1866,7 +1870,7 @@ DATA is the full function content."
 	 prefix)))
     (unless (memq 'include type)
       (forward-line 1)
-      (let (case-fold-search)
+      (my-lint-layout-with-case
 	(unless (looking-at "^[ \t]*[*][ \t]*$")
 	  (my-lint-layout-message
 	   "[phpdoc] no empty line after 1st line short description."
