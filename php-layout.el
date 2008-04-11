@@ -495,14 +495,18 @@ See `my-lint-layout-buffer-name'."
        (my-lint-layout-current-line-number)
        prefix))))
 
+(defsubst my-php-layout-print-command-forward-1 ()
+  "Find print or echo command."
+  (re-search-forward
+   ;; text/html; charset=utf-8
+   "^[ \t]*\\(print\\|echo\\)[ \t]*[(\"][^;]+;" nil 'noerr))
+
 (defsubst my-php-layout-print-command-forward ()
   "Search print or echo command. Return beginning point of match."
   (let (beg)
-    (when (re-search-forward
-	   ;; text/html; charset=utf-8
-	   "^[ \t]*\\(print\\|echo\\)[ \t]*[(\"][^;]+;" nil 'noerr)
+    (when (my-php-layout-print-command-forward-1)
       (setq beg (match-beginning 0))
-      (unless (looking-at ";[ \t]*$")
+      (unless (looking-at "[; \t]*$")
 	(when (re-search-forward ";[ \t]*$" nil 'noerr)))
       beg)))
 
@@ -514,16 +518,64 @@ print 'this' .
       ....
       ;
 "
-  (let (beg str lines)
+  (let (beg
+	str
+	lines)
     (while (setq beg (my-php-layout-print-command-forward))
       (setq str (buffer-substring beg (point)))
       (unless (string-match "[$]" str) ;No variables used
 	(setq lines (my-lint-layout-count-lines-in-string str))
 	(when (> lines 3)
 	  (my-lint-layout-message
-	   "Inefficient output, better use HERE doc syntax (<<<)"
+	   "Maintenance problem, better use HERE doc syntax (<<<)"
 	   (- (my-lint-layout-current-line-number) lines)
 	   prefix))))))
+
+;;; ......................................................... &php-sql ...
+
+(defsubst my-php-layout-var-forward-1 ()
+  "Find variable definition."
+  (re-search-forward "^[ \t]*\\([$][a-z].*=[^;]+\\)" nil 'noerr))
+
+(defsubst my-php-layout-var-sql-forward-1 ()
+  "Find SQL content in variable.
+Point is at end of variable after search.
+Return variable content string."
+  (let (ret
+	point
+	str)
+    (while (and (null ret)
+		(my-php-layout-var-forward-1))
+      (setq point (match-beginning 0)
+	    str   (match-string 0))
+      (when (or (string-match "\\<INSERT[ \t\r\n]+INTO\\>" str)
+		(and (string-match "\\<SELECT[ \t\"'$]" str)
+		     (string-match "\\<FROM[ \t\"'$]" str)))
+	(setq ret str)))
+    str))
+
+(defun my-php-layout-check-multiline-sql (&optional prefix)
+  "Check long SQL statements.
+
+    $insertCustomerQuery =
+    \" INSERT INTO   customer              \" .
+    \"              (firstName             \" .
+    \"               , lastName            \" .
+    \"               , address             \" .
+    ...
+"
+  (let (str
+	lines)
+    (while (setq str (my-php-layout-var-sql-forward-1))
+      (when (and (string-match "^\\([ \t]*\".*[\r\n]\\)+" str)
+		 (> (my-lint-layout-count-lines-in-string
+		     (match-string 0 str))
+		    3))
+	(setq lines (my-lint-layout-count-lines-in-string str))
+	(my-lint-layout-message
+	 "SQL maintenance problem, better use HERE doc syntax (<<<)"
+	 (- (my-lint-layout-current-line-number) lines)
+	 prefix)))))
 
 ;;; ............................................................. &xml ...
 
@@ -1965,10 +2017,12 @@ Point must be at function start line."
 	     my-php-layout-check-doc-missing
 	     my-php-layout-check-doc-main
 	     my-php-layout-check-multiline-print
+	     my-php-layout-check-multiline-sql
 	     my-php-layout-check-words
 	     my-lint-layout-check-whitespace
 	     my-lint-layout-check-eof-marker
-	     my-lint-layout-check-line-length))
+	     ;; my-lint-layout-check-line-length
+	     ))
     (my-php-layout-run-check
      (funcall function prefix))))
 

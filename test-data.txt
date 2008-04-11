@@ -109,6 +109,50 @@ elseif ( array_key_exists($field, $_POST) )
 
         * application/conf/.keep: (file) New file
 
+
+
+/**
+ *  This program starts from here.
+ *
+ *  @access   public
+ */
+function main (asd)
+{
+    // Something
+}
+
+/**
+ *  This program starts from here.
+ *
+ *  @param    none
+ *  @access   public
+ */
+function main ()
+{
+    // Something
+}
+
+
+    $handle = dbOpen();
+    $insertCustomerQuery =
+    " INSERT INTO   customer              " .
+    "              (firstName             " .
+    "               , lastName            " .
+    "               , address             " .
+    "               , zip                 " .
+    "               , city                " .
+    "               , country             " .
+    "               , phone               " .
+    "               , email)              " .
+    " VALUES         ('" . $firstName . "'" .
+    "                , '" . $lastName . "'" .
+    "                , '" . $address .  "'" .
+    "                , '" . $zip . "'     " .
+    "                , '" . $city . "'    " .
+    "                , '" . $country . "' " .
+    "                , '" . $phone . "'   " .
+    "                , '" . $email . "')  ";
+
 "string".$var   OR   $var."string"
 [".get_object_vars($resultObject)."]"
 print $user->getFirstName()." ".
