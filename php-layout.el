@@ -37,12 +37,16 @@
 
 (defconst my-lint-layout-php-function-regexp
   (concat
+   "^\\([ \t]*\\)"
    "\\(?:"
    my-lint-layout-generic-access-modifier-regexp
    "\\)?"
    "[ \t]*"
-   "\\<function\\>")
- "Function regexp.")
+   "\\<function\\>[ \t]+")
+ "Function regexp.
+
+submatch 1: Indent")
+
 
 (defconst my-lint-layout-php-doc-location-regexp
    (concat
@@ -193,6 +197,9 @@
   (and (re-search-forward "[*]/" nil t)
        (match-end 0)))
 
+(defsubst my-php-layout-search-function-beginning ()
+  (re-search-forward my-lint-layout-php-function-regexp nil t))
+
 (defsubst my-lint-layout-search-class-start ()
   (and (re-search-forward
 	"^[ \t]*\\(?:\\(abstract\\)[ \t]*\\)?class\\>[ \t]"
@@ -219,9 +226,7 @@
 
 (defsubst my-lint-layout-type-function-string-p (str)
   (string-match
-   (concat
-    "^[ \t]*"
-    my-lint-layout-php-function-regexp)
+   my-lint-layout-php-function-regexp
    str))
 
 (defsubst my-lint-layout-type-include-string-p (str)
@@ -1676,24 +1681,47 @@ Optional PREFIX is used add filename to the beginning of line."
 
 ;;; ............................................................. &doc ...
 
-(defun my-php-layout-doc-string-test-function (str line &optional prefix)
-  (let (access param return)
+(defun my-php-layout-doc-string-test-function
+  (str line &optional prefix data)
+  "docstring is in STR, at LINE number. PREFIX for messages.
+The DATA is function content string."
+  (let ((need-return-p
+	 (and data
+	      (string-match "^[ \t]*return\\>" data)))
+	(need-param-p
+	 (and data
+	      (string-match
+	       (concat
+		my-lint-layout-php-function-regexp
+		".*([ \t]*[^) \t\r\n]")
+	       data)))
+	(param  (string-match "@param" str))
+	(access (string-match "@access" str))
+
+	return)
     (when (string-match "this[ \t]+\\(function\\|method\\)" str)
       (my-lint-layout-message
        (format "[phpdoc] unnecessary wording: %s" (match-string 0 str))
        line prefix))
-    (unless (setq access (string-match "@access" str))
+    (unless access
       (my-lint-layout-message
        "[phpdoc] @access token not found"
        line prefix))
-    (unless (setq param (string-match "@param" str))
+    (when (and need-param-p
+	       (not param))
       (my-lint-layout-message
        "[phpdoc] @param token not found"
        line prefix))
-;;     (unless (setq return (string-match "@return" str))
-;;       (my-lint-layout-message
-;;        "[phpdoc] @return token not found"
-;;        line prefix))
+    (when (and param
+	       (not need-param-p))
+      (my-lint-layout-message
+       "[phpdoc] @param is unnecessary"
+       line prefix))
+    (when (and need-return-p
+	       (not (setq return (string-match "@return" str))))
+      (my-lint-layout-message
+       "[phpdoc] @return token not found"
+       line prefix))
     (if (and (and access param)
 	     (> access param))
 	(my-lint-layout-message
@@ -1705,8 +1733,11 @@ Optional PREFIX is used add filename to the beginning of line."
 	 "[phpdoc] incorrect order. Should be @access..@return"
 	 line prefix))))
 
-(defun my-php-layout-doc-examine-content-function (str line &optional prefix)
-  "Examine content: function. Expects narrow to docstring."
+(defun my-php-layout-doc-examine-content-function
+  (str line &optional prefix data)
+  "Examine content: function. Expects narrow to docstring.
+STR is docstring at LINE number. PREFIX is for messages.
+DATA is the full function content."
   (save-excursion
     ;;  * @param  $var string
     (goto-char (point-min))
@@ -1816,15 +1847,44 @@ Optional PREFIX is used add filename to the beginning of line."
   ;;     */"
   (save-restriction
     (save-excursion
-      (narrow-to-region beg end)
-      (let ((str (buffer-string)))
-	(cond
-	 ((memq 'var type)
-	  (my-php-layout-doc-string-test-var str line prefix))
-	 ((memq 'function type)
-	  (my-php-layout-doc-string-test-function str line prefix)
-	  (my-php-layout-doc-examine-content-function str line prefix)))
-	(my-php-layout-doc-examine-content-other str line type prefix)))))
+      (let (data)
+	(goto-char end)
+	(unless (zerop (skip-chars-forward " \t\r\n"))
+	  (goto-char (line-beginning-position))
+	  (setq data (my-php-layout-function-string-at-point)))
+	(narrow-to-region beg end)
+	(let ((str (buffer-string)))
+	  (cond
+	   ((memq 'var type)
+	    (my-php-layout-doc-string-test-var str line prefix))
+	   ((memq 'function type)
+	    (my-php-layout-doc-string-test-function str line prefix data)
+	    (my-php-layout-doc-examine-content-function str line prefix data)))
+	  (my-php-layout-doc-examine-content-other str line type prefix))))))
+
+(defun my-php-layout-function-region-at-point ()
+  "Return function '(beg end) points with indentation.
+Point must be at function start line."
+  (save-excursion
+    (goto-char (line-beginning-position))
+    (let (indent
+	  col
+	  beg)
+    (when (looking-at my-lint-layout-php-function-regexp)
+      (setq beg (point))
+      (setq indent (match-string 1))
+      (goto-char (match-beginning 1))
+      (setq col (current-column))
+      ;; FIXME: We rely on indentation to close the function
+      (when (re-search-forward (concat "^" indent "}"))
+	(list beg (point)))))))
+
+(defun my-php-layout-function-string-at-point ()
+  "Return function string if any at point."
+  (multiple-value-bind (beg end)
+      (my-php-layout-function-region-at-point)
+    (when beg
+      (buffer-substring beg end))))
 
 (defun my-php-layout-check-doc-main (&optional prefix)
   "Check /** ... */"
@@ -1872,14 +1932,14 @@ Optional PREFIX is used add filename to the beginning of line."
 	   "[phpdoc] not located at function, variable or require"
 	   line prefix))
 	 (t
-	  (setq top-level-p (my-lint-layout-doc-package-string-p str))
-	  (unless top-level-p
-	    (my-php-layout-doc-examine-main
-	     beg
-	     end
-	     type
-	     line
-	     prefix))))))))
+	  (let ((top-level-p (my-lint-layout-doc-package-string-p str)))
+	    (unless top-level-p
+	      (my-php-layout-doc-examine-main
+	       beg
+	       end
+	       type
+	       line
+	       prefix)))))))))
 
 ;;; ........................................................... &batch ...
 
