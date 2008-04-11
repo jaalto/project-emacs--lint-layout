@@ -1501,7 +1501,7 @@ Optional PREFIX is used add filename to the beginning of line."
   (let* ((sql-re my-lint-layout-sql-keywords-all)
 	 (type-re my-lint-layout-sql-keywords-sql92-data-types)
 	 ;;  "VARVHAR (80)"
-	 (type-re-space (concat type-re "[ \t]+([ \t]*[0-9][ \t]*)"))
+	 (type-re-space (concat type-re "[ \t]+([ \t]*[0-9]+[ \t]*)"))
 	 (mysql-re my-lint-layout-sql-keywords-column-mysql)
 	 (step my-lint-layout-generic-indent-step)
 	 non-std-kwd-p
