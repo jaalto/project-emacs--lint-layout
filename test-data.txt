@@ -153,6 +153,7 @@ function main ()
     "                , '" . $phone . "'   " .
     "                , '" . $email . "')  ";
 
+    $this_variable = "something";
 "string".$var   OR   $var."string"
 [".get_object_vars($resultObject)."]"
 print $user->getFirstName()." ".

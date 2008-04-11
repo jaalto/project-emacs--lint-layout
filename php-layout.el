@@ -296,6 +296,8 @@ See `my-lint-layout-buffer-name'."
      "Possibly K&R brace style, expected line-up")
    '("^[ \t]*function[ \t]+[a-z0-9_]+("
      "In funcdef, no space before starting '('")
+   '("^[ \t]*[$][a-z0-9]+_[a-z0-9]+[ \t\r\n]*="
+     "variable name not CamelCase")
    '("^[ \t]*function[ \t][a-z0-9]+_[^ \t]*[ \t]*("
      "In funcdef, name not CamelCase"))
   "Check Modern layout style.")
