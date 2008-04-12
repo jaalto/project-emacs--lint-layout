@@ -85,6 +85,7 @@ submatch 1: Indent")
   "\\|mixed"
   "\\|array"
   "\\|object"
+  "\\|resource"
   "\\|none"
   "\\)\\>")
   "Valid datatypes.")
