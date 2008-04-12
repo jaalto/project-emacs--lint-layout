@@ -232,13 +232,16 @@ submatch 1: Indent")
 (defsubst my-lint-layout-type-include-string-p (str)
   (string-match "^[ \t]*require\\|include" str))
 
+(defsubst my-lint-layout-type-class-string-p (str)
+  (string-match "^[ \t]*class" str))
+
 (defsubst my-lint-layout-looking-at-doc-end-valid-p ()
-  "Check of */ is followed by a function or variable definition."
+  "Check that */ is followed by a function or variable definition."
   (and
    (looking-at
     (concat
      "[ \t]*\\<\\("
-     "function\\|public\\|protected\\|private"
+     "class\\|function\\|public\\|protected\\|private"
      "\\|static\\|var"
      "\\|require\\|include"
      "\\)\\>"))
@@ -1912,7 +1915,8 @@ DATA is the full function content."
 	 "[phpdoc] decription does not start with capital letter."
 	 (1+ line)
 	 prefix)))
-    (unless (memq 'include type)
+    (unless (or (memq 'include type)
+		(memq 'class type))
       (forward-line 1)
       (my-lint-layout-with-case
 	(unless (looking-at "^[ \t]*[*][ \t]*$")
@@ -1934,6 +1938,8 @@ DATA is the full function content."
   (let (type)
     (if (my-lint-layout-type-variable-string-p str)
 	(push 'var type))
+    (if (my-lint-layout-type-class-string-p str)
+	(push 'class type))
     (if (my-lint-layout-type-function-string-p str)
 	(push 'function type))
     (if (my-lint-layout-type-include-string-p str)
@@ -2031,7 +2037,7 @@ Point must be at function start line."
 	 ((my-lint-layout-doc-var-string-p str)) ;Skip
 	 ((not valid-p)
 	  (my-lint-layout-message
-	   "[phpdoc] not located at function, variable or require"
+	   "[phpdoc] not located at class, func, var, require, include"
 	   line prefix))
 	 (t
 	  (let ((top-level-p (my-lint-layout-doc-package-string-p str)))

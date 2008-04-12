@@ -154,6 +154,23 @@ function main ()
     "                , '" . $email . "')  ";
 
     $this_variable = "something";
+
+// ## PHPDOC TESTS
+
+
+/**
+ * Include Data class.
+ */
+require_once dirname(__FILE__) . '/../class/data.php';
+
+
+/**
+ * Class for managing service requests.
+ */
+class ServiceRequest
+{
+    // Place holder
+}
 "string".$var   OR   $var."string"
 [".get_object_vars($resultObject)."]"
 print $user->getFirstName()." ".
