@@ -1905,11 +1905,12 @@ DATA is the full function content."
 			 my-lint-layout-generic-doc-1st-line-ignore-regexp)))
 	       (not (looking-at
 		     "^[ \t]+[*][ \t]+[^ \t\r\n]+[ \t][^ \t\r\n]+")))
-      ;; Search at least two words
-      (my-lint-layout-message
-       "[phpdoc] 1st line does not explain code that follows"
-       (1+ line)
-       prefix))
+      ;; Search at least two words. Ignore toplevel comment
+      (when type
+	(my-lint-layout-message
+	 "[phpdoc] 1st line does not explain code that follows"
+	 (1+ line)
+	 prefix)))
     (my-lint-layout-with-case
       (unless (looking-at "^[ \t]+[*][ \t]+[A-Z]")
 	(my-lint-layout-message
