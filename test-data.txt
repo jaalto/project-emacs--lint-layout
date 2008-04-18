@@ -3,6 +3,7 @@
 
 # not allowed comment style
 
+
 /**
  *  Reservation
  *
@@ -179,9 +180,13 @@ print $user->getFirstName()." ".
 class
 class
 
+// Possibly missing vardef($)
 if ( $query and mysql_result == false )
 if ( value and $var )
 if ( $TEST  and  realpath ($_SERVER["PHP_SELF"]) == __FILE__ )
+if ( ! is_int($priority) or $priority < 0 or $priority > 3 )
+
+
 
 // misspelled
 else if (test)
@@ -204,3 +209,4 @@ function def( param, param)
 function def ( param, param)
 function def (param, param )
 function def ( )
+

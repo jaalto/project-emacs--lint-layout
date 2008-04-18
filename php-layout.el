@@ -382,19 +382,19 @@ See `my-lint-layout-buffer-name'."
    ;; if ( $query and mysql_result == false )
    (list
     (concat
-     "\\<\\(if\\|foreach\\|while\\)[ \t]*("
-     ".*[$][^ \t\r\n]+\\>"
-     "[ \t]*\\(&&\\|[|][|]\\|and\\|or\\)[ \t]*"
-     "*[a-z0-9_]+[) \t\r\n]")
+     "\\<\\(?:elseif\\|if\\|foreach\\|while\\)[ \t]*("
+     ".*[ \t][$][^ 0-9\t\r\n]+\\>"
+     "[ \t]*\\(?:&&\\|[|][|]\\|and\\|or\\)[ \t]+"
+     "[a-z0-9_]+[) \t\r\n]")
     "Possibly missing vardef($) in relational test at right")
 
    ;; if ( value and $var )
    (list
     (concat
-     "\\<\\(if\\|foreach\\|while\\)[ \t]*("
-     ".*[ \t][^ \t\r\n]+\\>"
-     "[ \t]*\\(&&\\|[|][|]\\|and\\|or\\)[ \t]*"
-     "*[$][a-z0-9_]+[) \t\r\n]")
+     "\\<\\(?:elseif\\|if\\|foreach\\|while\\)[ \t]*("
+     ".*[ \t][^ 0-9\t\r\n]+\\>"
+     "[ \t]*\\(?:&&\\|[|][|]\\|and\\|or\\)[ \t]+"
+     "[$][a-z0-9_]+[) \t\r\n]")
     "Possibly missing vardef($) in relational test at left")
 
    '("[$][a-z][_a-z0-9]*=[ \t]+[$a-z_0-9\"\']"
