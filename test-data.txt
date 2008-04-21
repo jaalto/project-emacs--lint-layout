@@ -262,6 +262,11 @@ else
 }
 
 
+// Assignment inside statement
+if ( $row = $this->result->fetch_row() )
+else ( $row = $this->result->fetch_row() )
+while ( $row = $this->result->fetch_row() )
+
 function def_inition ( param, param)
 function def( param, param)
 function def ( param, param)

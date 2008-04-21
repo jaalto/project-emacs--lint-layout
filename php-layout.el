@@ -378,7 +378,7 @@ See `my-lint-layout-buffer-name'."
    '("^[ \t]*else[ \t]+if\\>"
      "Standard elseif keyword not used")
 
-   '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[$a-z][ \t]*=[ \t]*[$a-z]"
+   '("\\<\\(if\\|else\\|elseif\\)[ \t]*(.*[$a-z][ \t]*=[ \t]*[$a-z]"
      "Assignment inside statement"
      "mysql")
    '("\\<\\(if\\|foreach\\|while\\)("
