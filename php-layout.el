@@ -86,6 +86,7 @@
    "\\<"
    (regexp-opt
     '("else"
+      "elsif"
       "elseif"
       "catch")
     t)
