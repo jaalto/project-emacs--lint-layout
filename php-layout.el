@@ -1494,7 +1494,6 @@ Optional PREFIX is used add filename to the beginning of line."
 	"DATE"
 	"DEC"
 	"DECIMAL"
-	"DEC"
 	"DOUBLE PRECISION"
 	"FLOAT"
 	"INT"
@@ -1514,6 +1513,30 @@ Optional PREFIX is used add filename to the beginning of line."
       t) "\\b"))
   "SQL reserved keywords.")
 
+;; BIT data type in MS SQL Server stores a bit of data (0 or 1) and
+;; does not correspond to previously described SQL99 BIT. The literal
+;; value for bit is a single character from its range optionally
+;; enclosed into single quotes.
+;;
+;; SMALLINT is virtually same as INTEGER, but maximum precision can be
+;; smaller than that for INTEGER.
+
+(defconst my-lint-layout-sql-keywords-sql99-data-types
+  (eval-when-compile
+    (concat
+     "\\b"
+     (regexp-opt
+      '("ARRAY"
+	"BOOLEAN"
+	"BLOB"
+	"CLOB"
+	"LIST"
+	"SET"
+	"SMALLINT"
+	)
+      t) "\\b"))
+  "SQL reserved keywords.")
+
 (defconst my-lint-layout-sql-keywords-all
   (concat
    "\\("
@@ -1522,6 +1545,8 @@ Optional PREFIX is used add filename to the beginning of line."
    my-lint-layout-sql-keywords-functions
    "\\|"
    my-lint-layout-sql-keywords-sql92-data-types
+   "\\|"
+   my-lint-layout-sql-keywords-sql99-data-types
    "\\)")
   "SQL reserved keywords.")
 
