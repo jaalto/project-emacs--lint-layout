@@ -415,19 +415,19 @@ See `my-lint-layout-buffer-name'."
    ;; if ( $query and mysql_result == false )
    (list
     (concat
-     "\\<\\(if\\|foreach\\|while\\)[ \t]*("
-     ".*[$][^ \t\r\n]+\\>"
-     "[ \t]*\\(&&\\|[|][|]\\|and\\|or\\)[ \t]*"
-     "*[a-z0-9_]+[) \t\r\n]")
+     "\\<\\(?:elseif\\|if\\|foreach\\|while\\)[ \t]*("
+     ".*[ \t][$][^ 0-9\t\r\n]+\\>"
+     "[ \t]*\\(?:&&\\|[|][|]\\|and\\|or\\)[ \t]+"
+     "[a-z0-9_]+[) \t\r\n]")
     "Possibly missing vardef($) in relational test at right")
 
    ;; if ( value and $var )
    (list
     (concat
-     "\\<\\(if\\|foreach\\|while\\)[ \t]*("
-     ".*[ \t][^ \t\r\n]+\\>"
-     "[ \t]*\\(&&\\|[|][|]\\|and\\|or\\)[ \t]*"
-     "*[$][a-z0-9_]+[) \t\r\n]")
+     "\\<\\(?:elseif\\|if\\|foreach\\|while\\)[ \t]*("
+     ".*[ \t][^ 0-9\t\r\n]+\\>"
+     "[ \t]*\\(?:&&\\|[|][|]\\|and\\|or\\)[ \t]+"
+     "[$][a-z0-9_]+[) \t\r\n]")
     "Possibly missing vardef($) in relational test at left")
 
    '("[$][a-z][_a-z0-9]*=[ \t]+[$a-z_0-9\"\']"
@@ -1982,11 +1982,12 @@ DATA is the full function content."
 			 my-lint-layout-generic-doc-1st-line-ignore-regexp)))
 	       (not (looking-at
 		     "^[ \t]+[*][ \t]+[^ \t\r\n]+[ \t][^ \t\r\n]+")))
-      ;; Search at least two words
-      (my-lint-layout-message
-       "[phpdoc] 1st line does not explain code that follows"
-       (1+ line)
-       prefix))
+      ;; Search at least two words. Ignore toplevel comment
+      (when type
+	(my-lint-layout-message
+	 "[phpdoc] 1st line does not explain code that follows"
+	 (1+ line)
+	 prefix)))
     (my-lint-layout-with-case
       (unless (looking-at "^[ \t]+[*][ \t]+[A-Z]")
 	(my-lint-layout-message
