@@ -1537,6 +1537,15 @@ Optional PREFIX is used add filename to the beginning of line."
       t) "\\b"))
   "SQL reserved keywords.")
 
+(defconst my-lint-layout-sql-keywords-sql-types
+  (concat
+   "\\("
+   my-lint-layout-sql-keywords-sql92-data-types
+   "\\|"
+   my-lint-layout-sql-keywords-sql99-data-types
+   "\\)")
+  "SQL reserved keywords.")
+
 (defconst my-lint-layout-sql-keywords-all
   (concat
    "\\("
@@ -1575,20 +1584,22 @@ MySQL:
 (defun my-lint-layout-sql-check-keywords (&optional prefix)
   "Check SQL syntax."
   (require 'sql)
-  (let* ((sql-re my-lint-layout-sql-keywords-all)
-	 (type-re my-lint-layout-sql-keywords-sql92-data-types)
-	 ;;  "VARVHAR (80)"
+  (let* ((sql-re         my-lint-layout-sql-keywords-all)
+	 (type-sql92-re  my-lint-layout-sql-keywords-sql92-data-types)
+	 (type-re        my-lint-layout-sql-keywords-sql-types)
+	 ;;  "VARCHAR (80)"
 	 (type-re-space (concat type-re "[ \t]+([ \t]*[0-9]+[ \t]*)"))
 	 (mysql-re my-lint-layout-sql-keywords-column-mysql)
 	 (step my-lint-layout-generic-indent-step)
 	 non-std-kwd-p
+	 non-std92-kwd-p
 	 str
 	 tmp
 	 datatype
 	 word)
     (while (re-search-forward "^\\([ \t]*[^-\r\n].*\\)" nil t)
-      (setq non-std-kwd-p nil)
       (setq str (match-string 1))
+      (setq non-std-kwd-p nil)
       (my-lint-layout-sql-backquote str)
       (my-lint-layout-sql-comment str)
       (my-lint-layout-with-case
@@ -1616,9 +1627,9 @@ MySQL:
 	(setq tmp (match-string 1 str))
 	;; FIXME "FLOAT(1, 2)"
 	(when (string-match
-	       "\\(\\([a-z]+\\)\\(([ \t]*[,0-9 \t]+)\\)?\\)$"
+	       "\\(?:\\([a-z]+\\)\\(([ \t]*[,0-9 \t]+)\\)?\\)$"
 	       tmp)
-	  (setq word (match-string 2 tmp))))
+	  (setq word (match-string 1 tmp))))
        ((and (string-match "NULL" str)
 	     (not (string-match "NOT[ \t]+NULL" str)))
 	(when (string-match "NULL" str)	;; FIXME: NULL itself is not SQL92
@@ -1630,8 +1641,15 @@ MySQL:
       (when word
 	(when (and (null non-std-kwd-p) ; Not yet checked
 		   (not (string-match type-re word)))
+	  (setq non-std-kwd-p t)
 	  (my-lint-layout-message
-	   (format "[sql] unknown keyword or datatype: %s" word)
+	   (format "[sql] non-standard keyword or datatype: %s" word)
+	   (my-lint-layout-current-line-number)
+	   prefix))
+	(when (and (null non-std-kwd-p)
+		   (not (string-match type-sql92-re word)))
+	  (my-lint-layout-message
+	   (format "[sql] non-SQL92 may cause portability problems: %s" word)
 	   (my-lint-layout-current-line-number)
 	   prefix))
 	;; FIXME: tests only datatype now
