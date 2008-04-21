@@ -1248,36 +1248,33 @@ Optional PREFIX is used add filename to the beginning of line."
 Optional PREFIX is used add filename to the beginning of line."
   (let (indent
 	word
-	file
-	no-colon-p)
+	file)
     (while (re-search-forward my-layout-changelog-item-regexp nil t)
       (setq indent (match-string 1)
 	    file   (match-string 2)
 	    word   (or (and (looking-at
-			     ":.*([^)\r\n]+)[: ]+\\([^ \t\r\n]+\\)")
+			     ":?.*([^)\r\n]+)[: ]+\\([^ \t\r\n]+\\)")
 			    (match-string 1))
-		       (and (looking-at ": *\\([^ \t\r\n]+\\)")
+		       (and (looking-at ":?[ \t]*\\([^ \t\r\n]+\\)")
 			    (match-string 1))))
-      (unless (looking-at ":")
-	(setq no-colon-p t)
+      (when (looking-at "?:  ")
 	(my-lint-layout-message
-	 "[changelog] at *, no colon ':' immediately after pathname"
+	 "[changelog] at *, extra space after pathname"
 	 (my-lint-layout-current-line-number)
 	 prefix))
-      (when (looking-at ":  ")
+      (when (looking-at ":?[ \t]*([^)\r\n]+):  ")
 	(my-lint-layout-message
-	 "[changelog] at *, extra space after path colon ':'"
+	 "[changelog] at *, extra space after (marker):"
 	 (my-lint-layout-current-line-number)
 	 prefix))
-      (when (looking-at ":[ \t]*([^)\r\n]+):  ")
+      (when (looking-at ":?[ \t]*([^)\r\n]+):[^ \t\r\n]")
 	(my-lint-layout-message
-	 "[changelog] at *, extra space after (marker) colon ':'"
+	 "[changelog] at *, no space after (marker):"
 	 (my-lint-layout-current-line-number)
 	 prefix))
-      (when (and (null no-colon-p)
-		 (not (looking-at ":[ \r\n]")))
+      (when (and (not (looking-at ":?[ \r\n]")))
 	(my-lint-layout-message
-	 "[changelog] at *, need one space after colon ':'"
+	 "[changelog] at *, need one space after pathname"
 	 (my-lint-layout-current-line-number)
 	 prefix))
       (when word

@@ -97,17 +97,20 @@ elseif ( array_key_exists($field, $_POST) )
 
 2008-04-03  Jari Aalto  <jari.aalto@tamk.fi>
 
-	* doc (dir): New directory.
+	* doc/dev (dir): New directory.
 
-	* doc/dev:  (dir): New directory.
+	* doc/dev (dir):New directory.
 
-	* doc/dev: (dir):  New directory.
+	* doc/dev (dir):  New directory.
 
-        * application/lib/.keep: (file) New file
+	* doc/dev  (dir): New directory.
 
-        * application/data/.keep: (file) New file
+	* doc/dev(dir): New directory.
 
-        * application/conf/.keep: (file) New file
+	* doc/dev: (dir) New directory.
+
+	* doc/dev:
+	(dir) New directory.
 
 
 
