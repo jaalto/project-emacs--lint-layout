@@ -243,6 +243,20 @@ elseif ( this )
   code
 }
 
+if ( $result === false )
+{
+    throw new DatabaseException("Couldn't execute query.");
+}
+elseif ( $result === true )
+{
+    return true;
+}
+else
+{
+    return new DatabaseResultHandler($result);
+}
+
+
 function def_inition ( param, param)
 function def( param, param)
 function def ( param, param)

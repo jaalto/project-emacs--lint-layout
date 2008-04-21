@@ -82,7 +82,14 @@
   "Control statement keyword regexp.")
 
 (defconst my-lint-layout-generic-control-statement-continue-regexp
-   "\\<\\(else\\|catch\\)\\>"
+  (concat
+   "\\<"
+   (regexp-opt
+    '("else"
+      "elseif"
+      "catch")
+    t)
+   "\\>")
   "Control statement continue keyword regexp.")
 
 (defconst my-lint-layout-generic-control-statement-regexp
@@ -118,6 +125,10 @@
 (defconst my-lint-layout-generic-doc-line-regexp
   "^\\([ \t]*/[*][*]\\|[ \t]+[*]\\)"
   "Documentation comment line regexp.")
+
+(defconst my-php-layout-brace-and-code-regexp
+  "[}][ \t]*\r?\n[ \t]*\\([^{} \t\r\n]+\\)"
+  "Match brace end } followed by immediate code.")
 
 ;;; ....................................................... &utilities ...
 
@@ -1352,10 +1363,6 @@ Optional PREFIX is used add filename to the beginning of line."
 	(concat "}" my-php-layout-brace-and-code-regexp)
 	nil t)
        (list (point) 'end-brace-and-code)))
-
-(defconst my-php-layout-brace-and-code-regexp
-  "[}][ \t]*\r?\n[ \t]*\\([^{} \t\r\n]+\\)"
-  "Match brace end } followed by immediate code.")
 
 (defun my-php-layout-brace-forward-main ()
   "Move to first brace that contains problems."
