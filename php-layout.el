@@ -32,8 +32,17 @@
   "*Indent step.")
 
 (defconst my-lint-layout-generic-access-modifier-regexp
- "\\<\\(abstract\\|public\\|protected\\|private\\|static\\)\\>"
- "Access modifiers.")
+  (concat
+   "\\<"
+   (regexp-opt
+    '("abstract"
+      "public"
+      "protected"
+      "private"
+      "static")
+    t)
+   "\\>")
+  "Access modifiers.")
 
 (defconst my-lint-layout-php-function-regexp
   (concat
@@ -43,22 +52,33 @@
    "\\)?"
    "[ \t]*"
    "\\<function\\>[ \t]+")
- "Function regexp.
-
-submatch 1: Indent")
-
+ "Function regexp. Submatch 1: Indent")
 
 (defconst my-lint-layout-php-doc-location-regexp
    (concat
     "^[ \t]*"
     "\\("
     my-lint-layout-generic-access-modifier-regexp
-    "\\|function\\>\\|require\\|include"
-    "\\)")
+    "\\|\\<"
+    (regexp-opt
+     '("function"
+       "require"
+       "include")
+     t)
+    "\\>\\)")
   "Location, where documentation should exist.")
 
 (defconst my-lint-layout-generic-control-statement-start-regexp
-  "\\<\\(if\\|while\\|for\\(?:each\\)\\|try\\)\\>"
+  (concat
+   "\\<"
+   (regexp-opt
+    '("if"
+      "while"
+      "for"
+      "foreach"
+      "try")
+    t)
+   "\\>")
   "Control statement keyword regexp.")
 
 (defconst my-lint-layout-generic-control-statement-continue-regexp
@@ -78,16 +98,17 @@ submatch 1: Indent")
 
 (defconst my-lint-layout-php-data-type-regexp
   (concat
-  "\\<\\("
-  "string"
-  "\\|bool\\(?:ean\\)?"
-  "\\|int\\(eger\\)?"
-  "\\|mixed"
-  "\\|array"
-  "\\|object"
-  "\\|resource"
-  "\\|none"
-  "\\)\\>")
+   "\\<"
+   (regexp-opt
+    '("array"
+      "bool"
+      "boolean"
+      "mixed"
+      "object"
+      "resource"
+      "string")
+    t)
+   "\\>")
   "Valid datatypes.")
 
 (defconst my-lint-layout-generic-doc-1st-line-ignore-regexp
@@ -1793,7 +1814,7 @@ MySQL:
 The DATA is function content string."
   (let ((need-return-p
 	 (and data
-	      (string-match "^[ \t]*return\\>" data)))
+	      (string-match "^[ \t]*return\\>[ \t]*[^; \t\r\n]" data)))
 	(need-param-p
 	 (and data
 	      (string-match
@@ -1882,6 +1903,14 @@ DATA is the full function content."
    line
    prefix))
 
+(defun my-php-layout-doc-string-test-class (str line &optional prefix)
+  "Examine dostring: class."
+  (unless (string-match "@package" str)
+    (my-lint-layout-message
+     "[phpdoc] @package token not found"
+     line
+     prefix)))
+
 (defun my-php-layout-doc-examine-content-other
   (str line type &optional prefix)
   "Examine docstring: "
@@ -1966,6 +1995,8 @@ DATA is the full function content."
 	  (cond
 	   ((memq 'var type)
 	    (my-php-layout-doc-string-test-var str line prefix))
+	   ((memq 'class type)
+	    (my-php-layout-doc-string-test-class str line prefix))
 	   ((memq 'function type)
 	    (my-php-layout-doc-string-test-function str line prefix data)
 	    (my-php-layout-doc-examine-content-function str line prefix data)))

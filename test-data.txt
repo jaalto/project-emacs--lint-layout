@@ -171,6 +171,47 @@ class ServiceRequest
 {
     // Place holder
 }
+
+/**
+ * Test invalid parameter for setCategoryId().
+ *
+ * @access public
+ */
+public function testSetInvalidCategoryIdString ()
+{
+    try
+    {
+        $this->task->setCategoryId('foobar');
+    }
+    catch (ParameterException $e)
+    {
+        return;
+    }
+
+    $this->fail('ParameterException not caught.');
+}
+
+// Error: @return token not found
+
+/**
+ * Test invalid parameter for setCategoryId().
+ *
+ * @access public
+ */
+public function testSetInvalidCategoryIdString ()
+{
+    try
+    {
+        $this->task->setCategoryId('foobar');
+    }
+    catch (ParameterException $e)
+    {
+        return (1);
+    }
+
+    $this->fail('ParameterException not caught.');
+}
+
 "string".$var   OR   $var."string"
 [".get_object_vars($resultObject)."]"
 print $user->getFirstName()." ".
