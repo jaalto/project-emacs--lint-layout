@@ -248,3 +248,7 @@ function def( param, param)
 function def ( param, param)
 function def (param, param )
 function def ( )
+
+
+$this->fail("Must cause exception, wrong parameter array().");
+

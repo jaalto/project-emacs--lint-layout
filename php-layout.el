@@ -397,7 +397,7 @@ See `my-lint-layout-buffer-name'."
      "[$][a-z0-9_>-]+[.][$\"]"
      "\\|\"[.][$][a-z_]"
      "\\|\"[.][a-z_0-9]+"
-     "\\|[)][.][\"]")
+     "\\|[)][.][\"][^);]")
     "No surrounding spaces aroud concat(.)")
 
    ;; if ( $query and mysql_result == false )
