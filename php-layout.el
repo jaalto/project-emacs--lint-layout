@@ -2210,6 +2210,7 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
     (my-lint-layout-with-result-buffer
       ;; to stderr. Hm.
       (unless (eq (point-min) (point-max))
-	(message (buffer-string))))))
+	(message 
+	 (replace-regexp-in-string "%" "%%" (buffer-string)))))))
 
 ;; End of file
