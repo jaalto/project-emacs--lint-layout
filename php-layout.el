@@ -390,9 +390,11 @@ See `my-lint-layout-buffer-name'."
      "preg*() function family recommended for")
    '("\\<include[_a-z][( \t]*[\"\'$]"
      "require*() function family is safer than")
+
    '("\\<echo[( \t]*[\"\'$]"
      "Standard print() recommended for")
-   '("\\<date(.*)"
+
+   '("[.=][ \t]*\\<date(.*)"
      "POSIX standard strftime() recommended for")
 
    '("^[ \t]*else[ \t]+if\\>"
@@ -406,7 +408,7 @@ See `my-lint-layout-buffer-name'."
      "In statement, no space between keyword like 'if' and starting paren")
 
    '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
-     "In statement, no space after starting '(': ")
+     "In statement, no space after starting paren: ")
 
    '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
      "In statement, no space after keyword and paren")
@@ -424,7 +426,7 @@ See `my-lint-layout-buffer-name'."
 
    ;; function ( param, def)
    '("^[ \t]*function[ \t]*.*([ \t]"
-     "In funcdef, extra space after '('")
+     "In funcdef, extra space after starting paren")
    ;; function (param, def )
    '("^[ \t]*function[ \t]*.*([^)\r\n]*[ \t])"
      "In funcdef, extra space before closing paren")
@@ -456,9 +458,9 @@ See `my-lint-layout-buffer-name'."
     "Possibly missing vardef($) in relational test at left")
 
    '("[$][a-z][_a-z0-9]*=[ \t]+[$a-z_0-9\"\']"
-     "no space at left of '=': ")
+     "no space at left of equal sign")
    '("[$][a-z][_a-z0-9]*[ \t]+=[$a-z_0-9\"']"
-     "no space at right of '=': ")
+     "no space at right of equal sign")
 
    '("[!=]=[ \t]*\\(null\\|true\\|false\\)"
      "Possibly unnecessary test against literal"
@@ -726,16 +728,10 @@ Return variable content string."
       (setq str (match-string 1))
       (when (string-match "#" str)
 	(my-lint-layout-message
-	 "[comment] unknown syntax. Only // is recognized"
+	 "[comment] unknown syntax."
 	 (my-lint-layout-current-line-number)
 	 prefix))
-      (when (and (looking-at ".*[a-z]")
-		 (not (looking-at "[ \t]+")))
-	(my-lint-layout-message
-	 "[comment] No space between comment and text start"
-	 (my-lint-layout-current-line-number)
-	 prefix))
-      (when (and (not (looking-at "[ \r\n]"))
+      (when (and (not (looking-at "[ \t\r\n]"))
 		 (not (string-match
 		       my-lint-layout-eof-regexp
 		       (my-lint-layout-current-line-string))))
@@ -815,9 +811,10 @@ Return variable content string."
 	 (my-lint-layout-current-line-number)
 	 prefix))
        ((and base-indent
+	     (not (zerop i))
 	     (eq i base-indent))
 	(my-lint-layout-message
-	 (format "[code] Missing indentation at column %d" i)
+	 (format "[code] Possibly missing indentation at column %d" i)
 	 (my-lint-layout-current-line-number)
 	 prefix))))))
 
@@ -1788,7 +1785,7 @@ MySQL:
 	 prefix))
       (when (string-match "[(]" line)
 	(my-lint-layout-message
-	 "[sql] misplaced starting paren '(' (possibly not lined-up)"
+	 "[sql] misplaced starting paren (possibly not lined-up)"
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
 
@@ -1988,7 +1985,7 @@ The DATA is function content string."
       (my-lint-layout-message
        "[phpdoc] @param token is unnecessary"
        line prefix))
-    (when (and (not return)
+    (when (and return
 	       (not need-return-p))
       (my-lint-layout-message
        "[phpdoc] @return token is unnecessary"
@@ -2089,7 +2086,7 @@ DATA is the full function content."
     ;;  Complete sentence ends to period.
     (unless (looking-at "^[ \t]+[*].*\\.")
       (my-lint-layout-message
-       "[phpdoc] 1st line is not a complete sentence ending to period(.)"
+       "[phpdoc] First line is not a complete sentence ending to period(.)"
        (1+ line)
        prefix))
     (when (and (not
@@ -2101,7 +2098,7 @@ DATA is the full function content."
       ;; Search at least two words. Ignore toplevel comment
       (when type
 	(my-lint-layout-message
-	 "[phpdoc] 1st line does not explain code that follows"
+	 "[phpdoc] First line does not explain code that follows"
 	 (1+ line)
 	 prefix)))
     (my-lint-layout-with-case
@@ -2116,7 +2113,7 @@ DATA is the full function content."
       (my-lint-layout-with-case
 	(unless (looking-at "^[ \t]*[*][ \t]*$")
 	  (my-lint-layout-message
-	   "[phpdoc] no empty line after 1st line short description."
+	   "[phpdoc] no empty line after first line short description."
 	   (+ 2 line)
 	   prefix)))
       (goto-char (point-min))
