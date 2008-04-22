@@ -88,6 +88,7 @@
     '("else"
       "elsif"
       "elseif"
+      "else[ \t]+if"
       "catch")
     t)
    "\\>")
@@ -294,8 +295,15 @@
    (match-string 1)))
 
 (defsubst my-lint-layout-looking-at-comment-p (str)
-  "Check if line looks like comment."
+  "Check if STR looks like comment."
   (string-match "^[ \t]*\\([*]\\|//\\)" str))
+
+(defsubst my-lint-layout-looking-at-comment-line-p ()
+  "Check if line looks like comment."
+  (string-match "^[ \t]*\\([*]\\|//\\)"
+		(my-lint-layout-current-line-string)))
+
+
 
 (defsubst my-lint-layout-looking-at-assignment-column-p ()
   "Return assignmnet '=' column position."
@@ -393,12 +401,15 @@ See `my-lint-layout-buffer-name'."
    '("\\<\\(if\\|else\\|elseif\\)[ \t]*(.*[$a-z][ \t]*=[ \t]*[$a-z]"
      "Assignment inside statement"
      "mysql")
-   '("\\<\\(if\\|foreach\\|while\\)("
-     "In statement, no space before keyword and '(': ")
-   '("\\<\\(if\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
+
+   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)("
+     "In statement, no space between keyword like 'if' and starting paren (")
+
+   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
      "In statement, no space after starting '(': ")
-   '("\\<\\(if\\|foreach\\|while\\)[ \t]*([^ $)\t\r\n]"
-     "In statement, no space after keyword and '(': ")
+
+   '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
+     "In statement, no space after keyword and paren (: ")
 
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t])[ \t]*$"
      "In statement, no space before closing ')': ")
@@ -827,8 +838,10 @@ Return variable content string."
 		     my-lint-layout-generic-control-statement-regexp
 		     "\\)"))
 	 str
+	 point
 	 indent
 	 brace-p
+	 comment-p
 	 statement-start-col
 	 statement-line
 	 brace-start-col
@@ -836,7 +849,8 @@ Return variable content string."
 	 brace-end-col
 	 brace-end-line)
     (while (re-search-forward re nil t)
-      (setq indent (match-string 1)
+      (setq point  (match-beginning 1)
+            indent (match-string 1)
 	    str    (match-string 2))
       (save-excursion
 	(goto-char (match-beginning 2))
@@ -851,7 +865,18 @@ Return variable content string."
 	(unless (setq brace-p (looking-at ".*{"))
 	  ;; Peek next line
 	  (forward-line 1)
-	  (setq brace-p (not (looking-at ".*;")))))
+	  (setq brace-p (not (looking-at ".*;"))))
+
+	;; Peek comment above
+	(goto-char point)
+	(goto-char (line-beginning-position))
+	(skip-chars-backward " \t\r\n")
+	(if (my-lint-layout-looking-at-comment-line-p)
+	    (my-lint-layout-message
+	     (format "Misplaced comment. Should be inside '%s' block" str)
+	     (my-lint-layout-current-line-number)
+	     prefix))
+	)
       (my-php-layout-check-indent-string-message indent statement-line prefix)
       (when (string-match
 	     my-lint-layout-generic-control-statement-continue-regexp
