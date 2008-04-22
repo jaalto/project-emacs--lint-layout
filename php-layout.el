@@ -109,7 +109,6 @@
    "\\<"
    (regexp-opt
     '("array"
-      "bool"
       "boolean"
       "integer"
       "mixed"
@@ -119,6 +118,18 @@
     t)
    "\\>")
   "Valid datatypes.")
+
+
+(defconst my-lint-layout-php-data-type-short-regexp
+  (concat
+   "\\<"
+   (regexp-opt
+    '("array"
+      "bool"
+      "int")
+    t)
+   "\\>")
+  "Valid short datatypes.")
 
 (defconst my-lint-layout-generic-doc-1st-line-ignore-regexp
   "constructor\\|destructor"
@@ -1930,17 +1941,31 @@ DATA is the full function content."
 	(unless (my-lint-layout-with-case
 		  (string-match my-lint-layout-php-data-type-regexp
 				word))
-	  (let* ((case (string-match
-			my-lint-layout-php-data-type-regexp word))
-		 (match (and case
+	  (let* ((case-p (string-match
+			  my-lint-layout-php-data-type-regexp word))
+		 (short-p (string-match
+			   my-lint-layout-php-data-type-short-regexp word))
+		 (short-case-p
+		  (and short-p
+		       (not (my-lint-layout-with-case
+			      (string-match
+			       my-lint-layout-php-data-type-short-regexp word)))))
+		 (match (and case-p
 			     (match-string 1 word))))
 	    (my-lint-layout-message
 	     (format
 	      (concat
 	       "@param announces unknown datatype"
-	       (if case
-		   (format " (check spelling)" match)
-		 "")
+	       (cond
+		(case-p
+		 (format " (check spelling)" match))
+		((and short-p
+		      short-case-p)
+		 (format " (possibly abbreviated and incorrect case)" match))
+		(short-p
+		 (format " (possibly abbreviated)" match))
+		(t
+		 ""))
 	       ": %s")
 	      word)
 	     (+ line (my-lint-layout-current-line-number))
