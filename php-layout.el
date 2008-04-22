@@ -1875,7 +1875,6 @@ The DATA is function content string."
 	       data)))
 	(param  (string-match "@param" str))
 	(access (string-match "@access" str))
-
 	return)
     (when (string-match "this[ \t]+\\(function\\|method\\)" str)
       (my-lint-layout-message
@@ -1894,6 +1893,11 @@ The DATA is function content string."
 	       (not need-param-p))
       (my-lint-layout-message
        "[phpdoc] @param is unnecessary"
+       line prefix))
+    (when (and (not return)
+	       (not need-return-p))
+      (my-lint-layout-message
+       "[phpdoc] @return is unnecessary"
        line prefix))
     (when (and need-return-p
 	       (not (setq return (string-match "@return" str))))
@@ -1951,7 +1955,7 @@ DATA is the full function content."
      prefix))
   (unless (string-match "@var" str))
   (my-lint-layout-message
-   "[phpdoc] @var not found"
+   "[phpdoc] @var token not found"
    line
    prefix))
 
