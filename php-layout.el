@@ -1826,9 +1826,9 @@ MySQL:
   (when (and (looking-at "\\(.*[a-z]\\):")
 	     ;;  a:hover
 	     (not (string-match "\\<a" (match-string 1)))
-	     (not (looking-at ".*[a-z]:[ \t]")))
+	     (looking-at "\\([^ \t\r\n]+[a-z]:\\([^ \t\r\n]+\\)\\)"))
     (my-lint-layout-message
-     "[css] no space after attribute colon ':'"
+     (format "[css] no space between colon and attribute value: %s" (match-string 1))
      (my-lint-layout-current-line-number)
      prefix)))
 
