@@ -693,12 +693,14 @@ Return variable content string."
 	str)
     (while (re-search-forward my-php-layout-brace-and-code-regexp nil t)
       (setq str (buffer-substring (match-beginning 1) (match-end 1)))
-      (unless (string-match
-	       (concat
-		my-lint-layout-generic-control-statement-regexp
-		"\\|"
-		my-lint-layout-generic-xml-tag-regexp)
-	       str)
+      (when (and
+	     (not (my-lint-layout-looking-at-comment-p str))
+	     (not (string-match
+		   (concat
+		    my-lint-layout-generic-control-statement-regexp
+		    "\\|"
+		    my-lint-layout-generic-xml-tag-regexp)
+		   str)))
 	(setq line (my-lint-layout-current-line-number))
 	(my-lint-layout-message
 	 "[newline] no empty line found between '}' and next code line"
