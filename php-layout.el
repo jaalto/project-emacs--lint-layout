@@ -111,6 +111,7 @@
     '("array"
       "bool"
       "boolean"
+      "integer"
       "mixed"
       "object"
       "resource"
@@ -387,14 +388,16 @@ See `my-lint-layout-buffer-name'."
      "In statement, no space after starting '(': ")
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*([^ $)\t\r\n]"
      "In statement, no space after keyword and '(': ")
+
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t])[ \t]*$"
      "In statement, no space before closing ')': ")
+
    '("this->[^][ )\t\r\n]+[ \t]("
-     "In funcall, possibly extra space before '('")
+     "In funcall, possibly extra space before '(' paren")
 
    ;; code );
-   '("[a-z][_a-z0-9]+([^)]*[ \t]+)\\|[ \t]);"
-     "In funcall, extra space before ending ')'"
+   '("[a-z][_a-z0-9]+([^)]*[ \t]+)\\|[^) \t\r\n]+[ \t]);"
+     "In funcall, possily extra space before ending ')' paren"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
    ;; function ( param, def)
@@ -1928,13 +1931,14 @@ DATA is the full function content."
 		 (match (and case
 			     (match-string 1 word))))
 	    (my-lint-layout-message
-	     (concat
-	      "@param datatype should be a valid type or "
-	      "'mixed'"
-	      (if case
-		  (format " (check spelling of '%s')" match)
-		"")
-	      ". See PHP manual 'Types'.")
+	     (format
+	      (concat
+	       "@param announces unknown datatype"
+	       (if case
+		   (format " (check spelling)" match)
+		 "")
+	       ": %s")
+	      word)
 	     (+ line (my-lint-layout-current-line-number))
 	     prefix)))))))
 
