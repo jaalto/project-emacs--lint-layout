@@ -536,7 +536,7 @@ See `my-lint-layout-buffer-name'."
   "Count Classes and interfaces in one file"
   (let (count)
     (while (my-lint-layout-generic-class-forward)
-      (unless (looking-at ".*PHPUnit")
+      (unless (looking-at ".*PHPUnit\\|Exception")
 	(if count
 	    (incf count)
 	  (setq count 1))))
