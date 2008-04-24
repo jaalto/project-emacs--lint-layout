@@ -371,7 +371,7 @@ See `my-lint-layout-buffer-name'."
    (list
     (concat
      "^[ \]*"
-     "\\(class\\|function\\|if\\|elsewhile\\|abstract\\|interface\\|foreach\\)"
+     "\\(class\\|function\\|if\\|elsewhile\\|abstract\\|interface\\|foreach\\)[ \t]*("
      "\\>")
     "Possibly misspelled keyword, expect lowercase"
     nil
@@ -682,7 +682,8 @@ Return variable content string."
     (while (re-search-forward
 	    (concat
 	     "\n[ \t]*\\([^ \t\r\n{]\\).*\n[ \t]*"
-	     my-lint-layout-generic-control-statement-start-regexp)
+	     my-lint-layout-generic-control-statement-start-regexp
+	     "[ \t]*(.*)")
 	    nil t)
       ;; Ignore comments, xml-tags.
       (unless (save-excursion
@@ -691,7 +692,7 @@ Return variable content string."
 		(looking-at "[*/#]\\|[<>][?]"))
 	(my-lint-layout-message
 	 (concat
-	  "[newline] no empty line found between"
+	  "[newline] no empty line found between "
 	  "control statement and code above")
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
@@ -869,7 +870,7 @@ Return variable content string."
 		     "\\([ \t]*\\)"
 		     "\\("
 		     my-lint-layout-generic-control-statement-regexp
-		     "\\)"))
+		     "\\)[ \t{]*$"))
 	 str
 	 point
 	 point2
@@ -1234,10 +1235,10 @@ Should be called right after `my-layout-copyright-search-forward'."
   "Check Copyright line syntax."
   (let ((line (my-lint-layout-current-line-number))
 	(string (my-lint-layout-current-line-string)))
-    (when (and (not (looking-at " +(C)"))
+    (when (and (not (looking-at " +\\((C)\\|&copy;\\)"))
 	       (not (string-match "@copyright" string)))
       (my-lint-layout-message
-       (format "[copyright] missing: (C): %s" string)
+       (format "[copyright] expecting (C) sign: %s" string)
        line
        prefix))
     (unless (looking-at ".*[0-9][0-9][0-9][0-9]")
@@ -1263,7 +1264,7 @@ Should be called right after `my-layout-copyright-search-forward'."
     (when (looking-at ".*,")
       (my-lint-layout-message
        (format
-	"[copyright] only one person allowed in Copyright line: %s"
+	"[copyright] only one person should be listed in Copyright line: %s"
 	string)
        line
        prefix))))
@@ -1549,13 +1550,14 @@ Optional PREFIX is used add filename to the beginning of line."
     (concat
      "\\b"
      (regexp-opt
-      '(
-	"AVG"
+      '("AVG"
 	"COUNT"
 	"MAX"
 	"MIN"
 	"SUM"
-	) t) "\\b"))
+	)
+      t)
+     "\\b"))
   "SQL reserved keywords.")
 
 (defconst my-lint-layout-sql-keywords-column-mysql
@@ -1563,12 +1565,12 @@ Optional PREFIX is used add filename to the beginning of line."
     (concat
      "\\b"
      (regexp-opt
-      '(
-	"AUTO_INCREMENT"
+      '("AUTO_INCREMENT"
 	"UNSIGNED"
 	"ZEROFILL"
 	;; CREATE TABLE xxx (...) ENGINE = InnoDB;
 	"ENGINE"
+	"InnoDB"
 	) t) "\\b"))
   "MySQL column keywords.")
 
@@ -1682,6 +1684,7 @@ MySQL:
 	 (type-re-space (concat type-re "[ \t]+([ \t]*[0-9]+[ \t]*)"))
 	 (mysql-re my-lint-layout-sql-keywords-column-mysql)
 	 (step my-lint-layout-generic-indent-step)
+	 mysql-p
 	 non-std-kwd-p
 	 non-std92-kwd-p
 	 str
@@ -1693,19 +1696,20 @@ MySQL:
       (setq non-std-kwd-p nil)
       (my-lint-layout-sql-backquote str)
       (my-lint-layout-sql-comment str)
-      (my-lint-layout-with-case
-	(when (string-match "[^ \t\r\n]*[a-z]+[A-Z]+[^ \t\r\n]*" str)
-	(my-lint-layout-message
-	 (format "[sql] Portability problem in mixed case name: %s"
-		 (match-string 0 str))
-	 (my-lint-layout-current-line-number)
-	 prefix)))
       (when (string-match mysql-re str)
 	(setq non-std-kwd-p t)
 	(my-lint-layout-message
 	 (format "[sql] non-standard keyword: %s" (match-string 0 str))
 	 (my-lint-layout-current-line-number)
 	 prefix))
+      (my-lint-layout-with-case
+	(when (and (not non-std-kwd-p)
+		   (string-match "[^ \t\r\n]*[a-z]+[A-Z]+[^ \t\r\n]*" str))
+	  (my-lint-layout-message
+	   (format "[sql] Portability problem in mixed case name: %s"
+		   (match-string 0 str))
+	   (my-lint-layout-current-line-number)
+	   prefix)))
       (when (string-match type-re-space str)
 	(my-lint-layout-message
 	 (format "[sql] extra space found near size definition: %s"
@@ -2237,7 +2241,7 @@ Point must be at function start line."
 	 ((my-lint-layout-doc-var-string-p str)) ;Skip
 	 ((not valid-p)
 	  (my-lint-layout-message
-	   "[phpdoc] possiby not placed at class, func, var, require, include"
+	   "[phpdoc] possiby misplaced. Expecting class, func, var, require or include"
 	   line prefix))
 	 (t
 	  (let ((top-level-p (my-lint-layout-doc-package-string-p str)))
