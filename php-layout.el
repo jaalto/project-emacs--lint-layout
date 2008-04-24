@@ -648,13 +648,13 @@ Return variable content string."
 
 (defun my-lint-layout-check-xml-tags-lazy (tag &optional prefix)
   "Check lazy `<?' when it should read `<?TAG'."
-  (let (tag)
+  (let (str)
     (while (re-search-forward my-lint-layout-generic-xml-tag-regexp nil t)
-      (setq tag (match-string 0))
-      (when (string= tag "<?")
+      (setq str (match-string 0))
+      (when (string= str "<?")
 	(unless (looking-at tag)
 	  (my-lint-layout-message
-	   (format "Unknown opening xml tag. Expected <?%s: %s"
+	   (format "Unknown opening xml tag, <?%s expected: %s"
 		   tag
 		   (my-lint-layout-current-line-string))
 	   (my-lint-layout-current-line-number)
