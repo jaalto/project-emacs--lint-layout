@@ -371,7 +371,7 @@ See `my-lint-layout-buffer-name'."
    ;; See PHP manual Security => Using Register Globals
    (list
     (concat
-     "\\<[$]\\(HTTP\\)_[A-Z][A-Z_]+\\>")
+     "\\<[$]\\(HTTP\\)_[A-Z]+_[A-Z][A-Z_]+\\>")
     "Security risk. Superglobal variables may be supported in newest PHP")
 
    '("\\<register_globals[ \t\r\n]+="
