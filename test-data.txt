@@ -274,3 +274,10 @@ function def (param, param )
 function def ( )
 
 $this->fail("Must cause exception, wrong parameter array().");
+
+// Superglobal variables may be supported in newest PHP
+// http://jero.net/articles/php6
+
+var = $HTTP_VARIABLE;
+ret = functiion($HTTP_VARIABLE);
+ret = functiion($HTTP_VARIABLE . "some");

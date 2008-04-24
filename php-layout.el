@@ -368,6 +368,15 @@ See `my-lint-layout-buffer-name'."
 (defconst my-php-layout-check-regexp-occur-list
   (list
 
+   ;; See PHP manual Security => Using Register Globals
+   (list
+    (concat
+     "\\<[$]\\(HTTP\\)_[A-Z][A-Z_]+\\>")
+    "Security risk. Superglobal variables may be supported in newest PHP")
+
+   '("\\<register_globals[ \t\r\n]+="
+     "Security risk. Function register_globals() is deprecated.")
+
    (list
     (concat
      "^[ \]*"
@@ -384,8 +393,10 @@ See `my-lint-layout-buffer-name'."
      "Consider readable alternative for relational op")
    '("^[ \t]*#"
      "Not a recommended comment style")
-   '("^[ \t]*var[ \t]"
+
+   '("^[ \t]*var[ \t]*[a-z]"
      "Old vardef. Migrate to syntax public|protected: ")
+
    '("\\<ereg[_a-z]*(.*)"
      "preg*() function family recommended for")
    '("\\<include[_a-z][( \t]*[\"\'$]"
