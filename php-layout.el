@@ -731,12 +731,9 @@ Return variable content string."
 	 "[comment] unknown syntax."
 	 (my-lint-layout-current-line-number)
 	 prefix))
-      (when (and (not (looking-at "[ \t\r\n]"))
-		 (not (string-match
-		       my-lint-layout-eof-regexp
-		       (my-lint-layout-current-line-string))))
+      (when (looking-at "[^ \t\r\n]")
 	(my-lint-layout-message
-	 "[comment] no space or newline after comment marker"
+	 "[comment] no space between comment marker and text"
 	 (my-lint-layout-current-line-number)
 	 prefix))
       ;; Peek previous line
@@ -2096,7 +2093,7 @@ DATA is the full function content."
 	       (not (looking-at
 		     "^[ \t]+[*][ \t]+[^ \t\r\n]+[ \t][^ \t\r\n]+")))
       ;; Search at least two words. Ignore toplevel comment
-      (when type
+      (when (not (memq 'file type))
 	(my-lint-layout-message
 	 "[phpdoc] First line does not explain code that follows"
 	 (1+ line)
@@ -2191,13 +2188,15 @@ Point must be at function start line."
 (defun my-php-layout-check-doc-main (&optional prefix)
   "Check /** ... */"
   (let (line
-	nex-line-valid-p
+	point
+	next-line-valid-p
 	str
 	beg
 	end
 	type)
     (while (my-lint-layout-search-doc-beginning)
       (when (save-excursion
+	      (setq point (point))
 	      ;; Peek previous
 	      (forward-line -1)
 	      (my-lint-layout-current-line-string)
@@ -2211,18 +2210,25 @@ Point must be at function start line."
 		 (1+ (my-lint-layout-current-line-number))
 		 prefix))
 	      (forward-line 2)
-	      (setq nex-line-valid-p (my-lint-layout-looking-at-doc-p))
+	      (setq next-line-valid-p (my-lint-layout-looking-at-doc-p))
 	      (setq end (my-lint-layout-search-doc-end))
 	      (skip-chars-forward " \t\r\n")
-	      (setq valid-p (my-lint-layout-looking-at-doc-end-valid-p))
+	      (setq valid-p
+		    (or (my-lint-layout-looking-at-doc-end-valid-p)
+			;; File level comment
+			(string-match "Copyright\\|License"
+				      (buffer-substring point end))))
 	      (setq type
 		    (my-php-layout-doc-examine-typeof
 		     (my-lint-layout-current-line-string)))
+	      (if (and (not type)
+		       valid-p)
+		  (setq type '(file)))
 	      end)
 	(setq beg  (line-beginning-position)
 	      str  (buffer-substring beg end)
 	      line (my-lint-layout-current-line-number))
-	(unless nex-line-valid-p
+	(unless next-line-valid-p
 	  (my-lint-layout-message
 	   "[phpdoc] format layout error"
 	   line prefix))
@@ -2231,7 +2237,7 @@ Point must be at function start line."
 	 ((my-lint-layout-doc-var-string-p str)) ;Skip
 	 ((not valid-p)
 	  (my-lint-layout-message
-	   "[phpdoc] not located at class, func, var, require, include"
+	   "[phpdoc] possiby not placed at class, func, var, require, include"
 	   line prefix))
 	 (t
 	  (let ((top-level-p (my-lint-layout-doc-package-string-p str)))
