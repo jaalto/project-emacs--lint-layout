@@ -555,9 +555,9 @@ See `my-lint-layout-buffer-name'."
   (save-excursion
     (while (re-search-forward
 	    ;;  3 x threshold
-	    "^[ \t]*print.*\n[ \t]*print.*\n[ \t]*print" nil t)
+	    "^[ \t]*print(.*\n[ \t]*print(.*\n[ \t]*print(" nil t)
       (my-lint-layout-message
-       "Multiple print*() calls. Possible alternative: HERE syntax"
+       "Multiple print*() calls. Alternative HERE syntax recommended."
        (my-lint-layout-current-line-number)
        prefix))))
 
@@ -589,7 +589,7 @@ print 'this' .
 	lines)
     (while (setq beg (my-php-layout-print-command-forward))
       (setq str (buffer-substring beg (point)))
-      (unless (string-match "[$]" str) ;No variables used
+      (unless (string-match "[$]\\|<<<" str) ;No variables used
 	(setq lines (my-lint-layout-count-lines-in-string str))
 	(when (> lines 3)
 	  (my-lint-layout-message
@@ -633,7 +633,8 @@ Return variable content string."
   (let (str
 	lines)
     (while (setq str (my-php-layout-var-sql-forward-1))
-      (when (and (string-match "^\\([ \t]*\".*[\r\n]\\)+" str)
+      (when (and (not (string-match "<<<" str))
+		 (string-match "^\\([ \t]*\".*[\r\n]\\)+" str)
 		 (> (my-lint-layout-count-lines-in-string
 		     (match-string 0 str))
 		    3))
