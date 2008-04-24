@@ -2139,6 +2139,30 @@ DATA is the full function content."
 	(push 'include type))
     type))
 
+(defun my-php-layout-function-region-at-point ()
+  "Return function '(beg end) points with indentation.
+Point must be at function start line."
+  (save-excursion
+    (goto-char (line-beginning-position))
+    (let (indent
+	  col
+	  beg)
+    (when (looking-at my-lint-layout-php-function-regexp)
+      (setq beg (point))
+      (setq indent (match-string 1))
+      (goto-char (match-beginning 1))
+      (setq col (current-column))
+      ;; FIXME: We rely on indentation to close the function
+      (when (re-search-forward (concat "^" indent "}") nil t)
+	(list beg (point)))))))
+
+(defun my-php-layout-function-string-at-point ()
+  "Return function string if any at point."
+  (multiple-value-bind (beg end)
+      (my-php-layout-function-region-at-point)
+    (when beg
+      (buffer-substring beg end))))
+
 (defun my-php-layout-doc-examine-main (beg end type line &optional prefix)
   "Examine docstring
   ;;    /**
@@ -2164,30 +2188,6 @@ DATA is the full function content."
 	    (my-php-layout-doc-string-test-function str line prefix data)
 	    (my-php-layout-doc-examine-content-function str line prefix data)))
 	  (my-php-layout-doc-examine-content-other str line type prefix))))))
-
-(defun my-php-layout-function-region-at-point ()
-  "Return function '(beg end) points with indentation.
-Point must be at function start line."
-  (save-excursion
-    (goto-char (line-beginning-position))
-    (let (indent
-	  col
-	  beg)
-    (when (looking-at my-lint-layout-php-function-regexp)
-      (setq beg (point))
-      (setq indent (match-string 1))
-      (goto-char (match-beginning 1))
-      (setq col (current-column))
-      ;; FIXME: We rely on indentation to close the function
-      (when (re-search-forward (concat "^" indent "}"))
-	(list beg (point)))))))
-
-(defun my-php-layout-function-string-at-point ()
-  "Return function string if any at point."
-  (multiple-value-bind (beg end)
-      (my-php-layout-function-region-at-point)
-    (when beg
-      (buffer-substring beg end))))
 
 (defun my-php-layout-check-doc-main (&optional prefix)
   "Check /** ... */"
