@@ -896,7 +896,7 @@ Return variable content string."
       (my-php-layout-check-indent-string-check
        indent str prefix base-indent))))
 
-(defun my-php-layout-statement-brace-and-indent ()
+(defun my-php-layout-statement-brace-and-indent (&optional prefix)
   "Check that code is indented after brace column at point."
   (save-excursion
     (let ((beg (line-end-position)))
@@ -994,6 +994,7 @@ KEYWORD
 	    brace-start-col (1- (current-column)))
       (setq continue-p
 	    (my-php-layout-check-statement-continue-p str))
+      (forward-char -1)  ;; At brace start
       (save-excursion
 	(goto-char point2)
 	(setq statement-start-col (current-column)
@@ -1006,7 +1007,7 @@ KEYWORD
       (my-php-layout-check-indent-string-check indent statement-line prefix)
       ;; (my-php-layout-statement-brace-forward)
       ;; brace-start-line (my-lint-layout-current-line-number))
-      (my-php-layout-statement-brace-and-indent)
+      (my-php-layout-statement-brace-and-indent prefix)
       (my-php-layout-check-statement-brace-detach fullstr)
       (unless (eq statement-start-col brace-start-col)
 	(my-lint-layout-message
