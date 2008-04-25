@@ -101,8 +101,19 @@
    my-lint-layout-generic-control-statement-continue-regexp)
   "Control statement keyword.")
 
+(defconst my-lint-layout-generic-statement-regexp-brace
+  (concat
+   "^"
+   "\\([ \t]*\\)"
+   "\\("
+   my-lint-layout-generic-control-statement-regexp
+   "\\|function"
+   "\\)"
+   "\\([ \t\r\n]*{\\|[ \t].*(.*)[ \t\r\n]*{\\)")
+  "Left anchored statement with brace.")
+
 (defconst my-lint-layout-generic-xml-tag-regexp
-  "<[?]\\|[?]>"
+  "^[ \t]*<[?]\\|[?]>"
   "xml tag: starting, closing.")
 
 (defconst my-lint-layout-php-data-type-regexp
@@ -333,7 +344,7 @@
   (my-lint-layout-with-result-buffer
     (sort-lines (not 'reverse) (point-min) (point-max))))
 
-(defun my-lint-layout-message (msg line &optional prefix)
+q(defun my-lint-layout-message (msg line &optional prefix)
   "Write MSG with LINE numnber using PREFIX.
 See `my-lint-layout-buffer-name'."
   (my-lint-layout-with-result-buffer
@@ -349,12 +360,16 @@ See `my-lint-layout-buffer-name'."
   (list
    '("[a-z].*{[ \t\r\n]*$"
      "Possibly K&R brace style, expected line-up")
+
    '("[a-z].*}[ \t\r\n]*$"
      "Possibly K&R brace style, expected line-up")
+
    '("^[ \t]*function[ \t]+[a-z0-9_]+("
      "In funcdef, no space before starting paren")
+
    '("^[ \t]*[$][a-z0-9]+_[a-z0-9]+[ \t\r\n]*="
      "variable name not CamelCase")
+
    '("^[ \t]*function[ \t][a-z0-9]+_[^ \t]*[ \t]*("
      "In funcdef, name not CamelCase"))
   "Check Modern layout style.")
@@ -468,10 +483,14 @@ See `my-lint-layout-buffer-name'."
      "[$][a-z0-9_]+[) \t\r\n]")
     "Possibly missing vardef($) in relational test at left")
 
-   '("[$][a-z][_a-z0-9]*=[ \t]+[$a-z_0-9\"\']"
+   '("[$][a-z][_a-z0-9]*=[ \t]+[$a-z_0-9\"\'<]"
      "no space at left of equal sign")
-   '("[$][a-z][_a-z0-9]*[ \t]+=[$a-z_0-9\"']"
+
+   '("[$][a-z][_a-z0-9]*[ \t]+=[$a-z_0-9\"'<]"
      "no space at right of equal sign")
+
+   '("[$][a-z][_a-z0-9]*=[$a-z_0-9\"'<]"
+     "no spaces around equal sign")
 
    '("[!=]=[ \t]*\\(null\\|true\\|false\\)"
      "Possibly unnecessary test against literal"
@@ -665,8 +684,7 @@ Return variable content string."
       (when (string= str "<?")
 	(unless (looking-at tag)
 	  (my-lint-layout-message
-	   (format "Unknown opening xml tag, <?%s expected: %s"
-		   tag
+	   (format "Unknown opening short xml tag, long <?tag expected: %s"
 		   (my-lint-layout-current-line-string))
 	   (my-lint-layout-current-line-number)
 	   prefix))))))
@@ -805,7 +823,8 @@ Return variable content string."
        (string-match "^[ \t]*" str)
        (length (match-string 0 str))))
 
-(defun my-php-layout-check-indent-string-check (str line &optional prefix base-indent)
+(defun my-php-layout-check-indent-string-check
+  (str line &optional prefix base-indent)
   "Check STR for correct indent and report LINE as error."
   (let ((i (my-php-layout-indent-level str))
 	(istep my-lint-layout-generic-indent-step))
@@ -815,7 +834,8 @@ Return variable content string."
 		 (< i (+ base-indent istep)))
 	     (not (zerop (mod i 4))))
 	(my-lint-layout-message
-	 (format "[code] Possibly incorrect indent at col %d where multiple of %d expected"
+	 (format (concat "[code] Possibly incorrect indent "
+			 "at col %d where multiple of %d expected")
 		 i
 		 istep)
 	 (my-lint-layout-current-line-number)
@@ -849,7 +869,6 @@ Return variable content string."
 		    t)))
       (skip-chars-forward skip-chars))))
 
-
 (defsubst my-php-layout-statement-brace-end-forward (&optional col)
   "Find ending brace at `current-column' or COL"
   (or col
@@ -863,7 +882,8 @@ Return variable content string."
 	    (throw 'done (point)))
 	(goto-char point)))))
 
-(defun my-php-layout-statement-brace-block-check (beg end &optional base-indent prefix)
+(defun my-php-layout-statement-brace-block-check
+  (beg end &optional base-indent prefix)
   "Check brace block between BEG and END using BASE-INDENT"
   (or base-indent
       (setq base-indent (current-column)))
@@ -873,21 +893,88 @@ Return variable content string."
     (while (re-search-forward "^\\([ \t]*\\)\\([^ \t\r\n]+\\)" end 'noerr)
       (setq indent (match-string 1)
 	    str    (match-string 2))
-      (my-php-layout-check-indent-string-check indent str prefix base-indent))))
+      (my-php-layout-check-indent-string-check
+       indent str prefix base-indent))))
+
+(defun my-php-layout-statement-brace-and-indent ()
+  "Check that code is indented after brace column at point."
+  (save-excursion
+    (let ((beg (line-end-position)))
+      (when (setq brace-end-point
+		  (my-php-layout-statement-brace-end-forward))
+	(my-php-layout-statement-brace-block-check
+	 beg
+	 brace-end-point
+	 (current-column)
+	 prefix)))))
+
+(defun my-php-layout-check-statement-comment-above
+  (&optional str prefix)
+  "Check misplaced comment: just above continue statement.
+
+// comment here
+else
+{
+    code
+}
+"
+  (goto-char (line-beginning-position))
+  (skip-chars-backward " \t\r\n")
+  (when (my-lint-layout-looking-at-comment-line-p)
+    (my-lint-layout-message
+     (concat
+      "Misplaced comment. Should be inside "
+      (if str
+	  (format "'%s' block" str)
+	"next brace block"))
+     (my-lint-layout-current-line-number)
+     prefix)))
+
+(defun my-php-layout-check-statement-continue-detach (str &optional prefix)
+  "At statement STR, like 'else', peek above line."
+  (forward-line -1)
+  (unless (looking-at "^[ \t]*}")
+    (my-lint-layout-message
+     (format "keyword '%s' is not attached to brace block"
+	     str)
+     (my-lint-layout-current-line-number)
+     prefix)))
+
+(defun my-php-layout-check-statement-brace-detach (str &optional prefix)
+  "Check if there is empty lines between keyword and brace:
+KEYWORD
+
+\{
+  ..."
+  (when (string-match "\\([^ \t\r\n]+\\).*\r?\n[ \t]*[\r\n]+[ \t]*{" str)
+    (my-lint-layout-message
+     (format "keyword '%s' is not attached to brace block"
+	     (match-string 1 str))
+     (my-lint-layout-current-line-number)
+     prefix)))
+
+(defsubst my-php-layout-check-statement-continue-p (string)
+  "Check STRING against statement continue keywords."
+  (string-match
+   my-lint-layout-generic-control-statement-continue-regexp
+   string))
+
+(defsubst my-php-layout-brace-statement-forward ()
+  "Search control statement with brace forward."
+  (re-search-forward
+   my-lint-layout-generic-statement-regexp-brace
+   nil
+   'noerr))
 
 (defun my-php-layout-check-statement-start (&optional prefix)
   "Check lines beyond `my-lint-layout-generic-line-length-max'."
   (let* ((col my-lint-layout-generic-line-length-max)
-	 (re (concat "^"
-		     "\\([ \t]*\\)"
-		     "\\("
-		     my-lint-layout-generic-control-statement-regexp
-		     "\\)[ \t{]*$"))
 	 str
+	 fullstr
+	 bracestr
 	 point
 	 point2
 	 indent
-	 brace-p
 	 comment-p
 	 continue-p
 	 statement-start-col
@@ -897,80 +984,37 @@ Return variable content string."
 	 brace-end-col
 	 brace-end-point
 	 brace-end-line)
-    (while (re-search-forward re nil t)
-      (setq point  (match-beginning 1)
-	    point2 (match-beginning 2)
-            indent (match-string 1)
-	    str    (match-string 2)
-	    continue-p (string-match
-			my-lint-layout-generic-control-statement-continue-regexp
-			str))
+    (while (my-php-layout-brace-statement-forward)
+      (setq point     (match-beginning 1) ;; Left margin
+	    point2    (match-beginning 2) ;; keyword start
+            indent    (match-string 1)
+	    str       (match-string 2)    ;; Keyword
+	    bracestr  (match-string 5)
+	    fullstr   (match-string 0)
+	    brace-start-col (1- (current-column)))
+      (setq continue-p
+	    (my-php-layout-check-statement-continue-p str))
       (save-excursion
 	(goto-char point2)
 	(setq statement-start-col (current-column)
 	      statement-line (my-lint-layout-current-line-number))
-	;; if ()
-	;;    i=0;
-	;;
-	;; if ( $a and
-	;;      $b )
-	;; {
-	(unless (setq brace-p (looking-at ".*{"))
-	  ;; Peek next line
-	  (forward-line 1)
-	  (setq brace-p (not (looking-at ".*;"))))
-
-	;; Peek comment above
 	(when continue-p
 	  (goto-char point)
-	  (goto-char (line-beginning-position))
-	  (skip-chars-backward " \t\r\n")
-	  (if (my-lint-layout-looking-at-comment-line-p)
-	      (my-lint-layout-message
-	       (format "Misplaced comment. Should be inside '%s' block" str)
-	       (my-lint-layout-current-line-number)
-	       prefix)))
-	)
+	  (my-php-layout-check-statement-continue-detach str prefix)
+	  (goto-char point)
+	  (my-php-layout-check-statement-comment-above str prefix)))
       (my-php-layout-check-indent-string-check indent statement-line prefix)
-      (when (string-match
-	     my-lint-layout-generic-control-statement-continue-regexp
-	     str)
-	(save-excursion
-	  (forward-line -1)
-	  (unless (looking-at "^[ \t]*}")
-	    (my-lint-layout-message
-	     (format "keyword '%s' is not attached to above brace block"
-		    str)
-	    statement-line
-	    prefix))))
-      (cond
-       ((null brace-p)
+      ;; (my-php-layout-statement-brace-forward)
+      ;; brace-start-line (my-lint-layout-current-line-number))
+      (my-php-layout-statement-brace-and-indent)
+      (my-php-layout-check-statement-brace-detach fullstr)
+      (unless (eq statement-start-col brace-start-col)
 	(my-lint-layout-message
-	 (format "brace block not found near keyword '%s' at col %s"
+	 (format "brace { not directly under keyword '%s', expect col %d"
 		 str
 		 statement-start-col)
-	 statement-line
-	 prefix))
-       (t
-	(my-php-layout-statement-brace-forward)
-	(setq brace-start-col  (current-column)
-	      brace-start-line (my-lint-layout-current-line-number))
-	(save-excursion
-	  (let ((beg (line-end-position)))
-	    (when (setq brace-end-point
-			(my-php-layout-statement-brace-end-forward))
-	      (my-php-layout-statement-brace-block-check
-	       beg
-	       brace-end-point
-	       (current-column)
-	       prefix))))
-	(unless (eq statement-start-col brace-start-col)
-	  (my-lint-layout-message
-	   (format "brace { not directly under keyword '%s', expect col %d"
-		   str
-		   statement-start-col)
-	   (my-lint-layout-current-line-number)
-	   prefix)))))))
+	 (my-lint-layout-current-line-number)
+	 prefix)))))
 
 ;;; ........................................................ &conflict ...
 

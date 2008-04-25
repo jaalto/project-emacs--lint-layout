@@ -58,6 +58,17 @@ $a= 1
 $a =123
 a || b
 
+// (my-php-layout-check-regexp-occur)x
+// no space at left of equal sign
+$var=$var
+$var="asd"
+$var='asd'
+$var=<<<EOF
+
+$var =<<<EOF
+$var =$var
+$var= $var
+
 if (a = b)
 
 $this->call (param)
@@ -71,7 +82,11 @@ call( more(ad ));
 if ( ! @mysql_select_db(DBNAME, $this->conn) )
 $this->conn = @mysql_connect(DBHOST, DBUSER, DBPASS);
 if ( ! $this->conn )
+// no space before closing paren
+if ( TEST)
 
+// In funcdef, no space before starting paren
+function testUserAuthentication()
 function printFooter()
 
 while ($month <= 12)
@@ -281,3 +296,20 @@ $this->fail("Must cause exception, wrong parameter array().");
 var = $HTTP_VARIABLE;
 ret = functiion($HTTP_VARIABLE);
 ret = functiion($HTTP_VARIABLE . "some");
+
+// (my-php-layout-check-statement-start)
+function main ()
+
+{
+
+    if ( $TEST == 0 )
+
+    {
+    printHeader();
+    printContents();
+    printFooter();
+    }
+    else {
+	This
+    }
+}
