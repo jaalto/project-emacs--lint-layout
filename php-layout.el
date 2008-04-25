@@ -914,7 +914,7 @@ Return variable content string."
       (setq indent (match-string 1)
 	    line   (match-string 2)
 	    str    (match-string 3))
-      (or (my-php-layout-here-doc-skip)
+      (or (my-php-layout-here-doc-skip line)
 	  (my-php-layout-check-indent-string-check
 	   indent str prefix base-indent)))))
 
@@ -2414,6 +2414,11 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
       (unless (eq (point-min) (point-max))
 	(princ (buffer-string))))))
 
+(defun my-php-layout-test ()
+  (let ((command-line-args-left
+	 '("~/proj/05/application/signUp.php")))
+    (my-php-layout-check-command-line-batch
+     '(my-php-layout-check-all-1))))
 
 ;;	(message
 ;;	 (replace-regexp-in-string "%" "%%" (buffer-string)))))))
