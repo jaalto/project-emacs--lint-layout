@@ -887,6 +887,16 @@ Return variable content string."
   (if (string-match "[^<]<<+[ \t]*\\([A-Z]+\\)" str)
       (match-string 1 str)))
 
+(defsubst my-php-layout-here-doc-skip (str)
+  "If STR contains HERE doc, skip to end of marker."
+  (let ((here (my-php-layout-here-doc-p str)))
+    (if here
+	(my-lint-layout-with-case
+	  (re-search-forward
+	   (format "^[ \t]*%s[ \t]*;" here)
+	   nil
+	   'noerr)))))
+
 (defun my-php-layout-statement-brace-block-check
   (beg end &optional base-indent prefix)
   "Check brace block between BEG and END using BASE-INDENT"
@@ -904,14 +914,9 @@ Return variable content string."
       (setq indent (match-string 1)
 	    line   (match-string 2)
 	    str    (match-string 3))
-      (cond
-       ((setq here (my-php-layout-here-doc-p line))
-	(my-lint-layout-with-case
-	  (re-search-forward (format "^[ \t]*%s[ \t]*;" here) nil 'noerr)))
-       (t
-	(my-php-layout-statement-here-doc-end)
-	(my-php-layout-check-indent-string-check
-	 indent str prefix base-indent))))))
+      (or (my-php-layout-here-doc-skip)
+	  (my-php-layout-check-indent-string-check
+	   indent str prefix base-indent)))))
 
 (defun my-php-layout-statement-brace-and-indent (&optional prefix)
   "Check that code is indented according to brace column at point."

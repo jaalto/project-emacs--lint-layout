@@ -315,6 +315,7 @@ function main ()
     }
 }
 
+// Ignore here doc for indentation test
 // (my-php-layout-check-statement-start)
 
         function testLogin ()
