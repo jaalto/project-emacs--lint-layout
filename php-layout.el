@@ -496,13 +496,13 @@ See `my-lint-layout-buffer-name'."
      "[$][a-z0-9_]+[) \t\r\n]")
     "Possibly missing vardef($) in relational test at left")
 
-   '("\\<[a-z][_a-z0-9]*=[ \t]+[$a-z_0-9\"\'<]"
+   '("[$][a-z][_a-z0-9]*=[ \t]+[$a-z_0-9\"\'<]"
      "no space at left of equal sign")
 
-   '("\\<[a-z][_a-z0-9]*[ \t]+=[$a-z_0-9\"'<]"
+   '("[$][a-z][_a-z0-9]*[ \t]+=[$a-z_0-9\"'<]"
      "no space at right of equal sign")
 
-   '("\\<[a-z][_a-z0-9]*=[$a-z_0-9\"'<]"
+   '("[$][a-z][_a-z0-9]*=[$a-z_0-9\"'<]"
      "no spaces around equal sign")
 
    '("[!=]=[ \t]*\\(null\\|true\\|false\\)"
