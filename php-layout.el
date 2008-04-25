@@ -823,31 +823,6 @@ Return variable content string."
        (string-match "^[ \t]*" str)
        (length (match-string 0 str))))
 
-(defun my-php-layout-check-indent-string-check
-  (str line &optional prefix base-indent)
-  "Check STR for correct indent and report LINE as error."
-  (let ((i (my-php-layout-indent-level str))
-	(istep my-lint-layout-generic-indent-step))
-    (when (numberp i)
-      (cond
-       ((and (or (null base-indent)
-		 (< i (+ base-indent istep)))
-	     (not (zerop (mod i 4))))
-	(my-lint-layout-message
-	 (format (concat "[code] Possibly incorrect indent "
-			 "at col %d where multiple of %d expected")
-		 i
-		 istep)
-	 (my-lint-layout-current-line-number)
-	 prefix))
-       ((and base-indent
-	     (not (zerop i))
-	     (eq i base-indent))
-	(my-lint-layout-message
-	 (format "[code] Possibly missing indentation at column %d" i)
-	 (my-lint-layout-current-line-number)
-	 prefix))))))
-
 (defsubst my-php-layout-statement-brace-forward (&optional brace)
   "Find statement block BRACE, which is '{' by default."
   ;;  Notice that BRACE is hre used in regexp.
@@ -882,6 +857,36 @@ Return variable content string."
 	    (throw 'done (point)))
 	(goto-char point)))))
 
+(defun my-php-layout-check-indent-string-check
+  (str line &optional prefix base-indent)
+  "Check STR for correct indent and report LINE as error."
+  (let ((i (my-php-layout-indent-level str))
+	(istep my-lint-layout-generic-indent-step))
+    (when (numberp i)
+      (cond
+       ((and (or (null base-indent)
+		 (< i (+ base-indent istep)))
+	     (not (zerop (mod i 4))))
+	(my-lint-layout-message
+	 (format (concat "[code] Possibly incorrect indent "
+			 "at col %d where multiple of %d expected")
+		 i
+		 istep)
+	 (my-lint-layout-current-line-number)
+	 prefix))
+       ((and base-indent
+	     (not (zerop i))
+	     (eq i base-indent))
+	(my-lint-layout-message
+	 (format "[code] Possibly missing indentation at column %d" i)
+	 (my-lint-layout-current-line-number)
+	 prefix))))))
+
+(defsubst my-php-layout-here-doc-p (str)
+  "Check if statement is HERE document start."
+  (if (string-match "[^<]<<+[ \t]*\\([A-Z]+\\)" str)
+      (match-string 1 str)))
+
 (defun my-php-layout-statement-brace-block-check
   (beg end &optional base-indent prefix)
   "Check brace block between BEG and END using BASE-INDENT"
@@ -889,15 +894,27 @@ Return variable content string."
       (setq base-indent (current-column)))
   (goto-char beg)
   (let (indent
+	line
+	here
 	str)
-    (while (re-search-forward "^\\([ \t]*\\)\\([^ \t\r\n]+\\)" end 'noerr)
+    (while (re-search-forward
+	    "^\\([ \t]*\\)\\(\\([^ \t\r\n]+\\).*\\)"
+	    end
+	    'noerr)
       (setq indent (match-string 1)
-	    str    (match-string 2))
-      (my-php-layout-check-indent-string-check
-       indent str prefix base-indent))))
+	    line   (match-string 2)
+	    str    (match-string 3))
+      (cond
+       ((setq here (my-php-layout-here-doc-p line))
+	(my-lint-layout-with-case
+	  (re-search-forward (format "^[ \t]*%s[ \t]*;" here) nil 'noerr)))
+       (t
+	(my-php-layout-statement-here-doc-end)
+	(my-php-layout-check-indent-string-check
+	 indent str prefix base-indent))))))
 
 (defun my-php-layout-statement-brace-and-indent (&optional prefix)
-  "Check that code is indented after brace column at point."
+  "Check that code is indented according to brace column at point."
   (save-excursion
     (let ((beg (line-end-position)))
       (when (setq brace-end-point
@@ -973,7 +990,7 @@ KEYWORD
 	 fullstr
 	 bracestr
 	 point
-	 point2
+	 kwd-point
 	 indent
 	 comment-p
 	 continue-p
@@ -986,7 +1003,7 @@ KEYWORD
 	 brace-end-line)
     (while (my-php-layout-brace-statement-forward)
       (setq point     (match-beginning 1) ;; Left margin
-	    point2    (match-beginning 2) ;; keyword start
+	    kwd-point (match-beginning 2) ;; keyword start
             indent    (match-string 1)
 	    str       (match-string 2)    ;; Keyword
 	    bracestr  (match-string 5)
@@ -996,7 +1013,7 @@ KEYWORD
 	    (my-php-layout-check-statement-continue-p str))
       (forward-char -1)  ;; At brace start
       (save-excursion
-	(goto-char point2)
+	(goto-char kwd-point)
 	(setq statement-start-col (current-column)
 	      statement-line (my-lint-layout-current-line-number))
 	(when continue-p

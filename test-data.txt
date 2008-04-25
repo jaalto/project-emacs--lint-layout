@@ -309,7 +309,28 @@ function main ()
     printContents();
     printFooter();
     }
+
     else {
 	This
     }
 }
+
+// (my-php-layout-check-statement-start)
+
+        function testLogin ()
+        {
+            $login = <<<EOT
+<div id="login">
+<form action="form.php" method="post" >
+        <p>Username: <br />
+           <input type="text" name="username" /><br />
+           Password <br />
+           <input type="password" name="password" /><br />
+           <input type="submit" name="login" value="Login" />
+        </p>
+</form>
+</div>
+EOT;
+            $this->assertTrue( $this->form->login() == $login,
+                               "Action-path incorrect.");
+        }
