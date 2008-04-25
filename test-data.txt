@@ -276,6 +276,27 @@ else
     return new DatabaseResultHandler($result);
 }
 
+// (my-php-layout-check-statement-start-2)
+function name ();
+{
+    test
+}
+if ( test );
+{
+    test
+}
+for ( test );
+{
+    test
+}
+foreach ( test );
+{
+    test
+}
+while ( test );
+{
+    test
+}
 
 // Assignment inside statement
 if ( $row = $this->result->fetch_row() )

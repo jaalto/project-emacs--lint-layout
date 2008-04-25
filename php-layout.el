@@ -112,6 +112,19 @@
    "\\([ \t\r\n]*{\\|[ \t].*(.*)[ \t\r\n]*{\\)")
   "Left anchored statement with brace.")
 
+(defconst my-lint-layout-generic-statement-regexp-line
+  (concat
+   "^"
+   "\\([ \t]*\\)"
+   "\\("
+   my-lint-layout-generic-control-statement-regexp
+   "\\|function"
+   "\\)"
+   "\\([ \t].*(.*)[ \t\r\n]*\\|[ \t\r\n]*\\)")
+  "Left anchored statement.
+Same `my-lint-layout-generic-statement-regexp-brace' but
+without brace requirement.")
+
 (defconst my-lint-layout-generic-xml-tag-regexp
   "^[ \t]*<[?]\\|[?]>"
   "xml tag: starting, closing.")
@@ -980,6 +993,29 @@ KEYWORD
   (string-match
    my-lint-layout-generic-control-statement-continue-regexp
    string))
+
+(defsubst my-php-layout-statement-forward ()
+  "Search control statement forward."
+  (re-search-forward
+   my-lint-layout-generic-statement-regexp-line
+   nil
+   'noerr))
+
+(defun my-php-layout-check-statement-start-2 (&optional prefix)
+  "Check incorrect statement like:
+
+if ( check );
+{
+    line
+}"
+  (let (str)
+    (while (my-php-layout-statement-forward)
+      (when (looking-at ";")
+	(my-lint-layout-message
+	 (format "Possibly misplaced semicolon: %s"
+		 (my-lint-layout-current-line-string))
+	 (my-lint-layout-current-line-number)
+	 prefix)))))
 
 (defsubst my-php-layout-brace-statement-forward ()
   "Search control statement with brace forward."
@@ -2347,6 +2383,7 @@ Point must be at function start line."
 	     my-php-layout-check-xml-tags-lazy
 	     my-php-layout-check-multiple-print
 	     my-php-layout-check-statement-start
+	     my-php-layout-check-statement-start-2
 	     my-php-layout-check-comment-statements
 	     my-php-layout-check-control-statements
 	     my-php-layout-check-block-end-and-code
