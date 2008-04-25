@@ -459,7 +459,7 @@ See `my-lint-layout-buffer-name'."
      "In funcall, possibly extra space before opening paren")
 
    ;; code );
-   '("[a-z][_a-z0-9]+([^)]*[ \t]+)\\|[^) \t\r\n]+[ \t]);"
+   '("[a-z][_a-z0-9]+([^)\r\n]*[ \t]+)\\|[^) \t\r\n]+[ \t]+);"
      "In funcall, possibly extra space before closing paren"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 

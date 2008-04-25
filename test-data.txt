@@ -80,13 +80,18 @@ $this->call (param)
 $this->debugArray ($this->classId ...)
 
 IF ()
-
+// (my-php-layout-check-regexp-occur)
 // Extra space before closing ')'
 call( ad );
 call( more(ad ));
+
+// closing paren ok
+ $sql = sprintf( code
+ );
+if ( ! $this->conn )
 if ( ! @mysql_select_db(DBNAME, $this->conn) )
 $this->conn = @mysql_connect(DBHOST, DBUSER, DBPASS);
-if ( ! $this->conn )
+
 // no space before closing paren
 if ( TEST)
 
