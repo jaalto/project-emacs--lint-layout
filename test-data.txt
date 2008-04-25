@@ -58,7 +58,7 @@ $a= 1
 $a =123
 a || b
 
-// (my-php-layout-check-regexp-occur)x
+// (my-php-layout-check-regexp-occur)
 // no space at left of equal sign
 $var=$var
 $var="asd"
@@ -68,6 +68,11 @@ $var=<<<EOF
 $var =<<<EOF
 $var =$var
 $var= $var
+
+
+$sql = "SELECT * FROM pd_users WHERE name='$username'
+                               AND password='".md5($password)."'";
+
 
 if (a = b)
 
