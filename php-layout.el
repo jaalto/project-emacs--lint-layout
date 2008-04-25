@@ -344,7 +344,7 @@
   (my-lint-layout-with-result-buffer
     (sort-lines (not 'reverse) (point-min) (point-max))))
 
-q(defun my-lint-layout-message (msg line &optional prefix)
+(defun my-lint-layout-message (msg line &optional prefix)
   "Write MSG with LINE numnber using PREFIX.
 See `my-lint-layout-buffer-name'."
   (my-lint-layout-with-result-buffer
@@ -506,7 +506,7 @@ See `my-lint-layout-buffer-name'."
 			 (my-lint-layout-current-line-string)))))))
 
    '("\\<function[ \t]+\\(de\\|con\\)struct"
-     "Possibly mispelled __(de|con)structor"))
+     "Possibly mispelled __(de|con)struct"))
   "Search ((REGEXP MESSAGE [NOT-REGEXP] [FUNC]) ..).")
 
 (defun my-php-layout-check-regexp-occur (&optional prefix list)
@@ -690,8 +690,8 @@ Return variable content string."
 	   prefix))))))
 
 (defun my-php-layout-check-xml-tags-lazy (&optional prefix)
-  "Check <?php tag."
-  (my-lint-layout-check-xml-tags-lazy "php"))
+  "Check <?php and <?xml tag."
+  (my-lint-layout-check-xml-tags-lazy "php\\|xml"))
 
 (defun my-lint-layout-generic-xml-tags-check-main (&optional prefix)
   "Check multiple invocations like:
