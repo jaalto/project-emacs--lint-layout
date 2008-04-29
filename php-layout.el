@@ -248,6 +248,14 @@ without brace requirement.")
   "Count lines in STR."
   (length (replace-regexp-in-string "[^\n]" "" str)))
 
+(defsubst my-lint-layout-brace-open-backward ()
+  "Move to opening brace backward."
+  (re-search-backward "^[ \t]*{" nil t))
+
+(defsubst my-lint-layout-top-level-p ()
+  "Return t if outside of brace blocks. Point is moved."
+  (not (my-lint-layout-brace-open-backward)))
+
 (defsubst my-lint-layout-doc-package-string-p (str)
   "Check @package phpdoc"
   (string-match "@package\\|@copyright\\|@author\\|@version" str))
@@ -287,12 +295,18 @@ without brace requirement.")
   (string-match ";[ \t]*$" str))
 
 ;; For example: "private $var;"
-(defsubst my-lint-layout-type-variable-string-p (str)
+(defsubst my-lint-layout-type-class-variable-string-p (str)
   (string-match
    (concat
     ".*"
     my-lint-layout-generic-access-modifier-regexp
     ".*[$].*;[ \t]*$")
+   str))
+
+;; For example: "$var = ...;"
+(defsubst my-lint-layout-type-variable-string-p (str)
+  (string-match
+   "^[ \t]*[$][a-z].*;[ \t]*$"
    str))
 
 (defsubst my-lint-layout-type-function-string-p (str)
@@ -2167,7 +2181,7 @@ DATA is the full function content."
 	     (+ line (my-lint-layout-current-line-number))
 	     prefix)))))))
 
-(defun my-php-layout-doc-string-test-var (str line &optional prefix)
+(defun my-php-layout-doc-string-test-var-class (str line &optional prefix)
   "Examine dostring: variable."
   (unless (string-match "@access" str)
     (my-lint-layout-message
@@ -2179,6 +2193,14 @@ DATA is the full function content."
    "[phpdoc] @var token not found"
    line
    prefix))
+
+(defun my-php-layout-doc-string-test-var-global (str line &optional prefix)
+  "Examine dostring: variable."
+  (when (string-match "[*][ \t]*\\(@[a-z][a-z][a-z].*\\)" str)
+    (my-lint-layout-message
+     (format "[phpdoc] Possibly misplaced token: %s" (match-string 1))
+     line
+     prefix)))
 
 (defun my-php-layout-doc-string-test-class (str line &optional prefix)
   "Examine dostring: class."
@@ -2224,7 +2246,8 @@ DATA is the full function content."
 	 (1+ line)
 	 prefix)))
     (unless (or (memq 'include type)
-		(memq 'class type))
+		(memq 'class type)
+		(memq 'var-global type))
       (forward-line 1)
       (my-lint-layout-with-case
 	(unless (looking-at "^[ \t]*[*][ \t]*$")
@@ -2244,7 +2267,7 @@ DATA is the full function content."
 (defun my-php-layout-doc-examine-typeof (str)
   "Examine what type of docstring."
   (let (type)
-    (if (my-lint-layout-type-variable-string-p str)
+    (if (my-lint-layout-type-class-variable-string-p str)
 	(push 'var type))
     (if (my-lint-layout-type-class-string-p str)
 	(push 'class type))
@@ -2252,6 +2275,8 @@ DATA is the full function content."
 	(push 'function type))
     (if (my-lint-layout-type-include-string-p str)
 	(push 'include type))
+    (if (my-lint-layout-type-variable-string-p str)
+	(push 'var-global type))
     type))
 
 (defun my-php-layout-function-region-at-point ()
@@ -2296,7 +2321,9 @@ Point must be at function start line."
 	(let ((str (buffer-string)))
 	  (cond
 	   ((memq 'var type)
-	    (my-php-layout-doc-string-test-var str line prefix))
+	    (my-php-layout-doc-string-test-var-class str line prefix))
+	   ((memq 'var-global type)
+	    (my-php-layout-doc-string-test-var-global str line prefix))
 	   ((memq 'class type)
 	    (my-php-layout-doc-string-test-class str line prefix))
 	   ((memq 'function type)
@@ -2309,6 +2336,8 @@ Point must be at function start line."
   (let (line
 	point
 	next-line-valid-p
+	toplevel-p
+	valid-p
 	str
 	beg
 	end
@@ -2316,6 +2345,9 @@ Point must be at function start line."
     (while (my-lint-layout-search-doc-beginning)
       (when (save-excursion
 	      (setq point (point))
+	      (when (setq top-level-p
+			  (my-lint-layout-top-level-p))
+		(goto-char point))
 	      ;; Peek previous
 	      (forward-line -1)
 	      (my-lint-layout-current-line-string)
@@ -2333,7 +2365,8 @@ Point must be at function start line."
 	      (setq end (my-lint-layout-search-doc-end))
 	      (skip-chars-forward " \t\r\n")
 	      (setq valid-p
-		    (or (my-lint-layout-looking-at-doc-end-valid-p)
+		    (or top-level-p
+			(my-lint-layout-looking-at-doc-end-valid-p)
 			;; File level comment
 			(string-match "Copyright\\|License"
 				      (buffer-substring point end))))
@@ -2356,7 +2389,9 @@ Point must be at function start line."
 	 ((my-lint-layout-doc-var-string-p str)) ;Skip
 	 ((not valid-p)
 	  (my-lint-layout-message
-	   "[phpdoc] possiby misplaced. Expecting class, func, var, require or include"
+	   (concat
+	    "[phpdoc] possibly misplaced. "
+	    "Expecting class, func, var, require or include")
 	   line prefix))
 	 (t
 	  (let ((top-level-p (my-lint-layout-doc-package-string-p str)))
