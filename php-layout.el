@@ -395,7 +395,13 @@ See `my-lint-layout-buffer-name'."
      "In funcdef, no space before starting paren")
 
    '("^[ \t]*[$][a-z0-9]+_[a-z0-9]+[ \t\r\n]*="
-     "variable name not CamelCase")
+     "variable name not CamelCase"
+     nil
+     (lambda ()
+       (let* ((str   (match-string 0)))
+	 (my-lint-layout-with-case
+	   ;; Global variable
+	   (not (string-match "[$][A-Z][A-Z][A-Z]" str))))))
 
    '("^[ \t]*function[ \t][a-z0-9]+_[^ \t]*[ \t]*("
      "In funcdef, name not CamelCase"))
