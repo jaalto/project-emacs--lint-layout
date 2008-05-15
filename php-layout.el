@@ -1065,7 +1065,7 @@ if ( check );
     (while (my-php-layout-brace-statement-forward)
       (setq point     (match-beginning 1) ;; Left margin
 	    kwd-point (match-beginning 2) ;; keyword start
-            indent    (match-string 1)
+	    indent    (match-string 1)
 	    str       (match-string 2)    ;; Keyword
 	    bracestr  (match-string 5)
 	    fullstr   (match-string 0)
@@ -2150,10 +2150,12 @@ DATA is the full function content."
   (save-excursion
     ;;  * @param  $var string
     (goto-char (point-min))
-    (let (word)
+    (let (word
+	  str)
       (while (re-search-forward
-	      "[*][ \t]*@param[ \t]+\\([^ \t\r\n]+\\)" nil t)
-	(setq word (match-string 1))
+	      "[*][ \t]*@param[ \t]+\\([^ \t\r\n]+\\).*" nil t)
+	(setq str  (match-string 0)
+	      word (match-string 1))
 	(unless (my-lint-layout-with-case
 		  (string-match my-lint-layout-php-data-type-regexp
 				word))
@@ -2165,27 +2167,37 @@ DATA is the full function content."
 		  (and short-p
 		       (not (my-lint-layout-with-case
 			      (string-match
-			       my-lint-layout-php-data-type-short-regexp word)))))
+			       my-lint-layout-php-data-type-short-regexp
+			       word)))))
 		 (match (and case-p
 			     (match-string 1 word))))
-	    (my-lint-layout-message
-	     (format
-	      (concat
-	       "@param announces unknown datatype"
-	       (cond
-		(case-p
-		 (format " (check spelling)" match))
-		((and short-p
-		      short-case-p)
-		 (format " (possibly abbreviated and incorrect case)" match))
-		(short-p
-		 (format " (possibly abbreviated)" match))
-		(t
-		 ""))
-	       ": %s")
-	      word)
-	     (+ line (my-lint-layout-current-line-number))
-	     prefix)))))))
+	    ;; Check marked custom datatype
+	    (cond
+	     ((string-match "\\<entity" str)
+	      (my-lint-layout-message
+	       (format
+		"@param announces custom datatype: %s" word)
+	       (+ line (my-lint-layout-current-line-number))
+	       prefix))
+	     (t
+	      (my-lint-layout-message
+	       (format
+		(concat
+		 "@param announces unknown datatype"
+		 (cond
+		  (case-p
+		   (format " (check spelling)" match))
+		  ((and short-p
+			short-case-p)
+		   (format " (possibly abbreviated and incorrect case)" match))
+		  (short-p
+		   (format " (possibly abbreviated)" match))
+		  (t
+		   ""))
+		 ": %s")
+		word)
+	       (+ line (my-lint-layout-current-line-number))
+	       prefix)))))))))
 
 (defun my-php-layout-doc-string-test-var-class (str line &optional prefix)
   "Examine dostring: variable."
@@ -2349,11 +2361,12 @@ Point must be at function start line."
 	end
 	type)
     (while (my-lint-layout-search-doc-beginning)
+      (setq point (point))
+      (setq beg  (line-beginning-position))
+      (setq top-level-p
+	    (my-lint-layout-top-level-p))
+      (goto-char point))
       (when (save-excursion
-	      (setq point (point))
-	      (when (setq top-level-p
-			  (my-lint-layout-top-level-p))
-		(goto-char point))
 	      ;; Peek previous
 	      (forward-line -1)
 	      (my-lint-layout-current-line-string)
@@ -2383,8 +2396,7 @@ Point must be at function start line."
 		       valid-p)
 		  (setq type '(file)))
 	      end)
-	(setq beg  (line-beginning-position)
-	      str  (buffer-substring beg end)
+	(setq str  (buffer-substring beg end)
 	      line (my-lint-layout-current-line-number))
 	(unless next-line-valid-p
 	  (my-lint-layout-message
@@ -2407,7 +2419,7 @@ Point must be at function start line."
 	       end
 	       type
 	       line
-	       prefix)))))))))
+	       prefix))))))))
 
 ;;; ........................................................... &batch ...
 
