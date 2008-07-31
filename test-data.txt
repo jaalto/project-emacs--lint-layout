@@ -72,6 +72,40 @@ if ( ! @mysql_select_db(DBNAME, $this->conn) )
 $this->conn = @mysql_connect(DBHOST, DBUSER, DBPASS);
 if ( ! $this->conn )
 
+// (my-php-layout-check-statement-start)
+// - Misplaced comment. Should be inside else
+// - keyword 'else' is not attached to above brace block
+
+if ( 1 )
+{
+	code;
+}
+//  If parameter is not an array checkOk will be
+//  set to false.
+
+else
+{
+    $checkOk = false;
+}
+if ( !$checkOk )
+{
+     throw new ParameterException("Parametre was wrong");
+}
+
+
+// Misplaced comment. Should be inside 'catch' block
+// keyword 'catch' is not attached to above brace block
+
+try
+{
+    code;
+}
+//  If parameter is not an array checkOk will be
+//  set to false.
+catch
+{
+    code;
+}
 function printFooter()
 
 while ($month <= 12)
