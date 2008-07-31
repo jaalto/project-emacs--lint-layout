@@ -885,7 +885,7 @@ Return variable content string."
 	  (forward-line -1)
 	  (unless (looking-at "^[ \t]*}")
 	    (my-lint-layout-message
-	     (format "keyword '%s' is not attached to above brace block"
+	     (format "Keyword '%s' is not attached to above brace block"
 		    str)
 	    statement-line
 	    prefix))))
