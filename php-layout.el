@@ -102,7 +102,9 @@
   "Control statement keyword.")
 
 (defconst my-lint-layout-generic-xml-tag-regexp
-  "<[?]\\|[?]>"
+  (concat
+   "^[ \t]*<[?]"
+   "\\|[?]>[ \t]*$")
   "xml tag: starting, closing.")
 
 (defconst my-lint-layout-php-data-type-regexp
