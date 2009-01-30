@@ -1896,7 +1896,7 @@ MySQL:
 	  (setq word (match-string 1 tmp))))
        ((and (string-match "NULL" str)
 	     (not (string-match "NOT[ \t]+NULL" str)))
-	(when (string-match "NULL" str)	;; FIXME: NULL itself is not SQL92
+	(when (string-match "NULL" str) ;; FIXME: NULL itself is not SQL92
 	  (my-lint-layout-message
 	   (format "[sql] non-standard NULL keyword: %s"
 		   str)
@@ -2119,6 +2119,11 @@ MySQL:
       (forward-line 1))))
 
 ;;; ............................................................. &doc ...
+
+(defsubst my-php-layout-doc-string-narrowed-current-line-number ()
+  "Return correct line number in narrowed doc-block."
+  ;;  Because of narrowing, the first line is not 1, but 0.
+  (+ line (1- (my-lint-layout-current-line-number))))
 
 (defun my-php-layout-doc-string-test-function
   (str line &optional prefix data)
@@ -2346,7 +2351,7 @@ DATA is the full function content."
       (unless (string= text text-indent)
 	(my-lint-layout-message
 	 "[phpdoc] Text indentation mismatch: lined-upnot same as above."
-	 (my-lint-layout-current-line-number)
+         (my-php-layout-doc-string-narrowed-current-line-number)
 	 prefix)))))
 
 (defun my-php-layout-doc-examine-content-other--indent-col ()
@@ -2359,8 +2364,23 @@ DATA is the full function content."
 	  (my-lint-layout-message
 	   (format "[phpdoc] *-character does not start at column %d"
 		   col-indent)
-	   (my-lint-layout-current-line-number)
+	   (my-php-layout-doc-string-narrowed-current-line-number)
 	   prefix))))))
+
+(defun my-php-layout-doc-examine-content-other--doc-block-start-error ()
+  "Narrowed to doc-block, write error."
+  (my-lint-layout-message
+   "[phpdoc] /** line contains extra characters"
+   (my-php-layout-doc-string-narrowed-current-line-number)
+   prefix))
+
+(defun my-php-layout-doc-examine-content-other--doc-block-start ()
+  "Check that /** is alone."
+  (goto-char (line-beginning-position))
+  (re-search-forward "[ \t]*" (line-end-position) t)
+  (skip-chars-forward "/*")
+  (unless (looking-at "[ \t\r\n]*$")
+    (my-php-layout-doc-examine-content-other--doc-block-start-error)))
 
 (defun my-php-layout-doc-examine-content-other--all-lines ()
   "Check until `point-min' all lines."
@@ -2372,12 +2392,7 @@ DATA is the full function content."
 		 (setq point (my-lint-layout-doc-line-startp-p)))
 	(goto-char (1+ point))
 	(setq col-indent (current-column))
-	(skip-chars-forward "/*")
-	(unless (looking-at "[ \t\r\n]*$")
-	  (my-lint-layout-message
-	   "[phpdoc] /** line contains extra characters"
-	   (my-lint-layout-current-line-number)
-	   prefix)))
+	(my-php-layout-doc-examine-content-other--doc-block-start))
       ;; *-line; Initial values from first line that contains text
       (when (and (not text-indent)
 		 (my-lint-layout-doc-line-indent-p)
@@ -2513,7 +2528,7 @@ Point must be at function start line."
     (while (my-lint-layout-search-doc-beginning)
       (setq point       (point)
 	    beg         (line-beginning-position)
-            top-level-p (my-lint-layout-save-point
+	    top-level-p (my-lint-layout-save-point
 			  (my-lint-layout-top-level-p)))
       (my-php-layout-check-doc--test-empty-line-above)
       (when (save-excursion
@@ -2653,7 +2668,7 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
     (my-php-layout-check-command-line-batch
      '(my-php-layout-check-all-1))))
 
-;;	(message
-;;	 (replace-regexp-in-string "%" "%%" (buffer-string)))))))
+;;      (message
+;;       (replace-regexp-in-string "%" "%%" (buffer-string)))))))
 
 ;; End of file
