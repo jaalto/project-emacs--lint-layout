@@ -26,6 +26,9 @@
 (eval-when-compile
   (require 'cl))
 
+(defvar my-lint-debug nil
+  "Non-nil to turn on debug messages.")
+
 (defconst my-lint-layout-buffer-name "*Layout checks*"
   "*Buffer name for results.")
 
@@ -65,7 +68,8 @@
     my-lint-layout-generic-access-modifier-regexp
     "\\|\\<"
     (regexp-opt
-     '("function"
+     '("var"
+       "function"
        "require"
        "include")
      t)
@@ -98,6 +102,16 @@
    "\\>")
   "Control statement continue keyword regexp.")
 
+(defconst my-lint-layout-generic-class-statement
+  (concat
+   "\\<"
+   (regexp-opt
+    '("class"
+      "interface")
+    t)
+   "\\>")
+  "Class statement keyword regexp.")
+
 (defconst my-lint-layout-generic-control-statement-regexp
   (concat
    my-lint-layout-generic-control-statement-start-regexp
@@ -108,11 +122,14 @@
 (defconst my-lint-layout-generic-statement-regexp-brace
   (concat
    "^"
-   "\\([ \t]*\\)"
+   "\\([ \t]*\\)"  ;; Indent, submatch 1
    "\\("
-   my-lint-layout-generic-control-statement-regexp
-   "\\|function"
-   "\\)"
+       my-lint-layout-generic-class-statement
+       "\\|"
+       my-lint-layout-generic-control-statement-regexp
+       "\\|"
+       "\\(?:" my-lint-layout-generic-access-modifier-regexp "[ \t]+\\)" "function"
+   "\\).*"
    "\\([ \t\r\n]*{\\|[ \t].*(.*)[ \t\r\n]*{\\)")
   "Left anchored statement with brace.")
 
@@ -174,6 +191,12 @@ without brace requirement.")
 
 ;;; ....................................................... &utilities ...
 
+(put 'my-lint-debug-message 'my-lint-debug-message 0)
+(defmacro my-lint-debug-message (&rest body)
+  "Display debug @body using `message' function."
+  `(when my-lint-debug
+     (message ,@body)))
+
 (put 'my-lint-layout-with-result-buffer 'lisp-indent-function 0)
 (defmacro my-lint-layout-with-result-buffer (&rest body)
   "Run body in `my-lint-layout-buffer-name'."
@@ -195,6 +218,7 @@ without brace requirement.")
     ,@body))
 
 (put 'my-lint-layout-save-point 'lisp-indent-function 0)
+(put 'my-lint-layout-save-point 'edebug-form-spec '(body))
 (defmacro my-lint-layout-save-point (&rest body)
   "Run body and restore point.
 For forward, backward movements where save-excursion is too heavy."
@@ -284,7 +308,7 @@ For forward, backward movements where save-excursion is too heavy."
        (match-beginning 0)))
 
 (defsubst my-lint-layout-search-doc-beginning ()
-  (and (re-search-forward "^[ \t]*/[*][*][ \t\r]*" nil t)
+  (and (re-search-forward "^[ \t]*/[*][*]" nil t)
        (match-beginning 0)))
 
 (defsubst my-lint-layout-search-doc-end ()
@@ -294,34 +318,45 @@ For forward, backward movements where save-excursion is too heavy."
 (defsubst my-php-layout-search-function-beginning ()
   (re-search-forward my-lint-layout-php-function-regexp nil t))
 
-(defsubst my-lint-layout-search-class-start ()
+(defsubst my-lint-layout-search-class-beginning (&optional max)
+  "Search class start, up till optional MAX point."
   (and (re-search-forward
 	"^[ \t]*\\(?:\\(abstract\\)[ \t]*\\)?class\\>[ \t]"
-	nil t)
+	max t)
        (match-end 0)))
 
-(defsubst my-lint-layout-search-interface-start ()
+(defsubst my-lint-layout-search-interface-beginning (&optional max)
+  "Search interface start, up till optional MAX point."
   (and (re-search-forward
 	"^[ \t]*interface\\>[ \t]"
-	nil t)
+	max t)
+       (match-end 0)))
+
+(defsubst my-lint-layout-search-variable-dollar-beginning (&optional max)
+  "Search variable start, up till optional MAX point."
+  (and (re-search-forward
+	`,(concat
+	   "^[ \t]*"
+	   "\\(?:"
+	       my-lint-layout-generic-access-modifier-regexp
+	       "[ \t]+"
+	       "\\|\\<var\\>[ \t]+"
+	       "\\)?"
+	   "\\$_*[a-zA-Z][ \t]*[;=]")
+	   max t)
        (match-end 0)))
 
 (defsubst my-lint-layout-type-statement-string-p (str)
+  "Test if statement contains semicolon at the end."
   (string-match ";[ \t]*$" str))
 
 ;; For example: "private $var;"
-(defsubst my-lint-layout-type-class-variable-string-p (str)
+(defsubst my-lint-layout-type-class-variable-dollar-string-p (str)
   (string-match
-   (concat
-    ".*"
-    my-lint-layout-generic-access-modifier-regexp
-    ".*[$].*;[ \t]*$")
-   str))
-
-;; For example: "$var = ...;"
-(defsubst my-lint-layout-type-variable-string-p (str)
-  (string-match
-   "^[ \t]*[$][a-z].*;[ \t]*$"
+   `,(concat
+      ".*"
+      my-lint-layout-generic-access-modifier-regexp
+      ".*[$].*;[ \t]*$")
    str))
 
 (defsubst my-lint-layout-type-function-string-p (str)
@@ -335,16 +370,35 @@ For forward, backward movements where save-excursion is too heavy."
 (defsubst my-lint-layout-type-class-string-p (str)
   (string-match "^[ \t]*class" str))
 
+;; For example: "$var = ...;"
+(defsubst my-lint-layout-type-variable-string-p (str)
+  (string-match
+   `,(concat
+      "^[ \t]*"
+      "\\(?:"
+      my-lint-layout-generic-access-modifier-regexp
+      "\\)?"
+      "[ \t]*[$][a-z].*[ \t];"  ;; $var = value;
+      "[ \t]*$")
+   str))
+
 (defsubst my-lint-layout-looking-at-doc-end-valid-p ()
   "Check that */ is followed by a function or variable definition."
   (and
    (looking-at
-    (concat
-     "[ \t]*\\<\\("
-     "class\\|function\\|public\\|protected\\|private"
-     "\\|static\\|var"
-     "\\|require\\|include"
-     "\\)\\>"))
+    `,(concat
+       ;; Can't use regexp-opt, it uses grouping parens.
+       "[ \t]*\\<\\("
+       "class"
+       "\\|function"
+       "\\|public"
+       "\\|protected"
+       "\\|private"
+       "\\|static"
+       "\\|var"
+       "\\|require"
+       "\\|include"
+       "\\)\\>"))
    (match-string 1)))
 
 (defsubst my-lint-layout-looking-at-comment-p (str)
@@ -396,7 +450,7 @@ See `my-lint-layout-buffer-name'."
 
 (defsubst my-lint-layout-doc-line-startp-p ()
   "Check /* line. Return starting point."
-  (when (looking-at "^\\([ \t]+\\)/[*]")
+  (when (looking-at "^\\([ \t]*\\)/[*]")
     (match-end 1)))
 
 (defsubst my-lint-layout-doc-line-end-p ()
@@ -413,7 +467,7 @@ See `my-lint-layout-buffer-name'."
 
 ^ ^^
 The leading indent is in submatch 1 and text start indent in 2."
-  (if (looking-at "^\\([ \t]+\\)[*]\\([ \t]*\\)")
+  (if (looking-at "^\\([ \t]*\\)[*]\\([ \t]*\\)")
       (match-end 1)))
 
 ;;; ........................................................... &occur ...
@@ -430,7 +484,7 @@ The leading indent is in submatch 1 and text start indent in 2."
      "In funcdef, no space before starting paren")
 
    '("^[ \t]*[$][a-z0-9]+_[a-z0-9]+[ \t\r\n]*="
-     "variable name not CamelCase"
+     "Variable name not CamelCase"
      nil
      (lambda ()
        (let* ((str   (match-string 0)))
@@ -474,6 +528,7 @@ The leading indent is in submatch 1 and text start indent in 2."
 
    '("[|][|]\\|&&"
      "Consider readable alternative for relational op")
+
    '("^[ \t]*#"
      "Not a recommended comment style")
 
@@ -482,11 +537,15 @@ The leading indent is in submatch 1 and text start indent in 2."
 
    '("\\<ereg[_a-z]*(.*)"
      "preg*() function family recommended for")
+
    '("\\<include[_a-z][( \t]*[\"\'$]"
      "require*() function family is safer than")
 
    '("\\<echo[( \t]*[\"\'$]"
      "Standard print() recommended for")
+
+   '("\\<isset[( \t]*[\"\'$]"
+     "Possible better alternative is empty()")
 
    '("[.=][ \t]*\\<date(.*)"
      "POSIX standard strftime() recommended for")
@@ -502,7 +561,7 @@ The leading indent is in submatch 1 and text start indent in 2."
      "In statement, no space between keyword like 'if' and starting paren")
 
    '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
-     "In statement, no space after starting paren: ")
+     "In statement, no space after starting paren")
 
    '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
      "In statement, no space after keyword and paren")
@@ -552,13 +611,13 @@ The leading indent is in submatch 1 and text start indent in 2."
     "Possibly missing vardef($) in relational test at left")
 
    '("[$][a-z][_a-z0-9]*=[ \t]+[$a-z_0-9\"\'<]"
-     "no space at left of equal sign")
+     "No space at left of equal sign")
 
    '("[$][a-z][_a-z0-9]*[ \t]+=[$a-z_0-9\"'<]"
-     "no space at right of equal sign")
+     "No space at right of equal sign")
 
    '("[$][a-z][_a-z0-9]*=[$a-z_0-9\"'<]"
-     "no spaces around equal sign")
+     "No spaces around equal sign")
 
    '("[!=]=[ \t]*\\(null\\|true\\|false\\)"
      "Possibly unnecessary test against literal"
@@ -622,8 +681,8 @@ The leading indent is in submatch 1 and text start indent in 2."
 
 (defun my-lint-layout-generic-class-forward ()
   "Goto next class definition."
-  (let ((class  (save-excursion (my-lint-layout-search-class-start)))
-	(iface  (my-lint-layout-search-interface-start)))
+  (let ((class  (save-excursion (my-lint-layout-search-class-beginning)))
+	(iface  (my-lint-layout-search-interface-beginning)))
     (cond
      ((and class iface)
       (goto-char (min class iface)))
@@ -752,7 +811,7 @@ Return variable content string."
       (when (string= str "<?")
 	(unless (looking-at tag)
 	  (my-lint-layout-message
-	   (format "Unknown opening short xml tag, long <?tag expected: %s"
+	   (format "Unknown opening short xml tag, expecting long <?tag (found: %s)"
 		   (my-lint-layout-current-line-string))
 	   (my-lint-layout-current-line-number)
 	   prefix))))))
@@ -853,20 +912,59 @@ Return variable content string."
     ;; FIXME: Not bullet proof
     (looking-at "^[ \t]*[*]/[ \t]*$")))
 
-(defun my-php-layout-check-doc-missing (&optional prefix)
-  "Check missing documentation."
+(defsubst my-php-layout-re-search-forward-doc-keyword ()
+  "Search `my-lint-layout-php-doc-location-regexp'."
+  (re-search-forward
+   my-lint-layout-php-doc-location-regexp
+   nil t))
+
+(defun my-php-layout-class-check-variables (&optional prefix)
+  "Check class variables."
   (let (class-p
+	max
+	point
 	str
 	line)
     (save-excursion
-      (setq class-p (or (my-lint-layout-search-class-start)
-			(my-lint-layout-search-interface-start))))
-    (while (re-search-forward
-	    my-lint-layout-php-doc-location-regexp
-	    nil t)
+      (setq point (point))
+      (setq class-p (or (my-lint-layout-search-class-beginning)
+			(my-lint-layout-search-interface-beginning)))
+      (goto-char point)
+      ;;  one class - One file assumption. If there are no methods, this is
+      ;;  pure variable class, like struct.
+      (setq max (or (my-php-layout-search-function-beginning)
+		    (point-max)))
+      (when class-p
+	(goto-char point)
+	(while (my-lint-layout-search-variable-dollar-beginning max)
+	  (setq str  (my-lint-layout-current-line-string)
+		line (my-lint-layout-current-line-number))
+	  (cond
+	   ((string-match "\\<var\\>" str)
+	    (my-lint-layout-message
+	     "[code] Deprecated 'var'; expecting private, public etc. access modifiers"
+	     line prefix))
+	   ((string-match
+	     my-lint-layout-generic-access-modifier-regexp
+	     str)) ;; OK, do nothing
+	   (t
+	    (my-lint-layout-message
+	     "[code] Possibly missing access modifier like private, public etc."
+	     line prefix))))))))
+
+(defun my-php-layout-check-doc-missing (&optional prefix)
+  "Check missing documentation."
+  (let (class-p
+	function-p
+	str
+	line)
+    (save-excursion
+      (setq class-p (or (my-lint-layout-search-class-beginning)
+			(my-lint-layout-search-interface-beginning))))
+    (while (my-php-layout-re-search-forward-doc-keyword)
+      (setq str  (my-lint-layout-current-line-string)
+	    line (my-lint-layout-current-line-number))
       (unless (my-php-layout-doc-above-p)
-	(setq str  (my-lint-layout-current-line-string)
-	      line (my-lint-layout-current-line-number))
 	(cond
 	 ((and class-p
 	       (my-lint-layout-type-include-string-p str))
@@ -926,10 +1024,10 @@ Return variable content string."
 	(goto-char point)))))
 
 (defun my-php-layout-check-indent-string-check
-  (str line &optional prefix base-indent)
+  (str line &optional prefix base-indent match-str)
   "Check STR for correct indent and report LINE as error."
-  (let ((i (my-php-layout-indent-level str))
-	(istep my-lint-layout-generic-indent-step))
+  (let ((i      (my-php-layout-indent-level str))
+	(istep  my-lint-layout-generic-indent-step))
     (when (numberp i)
       (cond
        ((and (or (null base-indent)
@@ -946,7 +1044,7 @@ Return variable content string."
 	     (not (zerop i))
 	     (eq i base-indent))
 	(my-lint-layout-message
-	 (format "[code] Possibly missing indentation at column %d" i)
+	 (format "[code] Possibly missing indentation at col %d" i)
 	 (my-lint-layout-current-line-number)
 	 prefix))))))
 
@@ -971,7 +1069,8 @@ Return variable content string."
   (or base-indent
       (setq base-indent (current-column)))
   (goto-char beg)
-  (let (indent
+  (let (match
+	indent
 	line
 	here
 	str)
@@ -979,12 +1078,17 @@ Return variable content string."
 	    "^\\([ \t]*\\)\\(\\([^ \t\r\n]+\\).*\\)"
 	    end
 	    t)
-      (setq indent (match-string 1)
+      (setq match  (match-string 0)
+	    indent (match-string 1)
 	    line   (match-string 2)
 	    str    (match-string 3))
       (or (my-php-layout-here-doc-skip line)
 	  (my-php-layout-check-indent-string-check
-	   indent str prefix base-indent)))))
+	   indent
+	   str
+	   prefix
+	   base-indent
+	   match)))))
 
 (defun my-php-layout-statement-brace-and-indent (&optional prefix)
   "Check that code is indented according to brace column at point."
@@ -1072,19 +1176,31 @@ if ( check );
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
 
-(defsubst my-php-layout-brace-statement-forward ()
+(defsubst my-php-layout-brace-statement-forward (&optional max)
   "Search control statement with brace forward."
   (re-search-forward
    my-lint-layout-generic-statement-regexp-brace
-   nil
+   max
    t))
+
+(defun my-php-layout-check-statement-end (&optional prefix)
+  "Check end of line for ';' and whitespace."
+  (let (str
+	line)
+    (while (my-lint-layout-search-variable-dollar-beginning)
+      (setq str (my-lint-layout-current-line-string))
+      (when (string-match "[ \t];[ \t]*$" str)
+	;;  "$a = 12 ;"  vs. "$a = 12;"
+	(setq line (my-lint-layout-current-line-number))
+	(my-lint-layout-message
+	 "[code] Extra whitespace before statement end(;)"
+	 line prefix)))))
 
 (defun my-php-layout-check-statement-start (&optional prefix)
   "Check lines beyond `my-lint-layout-generic-line-length-max'."
   (let* ((col my-lint-layout-generic-line-length-max)
 	 str
 	 fullstr
-	 bracestr
 	 point
 	 kwd-point
 	 indent
@@ -1100,10 +1216,15 @@ if ( check );
     (while (my-php-layout-brace-statement-forward)
       (setq point     (match-beginning 1) ;; Left margin
 	    kwd-point (match-beginning 2) ;; keyword start
-	    indent    (match-string 1)
 	    str       (match-string 2)    ;; Keyword
-	    bracestr  (match-string 5)
 	    fullstr   (match-string 0)
+	    indent    (my-lint-layout-save-point
+			;; At brace line
+			(goto-char (line-beginning-position))
+			(if (looking-at "[ \t]+")
+			    (match-string 0)
+			  ""))
+	    ;; Cursor is one char after brace, correct that
 	    brace-start-col (1- (current-column)))
       (setq continue-p
 	    (my-php-layout-check-statement-continue-p str))
@@ -1111,7 +1232,7 @@ if ( check );
       (save-excursion
 	(goto-char kwd-point)
 	(setq statement-start-col (current-column)
-	      statement-line (my-lint-layout-current-line-number))
+	      statement-line      (my-lint-layout-current-line-number))
 	(when continue-p
 	  (goto-char point)
 	  (my-php-layout-check-statement-continue-detach str prefix)
@@ -1124,8 +1245,8 @@ if ( check );
       (my-php-layout-check-statement-brace-detach fullstr)
       (unless (eq statement-start-col brace-start-col)
 	(my-lint-layout-message
-	 (format "brace { not directly under keyword '%s', expect col %d"
-		 str
+	 (format "[code] brace { not directly under keyword '%s', expect col %d"
+		 (or str "")
 		 statement-start-col)
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
@@ -1208,7 +1329,7 @@ if ( check );
 	       (min (point-min) (* 4 80))
 	       t)
 	(my-lint-layout-message
-	 (format "[misc] No exact EOF text found: '%s'"
+	 (format "[misc] no exact EOF text found: '%s'"
 		 my-lint-layout-eof-regexp)
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
@@ -1831,7 +1952,7 @@ MySQL:
   );"
   (when (string-match "[`]" str)
     (my-lint-layout-message
-     "[sql] non-standard backquote character"
+     "[sql] Non-standard backquote character"
      (my-lint-layout-current-line-number)
      prefix)))
 
@@ -1868,7 +1989,7 @@ MySQL:
       (when (string-match mysql-re str)
 	(setq non-std-kwd-p t)
 	(my-lint-layout-message
-	 (format "[sql] non-standard keyword: %s" (match-string 0 str))
+	 (format "[sql] Non-standard keyword: %s" (match-string 0 str))
 	 (my-lint-layout-current-line-number)
 	 prefix))
       (my-lint-layout-with-case
@@ -1881,7 +2002,7 @@ MySQL:
 	   prefix)))
       (when (string-match type-re-space str)
 	(my-lint-layout-message
-	 (format "[sql] extra space found near size definition: %s"
+	 (format "[sql] Extra space found near size definition: %s"
 		 (match-string 0 str))
 	 (my-lint-layout-current-line-number)
 	 prefix))
@@ -1898,7 +2019,7 @@ MySQL:
 	     (not (string-match "NOT[ \t]+NULL" str)))
 	(when (string-match "NULL" str) ;; FIXME: NULL itself is not SQL92
 	  (my-lint-layout-message
-	   (format "[sql] non-standard NULL keyword: %s"
+	   (format "[sql] Non-standard NULL keyword: %s"
 		   str)
 	   (my-lint-layout-current-line-number)
 	   prefix))))
@@ -1907,13 +2028,13 @@ MySQL:
 		   (not (string-match type-re word)))
 	  (setq non-std-kwd-p t)
 	  (my-lint-layout-message
-	   (format "[sql] non-standard keyword or datatype: %s" word)
+	   (format "[sql] Non-standard keyword or datatype: %s" word)
 	   (my-lint-layout-current-line-number)
 	   prefix))
 	(when (and (null non-std-kwd-p)
 		   (not (string-match type-sql92-re word)))
 	  (my-lint-layout-message
-	   (format "[sql] non-SQL92 may cause portability problems: %s" word)
+	   (format "[sql] Non-SQL92 may cause portability problems: %s" word)
 	   (my-lint-layout-current-line-number)
 	   prefix))
 	;; FIXME: tests only datatype now
@@ -1921,12 +2042,12 @@ MySQL:
 		   (my-lint-layout-with-case
 		     (not (string-match sql-re word))))
 	  (my-lint-layout-message
-	   (format "[sql] keyword not in uppercase: %s" word)
+	   (format "[sql] Keyword not in uppercase: %s" word)
 	   (my-lint-layout-current-line-number)
 	   prefix))
 	(unless (string-match "^[ \t]+" str)
 	  (my-lint-layout-message
-	   (format "[sql] statement not indented (by %d)" step)
+	   (format "[sql] Statement not indented (by %d)" step)
 	   (my-lint-layout-current-line-number)
 	   prefix))))))
 
@@ -1935,7 +2056,7 @@ MySQL:
   (my-lint-layout-with-case
     (when (string-match "[A-Z]" table)
       (my-lint-layout-message
-       (format "[SQL] portability problem, mixed case table name: %s" table)
+       (format "[SQL] Portability problem, mixed case table name: %s" table)
        (my-lint-layout-current-line-number)
        prefix))))
 
@@ -1950,12 +2071,12 @@ MySQL:
       (my-lint-layout-sql-create-table table)
       (when (string-match "[`]" line)
 	(my-lint-layout-message
-	 "[sql] non-standard backquote character"
+	 "[sql] Non-standard backquote character"
 	 (my-lint-layout-current-line-number)
 	 prefix))
       (when (string-match "[(]" line)
 	(my-lint-layout-message
-	 "[sql] misplaced starting paren (possibly not lined-up)"
+	 "[sql] Misplaced starting paren (possibly not lined-up)"
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
 
@@ -1987,7 +2108,7 @@ MySQL:
 	       (setq col (current-column))
 	       (not (zerop (mod col step))))
       (my-lint-layout-message
-       (format "[css] body is not indented by %d at col %s" step col)
+       (format "[css] Body is not indented by %d at col %s" step col)
        (my-lint-layout-current-line-number)
        prefix))))
 
@@ -1998,7 +2119,7 @@ MySQL:
 	     (not (string-match "\\<a" (match-string 1)))
 	     (looking-at "\\([^ \t\r\n]+[a-z]:\\([^ \t\r\n]+\\)\\)"))
     (my-lint-layout-message
-     (format "[css] no space between colon and attribute value: %s" (match-string 1))
+     (format "[css] No space between colon and attribute value: %s" (match-string 1))
      (my-lint-layout-current-line-number)
      prefix)))
 
@@ -2009,7 +2130,7 @@ MySQL:
 	       (setq str (match-string 1))
 	       (not (eq 6 (length str))))
       (my-lint-layout-message
-       (format "[css] color is not complete 6 digit hex value: %s"str)
+       (format "[css] Color is not complete 6 digit hex value: %s"str)
        (my-lint-layout-current-line-number)
        prefix))))
 
@@ -2021,7 +2142,7 @@ MySQL:
     (my-lint-layout-css-attribute prefix)
     (my-lint-layout-css-color prefix)
     (my-php-layout-check-multiple-statements
-     "[css] multiple attribute definitions (only one expected)")
+     "[css] Multiple attribute definitions (only one expected)")
     (forward-line 1)))
 
 (defun my-lint-layout-css-skip-comment ()
@@ -2045,11 +2166,11 @@ MySQL:
       (cond
        ((eq lines 0)
 	(my-lint-layout-message
-	 "[css] no newline after token '{'"
+	 "[css] No newline after token '{'"
 	 line prefix))
       ((> lines 1)
 	(my-lint-layout-message
-	 (format "[css] extra %d empty lines after token '{'" (1- lines))
+	 (format "[css] Extra %d empty lines after token '{'" (1- lines))
 	 line prefix)))
       (my-lint-layout-current-line-string)
       (when (eq col 0)
@@ -2059,7 +2180,7 @@ MySQL:
 	 line prefix))
       ;;   background-color: #F8F8F8; border: 1px;
       (my-php-layout-check-multiple-statements
-       "[css] multiple attribute definitions (only one expected)")
+       "[css] Multiple attribute definitions (only one expected)")
       (my-lint-layout-css-indent-level)
       (my-lint-layout-css-body prefix))))
 
@@ -2114,7 +2235,7 @@ MySQL:
 	    line     (my-lint-layout-current-line-number))
       (unless (my-php-layout-test-line-up-p col)
 	(my-lint-layout-message
-	 (format "[assignment] token '=' is not lined-up at column %d" col)
+	 (format "[assignment] Token '=' is not lined-up at column %d" col)
 	 line prefix))
       (forward-line 1))))
 
@@ -2144,7 +2265,7 @@ The DATA is function content string."
 	return)
     (when (string-match "this[ \t]+\\(function\\|method\\)" str)
       (my-lint-layout-message
-       (format "[phpdoc] unnecessary wording: %s" (match-string 0 str))
+       (format "[phpdoc] Unnecessary wording: %s" (match-string 0 str))
        line prefix))
     (unless access
       (my-lint-layout-message
@@ -2178,7 +2299,7 @@ The DATA is function content string."
     (if (and (and access return)
 	     (> access return))
 	(my-lint-layout-message
-	 "[phpdoc] incorrect order. Should be @access..@return"
+	 "[phpdoc] Incorrect order. Should be @access..@return"
 	 line prefix))))
 
 (defun my-php-layout-doc-examine-content-function
@@ -2240,16 +2361,25 @@ DATA is the full function content."
 
 (defun my-php-layout-doc-string-test-var-class (str line &optional prefix)
   "Examine dostring: variable."
-  (unless (string-match "@access" str)
-    (my-lint-layout-message
-     "[phpdoc] @access token not found"
-     line
-     prefix))
-  (unless (string-match "@var" str))
-  (my-lint-layout-message
-   "[phpdoc] @var token not found"
-   line
-   prefix))
+  (let ((access-p (string-match "@access" str))
+	(var-p    (string-match "@var" str)))
+    (unless access-p
+      (my-lint-layout-message
+       "[phpdoc] @access token not found"
+       line
+       prefix))
+    (unless var-p
+      (my-lint-layout-message
+       "[phpdoc] @var token not found"
+       line
+       prefix))
+    (when (and access-p
+	       var-p
+	       (> access-p var-p))
+      (my-lint-layout-message
+       "[phpdoc] Incorrect order. Should be @access..@var"
+       line
+       prefix))))
 
 (defun my-php-layout-doc-string-test-var-global (str line &optional prefix)
   "Examine dostring: variable."
@@ -2267,15 +2397,17 @@ DATA is the full function content."
      line
      prefix)))
 
-(defun my-php-layout-doc-examine-content-other--test-doc-comment ()
+(defun my-php-layout-doc-examine-content-other--test-doc-comment
+  (line &optional prefix)
   "Check doc-comment."
     (unless (looking-at "^[ \t]+[*]")
       (my-lint-layout-message
-       "[phpdoc] Not a valid documentation comment."
+       "[phpdoc] Not a valid documentation comment"
        (1+ line)
        prefix)))
 
-(defun my-php-layout-doc-examine-content-other--test-period ()
+(defun my-php-layout-doc-examine-content-other--test-period
+  (line &optional prefix)
   "Check that line ends top period."
     ;;  Complete sentence ends to period.
     (unless (looking-at "^[ \t]+[*].*\\.")
@@ -2284,7 +2416,8 @@ DATA is the full function content."
        (1+ line)
        prefix)))
 
-(defun my-php-layout-doc-examine-content-other--first-sentence ()
+(defun my-php-layout-doc-examine-content-other--first-sentence
+  (line &optional prefix)
   "Check two words, that t1st line is sentence."
     (when (and (not
 		(looking-at
@@ -2299,7 +2432,7 @@ DATA is the full function content."
 	 (1+ line)
 	 prefix))))
 
-(defun my-php-layout-doc-examine-content-other--first-capital ()
+(defun my-php-layout-doc-examine-content-other--first-capital (line &optional prefix)
   "Check first line capital letter."
     (my-lint-layout-with-case
       (unless (looking-at "^[ \t]+[*][ \t]*[A-Z]")
@@ -2308,7 +2441,8 @@ DATA is the full function content."
 	 (1+ line)
 	 prefix))))
 
-(defun my-php-layout-doc-examine-content-other--star-indent ()
+(defun my-php-layout-doc-examine-content-other--star-indent
+  (line &optional prefix)
   "Check that words are indented by one or more spaces.
 
 /**
@@ -2324,8 +2458,14 @@ DATA is the full function content."
 	 (1+ line)
 	 prefix))))
 
-(defun my-php-layout-doc-examine-content-other--first-separator ()
-  "Check that first line is sperated by one empty line."
+(defun my-php-layout-doc-examine-content-other--first-separator
+  (line &optional prefix)
+  "Check that first line is sperated by one empty line.
+/**
+ *  First Line. Short description.
+ *  <empty line>
+ *  Long description.
+ */"
   (my-lint-layout-with-case
     (unless (looking-at "^[ \t]*[*][ \t]*$")
       (my-lint-layout-message
@@ -2334,7 +2474,8 @@ DATA is the full function content."
        prefix)))
   (goto-char (point-min)))
 
-(defun my-php-layout-doc-examine-content-other--empty-line-tokens ()
+(defun my-php-layout-doc-examine-content-other--empty-line-tokens
+  (line &optional prefix)
   "Check empty line before @-tokens."
   (when (re-search-forward "^[ \t]*[*][ \t]@" nil t)
     (forward-line -1)
@@ -2344,7 +2485,7 @@ DATA is the full function content."
        (+ line (my-lint-layout-current-line-number))
        prefix))))
 
-(defun my-php-layout-doc-examine-content-other--indent-text ()
+(defun my-php-layout-doc-examine-content-other--indent-text (line &optional prefix)
   "Check proper indent."
   (when (my-lint-layout-doc-line-indent-p)
     (let ((text (match-string 2)))
@@ -2354,35 +2495,52 @@ DATA is the full function content."
          (my-php-layout-doc-string-narrowed-current-line-number)
 	 prefix)))))
 
-(defun my-php-layout-doc-examine-content-other--indent-col ()
+(defun my-php-layout-doc-examine-content-other--indent-col-error
+  (col line &optional prefix)
+  "Write error:  *-character is not lined up at COL."
+  (my-lint-layout-message
+   (format "[phpdoc] *-character does not start at column %d" col)
+   line
+   prefix))
+
+(defun my-php-layout-doc-examine-content-other--indent-col (col line &optional prefix)
+  "Check that *-character is lined up at COL.
+Write error at LINE with PREFIX."
   (let (point)
-    (when (and col-indent
-	       (setq point (my-lint-layout-doc-line-indent-p)))
+    (when (setq point (my-lint-layout-doc-line-indent-p))
       (my-lint-layout-save-point
 	(goto-char point)
-	(unless (eq (current-column) col-indent)
-	  (my-lint-layout-message
-	   (format "[phpdoc] *-character does not start at column %d"
-		   col-indent)
+	(unless (eq (current-column) col)
+	  (my-php-layout-doc-examine-content-other--indent-col-error
+	   col
 	   (my-php-layout-doc-string-narrowed-current-line-number)
 	   prefix))))))
 
-(defun my-php-layout-doc-examine-content-other--doc-block-start-error ()
-  "Narrowed to doc-block, write error."
+(defun my-php-layout-doc-examine-content-other--doc-block-start-error
+  (line &optional prefix string)
+  "Write error: doc-block start contains extra characters."
   (my-lint-layout-message
-   "[phpdoc] /** line contains extra characters"
-   (my-php-layout-doc-string-narrowed-current-line-number)
+   (format "[phpdoc] /** line contains extra characters%s" (or string ""))
+   line
    prefix))
 
-(defun my-php-layout-doc-examine-content-other--doc-block-start ()
-  "Check that /** is alone."
-  (goto-char (line-beginning-position))
-  (re-search-forward "[ \t]*" (line-end-position) t)
-  (skip-chars-forward "/*")
-  (unless (looking-at "[ \t\r\n]*$")
-    (my-php-layout-doc-examine-content-other--doc-block-start-error)))
+(defun my-php-layout-doc-examine-content-other--doc-block-start (line &optional type prefix)
+  "Check that /** is alone.
 
-(defun my-php-layout-doc-examine-content-other--all-lines ()
+/**<no characters here>
+ *
+ */"
+  (goto-char (line-beginning-position))
+  (when (re-search-forward "[ \t]*/[*][*]" (line-end-position) t)
+    (when (and (not (looking-at "[ \t\r\n]*$"))
+	       (looking-at ".*"))
+      (let ((str  (concat ": " (match-string 0))))
+	(my-php-layout-doc-examine-content-other--doc-block-start-error
+	 (my-php-layout-doc-string-narrowed-current-line-number)
+	 prefix
+	 str)))))
+
+(defun my-php-layout-doc-examine-content-other--all-lines (line &optional type prefix)
   "Check until `point-min' all lines."
   (let (text-indent
 	col-indent)
@@ -2392,15 +2550,16 @@ DATA is the full function content."
 		 (setq point (my-lint-layout-doc-line-startp-p)))
 	(goto-char (1+ point))
 	(setq col-indent (current-column))
-	(my-php-layout-doc-examine-content-other--doc-block-start))
+	(my-php-layout-doc-examine-content-other--doc-block-start line type prefix))
       ;; *-line; Initial values from first line that contains text
-      (when (and (not text-indent)
-		 (my-lint-layout-doc-line-indent-p)
-		 (not (string= (match-string 2) "")))
-	(setq text-indent (match-string 2)))
-      (my-php-layout-doc-examine-content-other--indent-col)
-      ;; (my-php-layout-doc-examine-content-other--indent-text)
-      (my-php-layout-doc-examine-content-other--star-indent)
+      (when col-indent
+	(when (and (not text-indent)
+		   (my-lint-layout-doc-line-indent-p)
+		   (not (string= (match-string 2) "")))
+	  (setq text-indent (match-string 2)))
+	(my-php-layout-doc-examine-content-other--indent-col col-indent line prefix)
+	;; (my-php-layout-doc-examine-content-other--indent-text)
+	(my-php-layout-doc-examine-content-other--star-indent line prefix))
       (forward-line 1))))
 
 (defun my-php-layout-doc-examine-content-other
@@ -2409,24 +2568,24 @@ DATA is the full function content."
   (save-excursion
     (goto-char (point-min))
     (my-lint-layout-save-point
-      (my-php-layout-doc-examine-content-other--all-lines))
+      (my-php-layout-doc-examine-content-other--all-lines line type prefix))
     (forward-line 1)
-    (my-php-layout-doc-examine-content-other--test-doc-comment)
-    (my-php-layout-doc-examine-content-other--test-period)
-    (my-php-layout-doc-examine-content-other--first-sentence)
-    (my-php-layout-doc-examine-content-other--first-capital)
+    (my-php-layout-doc-examine-content-other--test-doc-comment line prefix)
+    (my-php-layout-doc-examine-content-other--test-period line prefix)
+    (my-php-layout-doc-examine-content-other--first-sentence line prefix)
+    (my-php-layout-doc-examine-content-other--first-capital line prefix)
     (unless (or (memq 'include type)
 		(memq 'class type)
 		(memq 'var-global type))
       (forward-line 1)
-      (my-php-layout-doc-examine-content-other--first-separator)
+      (my-php-layout-doc-examine-content-other--first-separator line prefix)
       (forward-line 1)
-      (my-php-layout-doc-examine-content-other--empty-line-tokens))))
+      (my-php-layout-doc-examine-content-other--empty-line-tokens line prefix))))
 
 (defun my-php-layout-doc-examine-typeof (str)
   "Examine what type of docstring."
   (let (type)
-    (if (my-lint-layout-type-class-variable-string-p str)
+    (if (my-lint-layout-type-class-variable-dollar-string-p str)
 	(push 'var type))
     (if (my-lint-layout-type-class-string-p str)
 	(push 'class type))
@@ -2500,7 +2659,7 @@ Point must be at function start line."
       ;;  * Documentation
       ;;  */
       (my-lint-layout-message
-       "[newline] no empty line before documentation block."
+       "[newline] No empty line before documentation block."
        (my-lint-layout-current-line-number)
        prefix))))
 
@@ -2555,13 +2714,13 @@ Point must be at function start line."
 	   "[phpdoc] format layout error"
 	   line prefix))
 	(cond
-	 ((my-lint-layout-doc-package-string-p str)) ;Skip
-	 ((my-lint-layout-doc-var-string-p str)) ;Skip
+	 ;; (my-lint-layout-doc-package-string-p str)) ;Skip
+	 ;; (my-lint-layout-doc-var-string-p str)) ;Skip
 	 ((not valid-p)
 	  (my-lint-layout-message
 	   (concat
-	    "[phpdoc] possibly misplaced. "
-	    "Expecting class, func, variable, require or include")
+	    "[phpdoc] Possibly misplaced. "
+	    "Expected class, function, variable, require or include")
 	   line prefix))
 	 (t
 	  (let ((top-level-p (my-lint-layout-doc-package-string-p str)))
@@ -2580,6 +2739,15 @@ Point must be at function start line."
   `(save-excursion
      ,@body))
 
+(defun my-php-layout-check-phpdoc-main (&optional prefix)
+  "Run PHPDoc checks."
+  (interactive)
+  (dolist (function
+	   '(my-php-layout-check-doc-missing
+	     my-php-layout-check-doc-main))
+    (my-php-layout-run-check
+      (funcall function prefix))))
+
 (defun my-php-layout-check-all-1 (&optional prefix)
   "Run all checks from curent point. Does not display result buffer."
   (dolist (function
@@ -2587,6 +2755,7 @@ Point must be at function start line."
 	     my-lint-layout-generic-xml-tags-check-main
 	     my-php-layout-check-xml-tags-lazy
 	     my-php-layout-check-multiple-print
+	     my-php-layout-check-statement-end
 	     my-php-layout-check-statement-start
 	     my-php-layout-check-statement-start-2
 	     my-php-layout-check-comment-statements
@@ -2595,6 +2764,7 @@ Point must be at function start line."
 	     my-php-layout-check-line-up-assignment
 	     my-php-layout-check-brace-extra-newline
 	     my-php-layout-check-regexp-occur-main
+	     my-php-layout-class-check-variables
 	     my-php-layout-check-doc-missing
 	     my-php-layout-check-doc-main
 	     my-php-layout-check-multiline-print
@@ -2605,13 +2775,9 @@ Point must be at function start line."
 	     ;; my-lint-layout-check-line-length
 	     ))
     (my-php-layout-run-check
-     (funcall function prefix))))
-
-(defun my-php-layout-check-phpdoc-main ()
-  "Run PHPDoc checks."
-  (interactive)
-  (my-php-layout-check-doc-missing)
-  (my-php-layout-check-doc-main))
+      (my-lint-debug-message
+       "debug layout: check-all %s %s" function prefix)
+      (funcall function prefix))))
 
 (defun my-php-layout-check-all-main ()
   "Run all checks from curent point."
@@ -2633,7 +2799,8 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
     (when list
       (dolist (file list)
 	(cd dir)
-;;;        (message "2: %s %s %s" function file (file-exists-p file))
+	(my-lint-debug-message
+	 "debug layout: Batch running %s %s %s" function file (file-exists-p file))
 	(when (file-exists-p file)
 	  (let (find-file-hooks)
 	    (find-file file)
@@ -2648,8 +2815,8 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
 	debug-ignored-errors
 	(default-directory default-directory)
 	(dir default-directory))
-;;;    (message "function %s" function)
-;;;    (message "files %s" files)
+    (my-lint-debug-message
+     "debug layout: Batch cmdline %s and files %s" function files)
     (my-lint-layout-result-erase-buffer)
     (dolist (func (if (listp function)
 		      function
@@ -2658,9 +2825,17 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
 	(goto-char (point-min))
 	(my-php-layout-check-file-list files func)))
     (my-lint-layout-with-result-buffer
+      (my-lint-debug-message
+       "debug layout: Batch cmdline results %s %d" (buffer-name) (point-max))
       ;; to stderr. Hm.
       (unless (eq (point-min) (point-max))
+	(message "Batch results")
 	(princ (buffer-string))))))
+
+(defun my-php-layout-check-command-line-batch-all ()
+  "Run all check functions over files on command line."
+  (my-php-layout-check-command-line-batch
+   'my-php-layout-check-all-1))
 
 (defun my-php-layout-test ()
   (let ((command-line-args-left
