@@ -287,13 +287,13 @@ For forward, backward movements where save-excursion is too heavy."
   "Count lines in STR."
   (length (replace-regexp-in-string "[^\n]" "" str)))
 
-(defsubst my-lint-layout-brace-open-backward ()
+(defsubst my-lint-layout-searc-backward-brace-open ()
   "Move to opening brace backward."
   (re-search-backward "^[ \t]*{" nil t))
 
 (defsubst my-lint-layout-top-level-p ()
   "Return t if outside of brace blocks. Point is moved."
-  (not (my-lint-layout-brace-open-backward)))
+  (not (my-lint-layout-searc-backward-brace-open)))
 
 (defsubst my-lint-layout-doc-package-string-p (str)
   "Check @package phpdoc"
@@ -307,32 +307,60 @@ For forward, backward movements where save-excursion is too heavy."
   (and (looking-at my-lint-layout-generic-doc-line-regexp)
        (match-beginning 0)))
 
-(defsubst my-lint-layout-search-doc-beginning ()
+(defsubst my-lint-layout-search-backward-doc-beginning ()
+  (and (re-search-backward "^[ \t]*/[*][*]" nil t)
+       (match-beginning 0)))
+
+(defsubst my-lint-layout-search-forward-doc-beginning ()
   (and (re-search-forward "^[ \t]*/[*][*]" nil t)
        (match-beginning 0)))
 
-(defsubst my-lint-layout-search-doc-end ()
+(defsubst my-lint-layout-search-forward-doc-end ()
   (and (re-search-forward "[*]/" nil t)
        (match-end 0)))
 
-(defsubst my-php-layout-search-function-beginning ()
+(defsubst my-php-layout-search-forward-function-beginning ()
   (re-search-forward my-lint-layout-php-function-regexp nil t))
 
-(defsubst my-lint-layout-search-class-beginning (&optional max)
-  "Search class start, up till optional MAX point."
+(defsubst my-lint-layout-search-forward-class-beginning (&optional max)
+  "Search class forward, up till optional MAX point."
   (and (re-search-forward
 	"^[ \t]*\\(?:\\(abstract\\)[ \t]*\\)?class\\>[ \t]"
 	max t)
        (match-end 0)))
 
-(defsubst my-lint-layout-search-interface-beginning (&optional max)
-  "Search interface start, up till optional MAX point."
+(defsubst my-lint-layout-search-backward-class-beginning (&optional max)
+  "Search class backward, up till optional MAX point."
+  (and (re-search-backward
+	"^[ \t]*\\(?:\\(abstract\\)[ \t]*\\)?class\\>[ \t]"
+	max t)
+       (match-end 0)))
+
+(defsubst my-lint-layout-search-forward-interface-beginning (&optional max)
+  "Search interface forward, up till optional MAX point."
   (and (re-search-forward
 	"^[ \t]*interface\\>[ \t]"
 	max t)
        (match-end 0)))
 
-(defsubst my-lint-layout-search-variable-dollar-beginning (&optional max)
+(defsubst my-lint-layout-search-backward-interface-beginning (&optional max)
+  "Search interface backward, up till optional MAX point."
+  (and (re-search-backward
+	"^[ \t]*interface\\>[ \t]"
+	max t)
+       (match-end 0)))
+
+(defsubst my-lint-layout-search-forward-class-p ()
+  "See if class or interface exists."
+  (or (my-lint-layout-search-forward-class-beginning)
+      (my-lint-layout-search-forward-interface-beginning)))
+
+(defsubst my-lint-layout-search-backward-class-p ()
+  "See if class or interface exists."
+  (or (my-lint-layout-search-backward-class-beginning)
+      (my-lint-layout-search-backward-interface-beginning)))
+
+(defsubst my-lint-layout-search-forward-variable-dollar-beginning (&optional max)
   "Search variable start, up till optional MAX point."
   (and (re-search-forward
 	`,(concat
@@ -545,7 +573,7 @@ The leading indent is in submatch 1 and text start indent in 2."
      "Standard print() recommended for")
 
    '("\\<isset[( \t]*[\"\'$]"
-     "Possible better alternative is empty()")
+     "Possible better alternative is to use empty() test")
 
    '("[.=][ \t]*\\<date(.*)"
      "POSIX standard strftime() recommended for")
@@ -681,8 +709,8 @@ The leading indent is in submatch 1 and text start indent in 2."
 
 (defun my-lint-layout-generic-class-forward ()
   "Goto next class definition."
-  (let ((class  (save-excursion (my-lint-layout-search-class-beginning)))
-	(iface  (my-lint-layout-search-interface-beginning)))
+  (let ((class  (save-excursion (my-lint-layout-search-forward-class-beginning)))
+	(iface  (my-lint-layout-search-forward-interface-beginning)))
     (cond
      ((and class iface)
       (goto-char (min class iface)))
@@ -750,7 +778,7 @@ print 'this' .
 	(setq lines (my-lint-layout-count-lines-in-string str))
 	(when (> lines 3)
 	  (my-lint-layout-message
-	   "Maintenance problem, better use HERE doc syntax (<<<)"
+	   "Possible maintenance problem, HERE doc syntax suggested (<<<)"
 	   (- (my-lint-layout-current-line-number) lines)
 	   prefix))))))
 
@@ -905,12 +933,12 @@ Return variable content string."
 
 (defun my-php-layout-doc-above-p ()
   "Check if phpdoc is in above line."
-  (save-excursion
-    (goto-char (line-beginning-position))
-    (skip-chars-backward "  \t\r\n")
-    (goto-char (line-beginning-position))
-    ;; FIXME: Not bullet proof
-    (looking-at "^[ \t]*[*]/[ \t]*$")))
+  (let ((type (my-php-layout-doc-examine-typeof (my-lint-layout-current-line-string))))
+    (save-excursion
+      (goto-char (line-beginning-position))
+      (skip-chars-backward "  \t\r\n") ;;  At the end of "*/"
+      (goto-char (line-beginning-position))
+      (looking-at "^[ \t]*[*]/[ \t]*$"))))
 
 (defsubst my-php-layout-re-search-forward-doc-keyword ()
   "Search `my-lint-layout-php-doc-location-regexp'."
@@ -927,16 +955,15 @@ Return variable content string."
 	line)
     (save-excursion
       (setq point (point))
-      (setq class-p (or (my-lint-layout-search-class-beginning)
-			(my-lint-layout-search-interface-beginning)))
+      (setq class-p (my-lint-layout-search-forward-class-p))
       (goto-char point)
       ;;  one class - One file assumption. If there are no methods, this is
       ;;  pure variable class, like struct.
-      (setq max (or (my-php-layout-search-function-beginning)
+      (setq max (or (my-php-layout-search-forward-function-beginning)
 		    (point-max)))
       (when class-p
 	(goto-char point)
-	(while (my-lint-layout-search-variable-dollar-beginning max)
+	(while (my-lint-layout-search-forward-variable-dollar-beginning max)
 	  (setq str  (my-lint-layout-current-line-string)
 		line (my-lint-layout-current-line-number))
 	  (cond
@@ -959,8 +986,7 @@ Return variable content string."
 	str
 	line)
     (save-excursion
-      (setq class-p (or (my-lint-layout-search-class-beginning)
-			(my-lint-layout-search-interface-beginning))))
+      (setq class-p (my-lint-layout-search-forward-class-p)))
     (while (my-php-layout-re-search-forward-doc-keyword)
       (setq str  (my-lint-layout-current-line-string)
 	    line (my-lint-layout-current-line-number))
@@ -1187,7 +1213,7 @@ if ( check );
   "Check end of line for ';' and whitespace."
   (let (str
 	line)
-    (while (my-lint-layout-search-variable-dollar-beginning)
+    (while (my-lint-layout-search-forward-variable-dollar-beginning)
       (setq str (my-lint-layout-current-line-string))
       (when (string-match "[ \t];[ \t]*$" str)
 	;;  "$a = 12 ;"  vs. "$a = 12;"
@@ -2247,10 +2273,12 @@ MySQL:
   (+ line (1- (my-lint-layout-current-line-number))))
 
 (defun my-php-layout-doc-string-test-function
-  (str line &optional prefix data)
+  (str line &optional prefix data type)
   "docstring is in STR, at LINE number. PREFIX for messages.
 The DATA is function content string."
-  (let ((need-return-p
+  (let ((class-p (my-lint-layout-save-point
+		  (my-lint-layout-search-backward-class-p)))
+	(need-return-p
 	 (and data
 	      (string-match "^[ \t]*return\\>[ \t]*[^; \t\r\n]" data)))
 	(need-param-p
@@ -2267,7 +2295,8 @@ The DATA is function content string."
       (my-lint-layout-message
        (format "[phpdoc] Unnecessary wording: %s" (match-string 0 str))
        line prefix))
-    (unless access
+    (when (and class-p
+	       (not access))
       (my-lint-layout-message
        "[phpdoc] @access token not found"
        line prefix))
@@ -2684,7 +2713,7 @@ Point must be at function start line."
 	beg
 	end
 	type)
-    (while (my-lint-layout-search-doc-beginning)
+    (while (my-lint-layout-search-forward-doc-beginning)
       (setq point       (point)
 	    beg         (line-beginning-position)
 	    top-level-p (my-lint-layout-save-point
@@ -2693,7 +2722,7 @@ Point must be at function start line."
       (when (save-excursion
 	      (forward-line 1)
 	      (setq next-line-valid-p (my-lint-layout-looking-at-doc-p))
-	      (setq end (my-lint-layout-search-doc-end))
+	      (setq end (my-lint-layout-search-forward-doc-end))
 	      (skip-chars-forward " \t\r\n")
 	      (setq valid-p
 		    (or top-level-p
