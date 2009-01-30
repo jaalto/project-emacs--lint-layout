@@ -11,14 +11,14 @@
 ;;
 ;; This program is distributed in the hope that it will be useful, but
 ;; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
-;; or FITNESS FOR A PARTICULAR PURPOSE.  See the GNU General Public License
-;; for more details at <http://www.gnu.org/copyleft/gpl.html>
+;; or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
+;; for more details at <http://www.gnu.org/copyleft/gpl.html>.
 ;;
 ;; All *check-* function are callable.
 ;; Look results in `my-layout-changelog-check-main' *Layout checks*"
 ;; See `my-php-layout-check-all-1' for list of functions.
 ;;
-;; M-x my-php-layout-check-all-main    From current point
+;; M-x my-php-layout-check-all-main      At current point
 ;; M-x my-php-layout-check-phpdoc-main
 
 (require 'regexp-opt)
