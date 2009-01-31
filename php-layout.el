@@ -2823,7 +2823,8 @@ Point must be at function start line."
 			(string-match "Copyright\\|License"
 				      (buffer-substring point end))))
 	      (setq type
-		    (my-php-layout-doc-examine-typeof (my-lint-layout-current-line-string)))
+		    (my-php-layout-doc-examine-typeof
+		     (my-lint-layout-current-line-string)))
 	      (if (and (not type)
 		       valid-p)
 		  (setq type '(file)))
@@ -2852,6 +2853,111 @@ Point must be at function start line."
 	       type
 	       line
 	       prefix)))))))))
+
+;;; ............................................................ &mode ...
+
+(defvar my-lint-output-mode-hook nil
+  "*Hook run when `my-lint-output-mode' is called.")
+
+(defvar my-lint-output-mode-map (make-sparse-keymap)
+  "*Keymap")
+
+;; font-lock-constant-face
+(defvar my-lint-output-mode-font-lock-keywords
+  (list
+   (list
+    (list
+     "^\\([^:]+\\):+\\([0-9]+\\)"
+     '(1 'font-lock-function-name-face)  ;; filename
+     '(2 'font-lock-constant-face))      ;; line
+;;;    (list
+;;;     "^\\(To view errors and warnings, look at\\) +\\(.+\\)"
+;;;     '(1 'font-lock-builtin-face)
+;;;     '(2 'font-lock-function-name-face))
+;;;    (list
+;;;     "^Converting +\\([^ \t\rn\n]+\\).*Procedural"
+;;;     1 'font-lock-function-name-face)
+;;;    (list
+;;;     "[0-9]+ +seconds"
+;;;     0 'font-lock-constant-face)))
+    ))
+  "*Fontification.")
+
+(defun my-lint-output-mode-error-at-point-p ()
+  "Check current line for errors."
+  (if (looking-at "^\\([^:]+\\):+\\([0-9]+\\)")
+      (list (match-string 1)
+	    (string-to-int (match-string 2)))))
+
+(defun my-lint-output-mode-error-info ()
+  "Return filename and line at point."
+  (save-excursion
+    (goto-char (line-beginning-position))
+    (my-lint-output-mode-error-at-point-p)))
+
+(defsubst my-lint-output-mode-find-buffer (name)
+  "Return bufer pointer for buffer NAME."
+  (or (get-buffer name)
+      (find-buffer-visiting name)))
+
+(defun my-lint-output-mode-goto-line-key ()
+  "Go to file or dir at point."
+  (interactive)
+  (multiple-value-bind (file line)
+      (my-lint-output-mode-error-info)
+    (if (not file)
+	(message "No file information found at current line.")
+      (let ((buffer (my-lint-output-mode-find-buffer file)))
+	(if (not buffer)
+	    (message "Can't find buffer for '%s'" file)
+	  (pop-to-buffer buffer)
+	  ;; (find-file-other-window file)))
+	  (if line
+	      (goto-line line)))))))
+
+(defun my-lint-output-mode-goto-line-mouse (event)
+  (interactive "e")
+  (let* ((epoint (event-start event))
+         (win    (or (and epoint
+                          (nth 0 epoint))
+                     (get-buffer-window (current-buffer))))
+         (point  (or (and epoint
+                          (nth 1 epoint))
+                     (point))))
+    (select-window win)
+    (goto-char point)
+    (my-lint-output-mode-goto-line-key)))
+
+(defun my-lint-output-mode-map-define ()
+  "Define keymap."
+  (define-key my-lint-output-mode-map
+    "\C-c\C-c"
+    'my-lint-output-mode-goto-line-key)
+  (define-key my-lint-output-mode-map
+    "\C-m" 'my-lint-output-mode-goto-line-key)
+  (define-key my-lint-output-mode-map
+    [(mouse-2)]'my-lint-output-mode-goto-line-mouse)
+  ;; Set up the menu-bar
+  (define-key my-lint-output-mode-map [menu-bar](make-sparse-keymap))
+  (define-key my-lint-output-mode-map [menu-bar lint-layout]
+    (cons "Lint" (make-sparse-keymap "Lint")))
+  ;; '("----" . nil)
+  ;; Bottom up order
+  (define-key my-lint-output-mode-map
+    [menu-bar lint-layout my-lint-output-mode-goto-line-mouse]
+    '("Goto error at point" . my-lint-output-mode-goto-line-mouse)))
+
+;;;###autoload
+(define-derived-mode my-lint-output-mode fundamental-mode "Lint"
+  "Major mode for Lint output.
+Runs `my-lint-output-mode-hook'."
+  (setq buffer-read-only t)
+  (my-lint-output-mode-map-define)
+  (setq font-lock-defaults
+        my-lint-output-mode-font-lock-keywords)
+  (if (or font-lock-mode
+	  global-font-lock-mode)
+      (font-lock-fontify-buffer)))
 
 ;;; ........................................................... &batch ...
 
