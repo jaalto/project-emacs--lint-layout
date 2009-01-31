@@ -14,12 +14,23 @@
 ;; or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
 ;; for more details at <http://www.gnu.org/copyleft/gpl.html>.
 ;;
-;; All *check-* function are callable.
-;; Look results in `my-layout-changelog-check-main' *Layout checks*"
-;; See `my-php-layout-check-all-1' for list of functions.
+;; Description
 ;;
-;; M-x my-php-layout-check-all-main      At current point
-;; M-x my-php-layout-check-phpdoc-main
+;;	All *check-* function are callable.
+;;	Look results in `my-layout-changelog-check-main' *Layout checks*"
+;;	See `my-php-layout-check-all-1' for list of functions.
+;;
+;; User callable functions (M-x):
+;;
+;;      Normally functions start scanning from current point foward, unless
+;;      "buffer" is mentioned:
+;;
+;;	my-php-layout-check-all-interactive
+;;
+;;	my-php-layout-check-phpdoc-interactive
+;;	my-lint-layout-check-whitespace-buffer-interactive
+;;	my-lint-layout-check-line-length-buffer-interactive
+;;      my-lint-layout-check-eof-marker-interactive
 
 (require 'regexp-opt)
 
@@ -119,6 +130,13 @@
    my-lint-layout-generic-control-statement-continue-regexp)
   "Control statement keyword.")
 
+;; Todo: multiline IF
+;;
+;;        if ( isset ( $_POST['login'] )
+;;             AND ( $_POST['username'] == ""
+;;                   OR $_POST['passwd'] == "") )
+;;        {
+;;
 (defconst my-lint-layout-generic-statement-regexp-brace
   (concat
    "^"
@@ -192,12 +210,14 @@ without brace requirement.")
 ;;; ....................................................... &utilities ...
 
 (put 'my-lint-debug-message 'my-lint-debug-message 0)
+(put 'my-lint-debug-message 'edebug-form-spec '(body))
 (defmacro my-lint-debug-message (&rest body)
   "Display debug @body using `message' function."
   `(when my-lint-debug
      (message ,@body)))
 
 (put 'my-lint-layout-with-result-buffer 'lisp-indent-function 0)
+(put 'my-lint-layout-with-result-buffer 'edebug-form-spec '(body))
 (defmacro my-lint-layout-with-result-buffer (&rest body)
   "Run body in `my-lint-layout-buffer-name'."
   `(let ((buffer (get-buffer-create my-lint-layout-buffer-name)))
@@ -205,12 +225,14 @@ without brace requirement.")
        ,@body)))
 
 (put 'my-lint-layout-with-case 'lisp-indent-function 0)
+(put 'my-lint-layout-with-case 'edebug-form-spec '(body))
 (defmacro my-lint-layout-with-case (&rest body)
   "Run BODY with `case-fold-search' set to nil."
   `(let (case-fold-search)
      ,@body))
 
 (put 'my-lint-layout-point-min 'lisp-indent-function 0)
+(put 'my-lint-layout-point-min 'edebug-form-spec '(body))
 (defmacro my-lint-layout-point-min (&rest body)
   "Run BODY with from `point-min'."
   `(save-excursion
@@ -230,6 +252,7 @@ For forward, backward movements where save-excursion is too heavy."
 	 (goto-char ,point)))))
 
 (put 'my-lint-layout-flet-run-at-point 'lisp-indent-function 0)
+(put 'my-lint-layout-flet-run-at-point 'edebug-form-spec '(body))
 (defmacro my-lint-layout-flet-run-at-point (&rest body)
   "DEfine function `run' which preserves point. Run BODY."
   (let ((point (make-symbol "--point--")))
@@ -240,6 +263,7 @@ For forward, backward movements where save-excursion is too heavy."
 	 ,@body))))
 
 (put 'my-lint-layout-with-interactive 'lisp-indent-function 0)
+(put 'my-lint-layout-with-interactive 'edebug-form-spec '(body))
 (defmacro my-lint-layout-with-interactive (&rest body)
   "Run BODY from `point-min' and show `my-lint-layout-buffer-name'."
   `(progn
@@ -1074,6 +1098,19 @@ Return variable content string."
 	 (my-lint-layout-current-line-number)
 	 prefix))))))
 
+(defun my-php-layout-check-keywords-case (keyword fullstr &optional prefix)
+  "If statement: check proper and, or, true, false character case."
+  (my-lint-layout-with-case
+    (if (string-match
+	 "<\\(AND\\|OR\\|FALSE\\|TRUE\\)\\>"
+	 fullstr)
+	(my-lint-layout-message
+	 (format "[code] Conditional statement; expecting lowercase keyword for '%s'"
+		 (match-string 0 fullstr))
+	 ;;  Point is at brace, refer to above line.
+	 (1- (my-lint-layout-current-line-number))
+	 prefix))))
+
 (defsubst my-php-layout-here-doc-p (str)
   "Check if statement is HERE document start."
   (if (string-match "[^<]<<+[ \t]*\\([A-Z]+\\)" str)
@@ -1225,7 +1262,7 @@ if ( check );
 (defun my-php-layout-check-statement-start (&optional prefix)
   "Check lines beyond `my-lint-layout-generic-line-length-max'."
   (let* ((col my-lint-layout-generic-line-length-max)
-	 str
+	 keyword
 	 fullstr
 	 point
 	 kwd-point
@@ -1242,7 +1279,7 @@ if ( check );
     (while (my-php-layout-brace-statement-forward)
       (setq point     (match-beginning 1) ;; Left margin
 	    kwd-point (match-beginning 2) ;; keyword start
-	    str       (match-string 2)    ;; Keyword
+	    keyword   (match-string 2)    ;; Keyword
 	    fullstr   (match-string 0)
 	    indent    (my-lint-layout-save-point
 			;; At brace line
@@ -1253,7 +1290,7 @@ if ( check );
 	    ;; Cursor is one char after brace, correct that
 	    brace-start-col (1- (current-column)))
       (setq continue-p
-	    (my-php-layout-check-statement-continue-p str))
+	    (my-php-layout-check-statement-continue-p keyword))
       (forward-char -1)  ;; At brace start
       (save-excursion
 	(goto-char kwd-point)
@@ -1261,18 +1298,20 @@ if ( check );
 	      statement-line      (my-lint-layout-current-line-number))
 	(when continue-p
 	  (goto-char point)
-	  (my-php-layout-check-statement-continue-detach str prefix)
+	  (my-php-layout-check-statement-continue-detach keyword prefix)
 	  (goto-char point)
-	  (my-php-layout-check-statement-comment-above str prefix)))
+	  (my-php-layout-check-statement-comment-above keyword prefix)))
       (my-php-layout-check-indent-string-check indent statement-line prefix)
       ;; (my-php-layout-statement-brace-forward)
       ;; brace-start-line (my-lint-layout-current-line-number))
       (my-php-layout-statement-brace-and-indent prefix)
       (my-php-layout-check-statement-brace-detach fullstr)
+      (when (string-match "\\<if\\>\\|\\<els.*if\\>" keyword)
+	(my-php-layout-check-keywords-case keyword fullstr prefix))
       (unless (eq statement-start-col brace-start-col)
 	(my-lint-layout-message
 	 (format "[code] brace { not directly under keyword '%s', expect col %d"
-		 (or str "")
+		 (or keyword "")
 		 statement-start-col)
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
@@ -1341,7 +1380,7 @@ if ( check );
 
 ;;; ............................................................. &eof ...
 
-(defconst my-lint-layout-eof-regexp
+(defvar my-lint-layout-eof-regexp
   (regexp-quote "End of file")
   "End of file marker text.")
 
@@ -1355,10 +1394,15 @@ if ( check );
 	       (min (point-min) (* 4 80))
 	       t)
 	(my-lint-layout-message
-	 (format "[misc] no exact EOF text found: '%s'"
+	 (format "[misc] No exact EOF marker found: '%s'"
 		 my-lint-layout-eof-regexp)
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
+
+(defun my-lint-layout-check-eof-marker-interactive ()
+  "Near the last line of file find text `my-lint-layout-eof-regexp'."
+  (interactive)
+  (my-lint-layout-check-eof-marker))
 
 ;;; ...................................................... &whitespace ...
 
@@ -1470,6 +1514,11 @@ if ( check );
   "Check from `point-min' with `my-lint-layout-check-line-length'."
   (my-lint-layout-point-min
     (my-lint-layout-check-line-length)))
+
+(defun my-lint-layout-check-line-length-buffer-interactive (&optional prefix)
+  "Run `my-lint-layout-check-line-length-buffer' and show results."
+  (interactive)
+  (my-lint-layout-check-line-length-buffer))
 
 ;;; ..................................................... &gpl-license ...
 
@@ -2768,15 +2817,6 @@ Point must be at function start line."
   `(save-excursion
      ,@body))
 
-(defun my-php-layout-check-phpdoc-main (&optional prefix)
-  "Run PHPDoc checks."
-  (interactive)
-  (dolist (function
-	   '(my-php-layout-check-doc-missing
-	     my-php-layout-check-doc-main))
-    (my-php-layout-run-check
-      (funcall function prefix))))
-
 (defun my-php-layout-check-all-1 (&optional prefix)
   "Run all checks from curent point. Does not display result buffer."
   (dolist (function
@@ -2807,14 +2847,6 @@ Point must be at function start line."
       (my-lint-debug-message
        "debug layout: check-all %s %s" function prefix)
       (funcall function prefix))))
-
-(defun my-php-layout-check-all-main ()
-  "Run all checks from curent point."
-  (interactive)
-  (my-lint-layout-result-erase-buffer)
-  (my-php-layout-check-all-1 (buffer-name))
-  (my-lint-layout-result-sort-lines)
-  (display-buffer my-lint-layout-buffer-name))
 
 (defun my-php-layout-check-file-list (list &optional function)
   "Check LIST of files.
@@ -2858,7 +2890,6 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
        "debug layout: Batch cmdline results %s %d" (buffer-name) (point-max))
       ;; to stderr. Hm.
       (unless (eq (point-min) (point-max))
-	(message "Batch results")
 	(princ (buffer-string))))))
 
 (defun my-php-layout-check-command-line-batch-all ()
@@ -2871,6 +2902,30 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
 	 '("~/proj/05/application/signUp.php")))
     (my-php-layout-check-command-line-batch
      '(my-php-layout-check-all-1))))
+
+;;; ..................................................... &interactive ...
+
+(defun my-php-layout-check-all-interactive ()
+  "Run all checks from curent point."
+  (interactive)
+  (let ((prefix (buffer-name)))
+    (my-lint-layout-result-erase-buffer)
+    (dolist (function '(my-lint-layout-check-whitespace
+			my-lint-layout-check-line-length
+			my-php-layout-check-all-1))
+      (funcall function prefix))
+    (my-lint-layout-result-sort-lines)
+    (display-buffer my-lint-layout-buffer-name)))
+
+(defun my-php-layout-check-phpdoc-interactive (&optional prefix)
+  "Run PHPDoc checks."
+  (interactive)
+  (dolist (function
+	   '(my-php-layout-check-doc-missing
+	     my-php-layout-check-doc-main))
+    (my-php-layout-run-check
+      (funcall function prefix))))
+
 
 ;;      (message
 ;;       (replace-regexp-in-string "%" "%%" (buffer-string)))))))
