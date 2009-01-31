@@ -26,11 +26,16 @@
 ;;      "buffer" is mentioned:
 ;;
 ;;	my-php-layout-check-all-interactive
-;;
 ;;	my-php-layout-check-phpdoc-interactive
+;;
+;;      ;; Decides tests for *.css, *.php, *.sql file
+;;      my-lint-layout-check-generic-interactive
+;;
 ;;	my-lint-layout-check-whitespace-buffer-interactive
 ;;	my-lint-layout-check-line-length-buffer-interactive
 ;;      my-lint-layout-check-eof-marker-interactive
+;;      my-lint-layout-css-check-buffer-interactive
+;;      my-lint-layout-sql-buffer-interactive
 
 (require 'regexp-opt)
 
@@ -234,7 +239,7 @@ without brace requirement.")
 (put 'my-lint-layout-point-min 'lisp-indent-function 0)
 (put 'my-lint-layout-point-min 'edebug-form-spec '(body))
 (defmacro my-lint-layout-point-min (&rest body)
-  "Run BODY with from `point-min'."
+  "Run BODY with from `point-min'. Point is preserved."
   `(save-excursion
     (goto-char (point-min))
     ,@body))
@@ -254,13 +259,24 @@ For forward, backward movements where save-excursion is too heavy."
 (put 'my-lint-layout-flet-run-at-point 'lisp-indent-function 0)
 (put 'my-lint-layout-flet-run-at-point 'edebug-form-spec '(body))
 (defmacro my-lint-layout-flet-run-at-point (&rest body)
-  "DEfine function `run' which preserves point. Run BODY."
+  "Define function `run' which preserves point. Run BODY."
   (let ((point (make-symbol "--point--")))
     `(let ((,point (point)))
        (flet ((run (func &rest args)
 		   (goto-char ,point)
 		   (apply func args)))
 	 ,@body))))
+
+(put 'my-lint-with-result-buffer 'lisp-indent-function 1)
+(put 'my-lint-with-result-buffer 'edebug-form-spec '(body))
+(defmacro my-lint-with-result-buffer (display &rest body)
+  "Clear result buffer, run BODY, collect results and DSPLAY."
+  `(progn
+     (my-lint-layout-result-erase-buffer)
+     ,@body
+     (my-lint-layout-result-sort-lines)
+     (if ,display
+	 (display-buffer my-lint-layout-buffer-name))))
 
 (put 'my-lint-layout-with-interactive 'lisp-indent-function 0)
 (put 'my-lint-layout-with-interactive 'edebug-form-spec '(body))
@@ -2157,20 +2173,34 @@ MySQL:
 
 (defun my-lint-layout-sql-main (&optional prefix)
   "Check SQL syntax."
-  (save-excursion
-    (my-lint-layout-sql-check-create-table prefix))
-  (save-excursion
-    (my-lint-layout-sql-check-keywords prefix)))
+  (my-lint-layout-flet-run-at-point
+    (run 'my-lint-layout-sql-check-create-table prefix)
+    (run 'my-lint-layout-sql-check-keywords prefix)))
+
+(defun my-lint-layout-sql-buffer (&optional prefix)
+  "Check from `point-min' with `my-lint-layout-sql-main'."
+  (my-lint-layout-point-min
+    (my-lint-layout-sql-main)))
+
+(defun my-lint-layout-sql-buffer-interactive (&optional prefix)
+  "Run `my-lint-layout-sql-buffer'."
+  (interactive)
+  (my-lint-with-result-buffer 'display
+    (my-lint-layout-sql-buffer prefix)))
 
 ;;; ............................................................. &css ...
+
+(defsubst my-php-layout-check-multiple-statements-error (msg &optional prefix)
+  "Write error."
+  (my-lint-layout-message
+   msg
+   (my-lint-layout-current-line-number)
+   prefix))
 
 (defsubst my-php-layout-check-multiple-statements (msg &optional prefix)
   "Check multiple ';'."
   (when (looking-at ".+;.*;")
-    (my-lint-layout-message
-     msg
-     (my-lint-layout-current-line-number)
-     prefix)))
+    (my-php-layout-check-multiple-statements-error msg prefix)))
 
 (defun my-lint-layout-css-indent-level (&optional prefix)
   "Check indent."
@@ -2217,7 +2247,8 @@ MySQL:
     (my-lint-layout-css-attribute prefix)
     (my-lint-layout-css-color prefix)
     (my-php-layout-check-multiple-statements
-     "[css] Multiple attribute definitions (only one expected)")
+     "[css] Multiple attribute definitions (only one expected)"
+     prefix)
     (forward-line 1)))
 
 (defun my-lint-layout-css-skip-comment ()
@@ -2255,8 +2286,9 @@ MySQL:
 	 line prefix))
       ;;   background-color: #F8F8F8; border: 1px;
       (my-php-layout-check-multiple-statements
-       "[css] Multiple attribute definitions (only one expected)")
-      (my-lint-layout-css-indent-level)
+       "[css] Multiple attribute definitions (only one expected)"
+       prefix)
+      (my-lint-layout-css-indent-level prefix)
       (my-lint-layout-css-body prefix))))
 
 (defun my-lint-layout-check-comment-javadoc-invalid (&optional prefix)
@@ -2267,7 +2299,7 @@ MySQL:
       (save-excursion
 	(while (re-search-forward re nil t)
 	  (my-lint-layout-message
-	   (format "[css] Probably misplaced Javadoc/Phpdoc: %s"
+	   (format "[css] Probably misplaced PHP-style doc-block: %s"
 		   (my-lint-layout-current-line-string))
 	   (my-lint-layout-current-line-number)
 	   prefix))))))
@@ -2277,6 +2309,17 @@ MySQL:
   (my-lint-layout-flet-run-at-point
     (run 'my-lint-layout-check-comment-javadoc-invalid prefix)
     (run 'my-lint-layout-css-check-generic prefix)))
+
+(defun my-lint-layout-css-check-buffer (&optional prefix)
+  "Check from `point-min' with `my-lint-layout-css-check-main'."
+  (my-lint-layout-point-min
+    (my-lint-layout-css-check-main prefix)))
+
+(defun my-lint-layout-css-check-buffer-interactive (&optional prefix)
+  "Run `my-lint-layout-css-check-buffer'."
+  (interactive)
+  (my-lint-with-result-buffer 'display
+    (my-lint-layout-css-check-buffer prefix)))
 
 ;;; ......................................................... &line-up ...
 
@@ -2905,17 +2948,17 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
 
 ;;; ..................................................... &interactive ...
 
-(defun my-php-layout-check-all-interactive ()
-  "Run all checks from curent point."
+(defun my-php-layout-check-all-interactive (&optional point prefix)
+  "Run all checks from current POINT forward."
   (interactive)
-  (let ((prefix (buffer-name)))
-    (my-lint-layout-result-erase-buffer)
-    (dolist (function '(my-lint-layout-check-whitespace
-			my-lint-layout-check-line-length
-			my-php-layout-check-all-1))
-      (funcall function prefix))
-    (my-lint-layout-result-sort-lines)
-    (display-buffer my-lint-layout-buffer-name)))
+  (my-lint-with-result-buffer 'display
+    (save-excursion
+      (if point
+	  (goto-char point))
+      (dolist (function '(my-lint-layout-check-whitespace
+			  my-lint-layout-check-line-length
+			  my-php-layout-check-all-1))
+	(funcall function prefix)))))
 
 (defun my-php-layout-check-phpdoc-interactive (&optional prefix)
   "Run PHPDoc checks."
@@ -2926,6 +2969,19 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
     (my-php-layout-run-check
       (funcall function prefix))))
 
+(defun my-lint-layout-check-generic-interactive (&optional prefix)
+  "Run check according to file extension: *.php, *.css, *.php."
+  (interactive)
+  (let ((name (buffer-name)))
+    (cond
+     ((string-match "\\.php" name)
+      (my-php-layout-check-all-interactive (point-min) name))
+     ((string-match "\\.css" name)
+      (my-lint-layout-css-check-buffer-interactive name))
+     ((string-match "\\.sql" name)
+      (my-lint-layout-sql-buffer-interactive name))
+     (t
+      (message "no checks defined for: %s" name)))))
 
 ;;      (message
 ;;       (replace-regexp-in-string "%" "%%" (buffer-string)))))))
