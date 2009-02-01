@@ -1,6 +1,11 @@
-;; php-layout.el -- Utilities to check PHP code layout
-;;
-;; Copyright (C) 2006-2009 Jari Aalto
+;;; lint-layout.el --- Coding layout lint utilities.
+
+;;{{{ Id
+
+;; Copyright (C)    2006-2009 Jari Aalto <jari.aalto@cante.net>
+;; Keywords:        extensions
+;; Author:          Jari Aalto
+;; Maintainer:      Jari Aalto
 ;;
 ;; COPYRIGHT NOTICE
 ;;
@@ -12,37 +17,104 @@
 ;; This program is distributed in the hope that it will be useful, but
 ;; WITHOUT ANY WARRANTY; without even the implied warranty of MERCHANTABILITY
 ;; or FITNESS FOR A PARTICULAR PURPOSE. See the GNU General Public License
-;; for more details at <http://www.gnu.org/copyleft/gpl.html>.
+;; for more details.
 ;;
-;; Description
+;; You should have received a copy of the GNU General Public License
+;; along with program. If not, write to the
+;; Free Software Foundation, Inc., 51 Franklin Street, Fifth Floor,
+;; Boston, MA 02110-1301, USA.
 ;;
-;;	All *check-* function are callable.
-;;	Look results in `my-layout-changelog-check-main' *Layout checks*"
-;;	See `my-php-layout-check-all-1' for list of functions.
+;; Visit <http://www.gnu.org/copyleft/gpl.html> for more information
+
+;;}}}
+;;{{{ Install
+
+;; ........................................................ &t-install ...
+;;   Put this file on your Emacs-Lisp `load-path', add following into your
+;;   $HOME/.emacs startup file
+;;
+;;      (require 'lint-layout)
+;;
+;;   If you have any questions about this Emacs package:
+;;
+;;      M-x mail send question, feedback, bugs
+
+;;}}}
+;;{{{ Documentation
+
+;; ..................................................... &t-commentary ...
+
+;;; Commentary:
+
+;;  Overview of features
+;;
+;;      This package contains utilities for static code checking, usually
+;;      known by term 'linting'. See Wikipedia
+;;      <http://en.wikipedia.org/wiki/Lint_programming_tool> for more
+;;      about the static code checking methodology.
+;;
+;;      The checks include typical code conventions, most of which are
+;;      configurable:
+;;
+;;	o   Maximum code column 80
+;;	o   Extra whitespace at end of lines (spaces and tabs)
+;;	o   Brace placement (lined-up; no K&R support yet)
+;;	o   Indentation multiple of 4.
+;;	o   terminating semicolon checks: no loose "semicolons ;"
+;;
+;;	Some of the PHP language checks include:
+;;
+;;	o   The use and definition of function or methods:
+;;
+;;	    function name () // in definition <neme> surrounding space
+;;	    {
+;;		call( $param, $param); // leading space in muti-arg calls
+;;		call(aram);	       // single arg call
+;;	    }
+;;
+;;	o   Readable keywords `and' and `or' preferred over
+;;	    traditional && and ||.
+;;	o   Literal keywords in lowercase: false, true, null
+;;	o   Multiline concat dot-operator(.) could be written using
+;;	    <<<HERE documents.
+;;	o   Instead echo(), print() is suggested due to function to exist
+;;	    in all programming languages.
+;;	o   Instead of date(), POSIX standard strftime() preferred.
 ;;
 ;; User callable functions (M-x):
 ;;
 ;;      Normally functions start scanning from current point foward, unless
 ;;      "buffer" is mentioned:
 ;;
-;;	my-php-layout-check-all-interactive
-;;	my-php-layout-check-phpdoc-interactive
+;;	    ;; Decides correct test set for *.css, *.php, *.sql file
+;;	    my-lint-layout-check-generic-interactive
 ;;
-;;      ;; Decides tests for *.css, *.php, *.sql file
-;;      my-lint-layout-check-generic-interactive
+;;	    my-php-layout-check-all-interactive
+;;	    my-php-layout-check-phpdoc-interactive
 ;;
-;;	my-lint-layout-check-whitespace-buffer-interactive
-;;	my-lint-layout-check-line-length-buffer-interactive
-;;      my-lint-layout-check-eof-marker-interactive
-;;      my-lint-layout-css-check-buffer-interactive
-;;      my-lint-layout-sql-buffer-interactive
+;;	    my-lint-layout-check-whitespace-buffer-interactive
+;;	    my-lint-layout-check-line-length-buffer-interactive
+;;	    my-lint-layout-check-eof-marker-interactive
+;;
+;;	    my-lint-layout-css-check-buffer-interactive
+;;	    my-lint-layout-sql-buffer-interactive
+;;
+;;	Look at results in `my-layout-changelog-check-main' buffer which
+;;	by default is `my-lint-layout-buffer-name'.
+;;
+;; Batch command line usage
+;;
+;;	This lisp library canbe called from command line with list of files
+;;	to check:
+;;
+;;	    emacs -Q -q -l lint-layout.el -f
 
 (require 'regexp-opt)
 
 (eval-when-compile
   (require 'cl))
 
-(defvar my-lint-debug nil
+(defvar my-lint-layout-debug nil
   "Non-nil to turn on debug messages.")
 
 (defconst my-lint-layout-buffer-name "*Layout checks*"
@@ -212,13 +284,64 @@ without brace requirement.")
   "[}][ \t]*\r?\n[ \t]*\\([^{} \t\r\n]+\\)"
   "Match brace end } followed by immediate code.")
 
+(defvar my-lint-layout-check-generic-functions
+  '(my-lint-layout-check-whitespace
+    my-lint-layout-check-line-length)
+  "*List of generic lint functions.")
+
+(defvar my-lint-layout-check-php-code-functions
+  '(my-lint-layout-generic-class-count
+    my-lint-layout-generic-xml-tags-check-main
+    my-php-layout-check-xml-tags-lazy
+    my-php-layout-check-multiple-print
+    my-php-layout-check-statement-end
+    my-php-layout-check-statement-start
+    my-php-layout-check-statement-start-2
+    my-php-layout-check-comment-statements
+    my-php-layout-check-control-statements
+    my-php-layout-check-block-end-and-code
+    my-php-layout-check-line-up-assignment
+    my-php-layout-check-brace-extra-newline
+    my-php-layout-check-regexp-occur-main
+    my-php-layout-class-check-variables
+    my-php-layout-check-doc-missing
+    my-php-layout-check-doc-main
+    my-php-layout-check-multiline-print
+    my-php-layout-check-multiline-sql
+    my-php-layout-check-words
+    my-lint-layout-check-whitespace
+    my-lint-layout-check-eof-marker
+    ;; my-lint-layout-check-line-length
+    )
+  "*List of PHP code check functions")
+
+(defvar my-lint-layout-check-php-doc-functions
+  '(my-php-layout-check-doc-missing
+    my-php-layout-check-doc-main)
+  "*List of functions for PHPDoc.")
+
+(defvar my-lint-layout-check-php-generic-functions
+  (append my-lint-layout-check-php-doc-functions
+	  my-lint-layout-check-php-code-functions)
+  "List of all PHP check functions.")
+
+(defvar my-lint-layout-check-sql-functions
+  '(my-lint-layout-sql-check-create-table
+    my-lint-layout-sql-check-keywords)
+  "*List of functions for SQL.")
+
+(defvar my-lint-layout-check-css-functions
+  '(my-lint-layout-check-comment-javadoc-invalid
+    my-lint-layout-css-check-generic)
+  "*List of functions for CSS.")
+
 ;;; ....................................................... &utilities ...
 
-(put 'my-lint-debug-message 'my-lint-debug-message 0)
-(put 'my-lint-debug-message 'edebug-form-spec '(body))
-(defmacro my-lint-debug-message (&rest body)
+(put 'my-lint-layout-debug-message 'my-lint-layout-debug-message 0)
+(put 'my-lint-layout-debug-message 'edebug-form-spec '(body))
+(defmacro my-lint-layout-debug-message (&rest body)
   "Display debug @body using `message' function."
-  `(when my-lint-debug
+  `(when my-lint-layout-debug
      (message ,@body)))
 
 (put 'my-lint-layout-with-result-buffer 'lisp-indent-function 0)
@@ -228,6 +351,12 @@ without brace requirement.")
   `(let ((buffer (get-buffer-create my-lint-layout-buffer-name)))
      (with-current-buffer buffer
        ,@body)))
+
+(defsubst my-lint-layout-result-erase-buffer ()
+  "Create and clear `my-lint-layout-buffer-name'."
+  (my-lint-layout-with-result-buffer
+    (setq buffer-read-only nil)
+    (erase-buffer)))
 
 (put 'my-lint-layout-with-case 'lisp-indent-function 0)
 (put 'my-lint-layout-with-case 'edebug-form-spec '(body))
@@ -247,8 +376,7 @@ without brace requirement.")
 (put 'my-lint-layout-save-point 'lisp-indent-function 0)
 (put 'my-lint-layout-save-point 'edebug-form-spec '(body))
 (defmacro my-lint-layout-save-point (&rest body)
-  "Run body and restore point.
-For forward, backward movements where save-excursion is too heavy."
+  "Run body and restore point. Lighter than `save-excursion'."
   (let ((point (gensym "point-")))
     `(let ((,point (point)))
        (prog1
@@ -267,16 +395,19 @@ For forward, backward movements where save-excursion is too heavy."
 		   (apply func args)))
 	 ,@body))))
 
-(put 'my-lint-with-result-buffer 'lisp-indent-function 1)
+(put 'my-lint-with-result-buffer 'lisp-indent-function 2)
 (put 'my-lint-with-result-buffer 'edebug-form-spec '(body))
-(defmacro my-lint-with-result-buffer (display &rest body)
+(defmacro my-lint-with-result-buffer (display erase &rest body)
   "Clear result buffer, run BODY, collect results and DSPLAY."
   `(progn
-     (my-lint-layout-result-erase-buffer)
+     (if ,erase
+	 (my-lint-layout-result-erase-buffer))
      ,@body
      (my-lint-layout-result-sort-lines)
-     (if ,display
-	 (display-buffer my-lint-layout-buffer-name))))
+     (when ,display
+       (display-buffer my-lint-layout-buffer-name)
+       (with-current-buffer my-lint-layout-buffer-name
+	 (my-lint-output-mode)))))
 
 (put 'my-lint-layout-with-interactive 'lisp-indent-function 0)
 (put 'my-lint-layout-with-interactive 'edebug-form-spec '(body))
@@ -496,11 +627,6 @@ For forward, backward movements where save-excursion is too heavy."
   "Insert file and time string."
   (insert (my-php-layout-result-buffer-header)))
 
-(defsubst my-lint-layout-result-erase-buffer ()
-  "Create and clear `my-lint-layout-buffer-name'."
-  (my-lint-layout-with-result-buffer
-    (erase-buffer)))
-
 (defsubst my-lint-layout-result-sort-lines ()
   "Sort lines."
   (my-lint-layout-with-result-buffer
@@ -537,6 +663,18 @@ See `my-lint-layout-buffer-name'."
 The leading indent is in submatch 1 and text start indent in 2."
   (if (looking-at "^\\([ \t]*\\)[*]\\([ \t]*\\)")
       (match-end 1)))
+
+(defun my-lint-layout-run-list (list &optional prefix point)
+  "Run LIST of functions from current point forward.
+Point is preserved after each function. Result buffer is not
+displayed."
+  (dolist (function list)
+    (my-lint-layout-save-point
+      (if point
+	  (goto-char point))
+      (my-lint-layout-debug-message
+       "debug layout: check %s %s" function prefix)
+      (funcall function prefix))))
 
 ;;; ........................................................... &occur ...
 
@@ -1118,10 +1256,10 @@ Return variable content string."
   "If statement: check proper and, or, true, false character case."
   (my-lint-layout-with-case
     (if (string-match
-	 "<\\(AND\\|OR\\|FALSE\\|TRUE\\)\\>"
+	 "<\\(AND\\|OR\\|FALSE\\|TRUE\\|NULL\\)\\>"
 	 fullstr)
 	(my-lint-layout-message
-	 (format "[code] Conditional statement; expecting lowercase keyword for '%s'"
+	 (format "[code] Keyword in conditional; expecting lowercase '%s'"
 		 (match-string 0 fullstr))
 	 ;;  Point is at brace, refer to above line.
 	 (1- (my-lint-layout-current-line-number))
@@ -2171,21 +2309,20 @@ MySQL:
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
 
-(defun my-lint-layout-sql-main (&optional prefix)
-  "Check SQL syntax."
-  (my-lint-layout-flet-run-at-point
-    (run 'my-lint-layout-sql-check-create-table prefix)
-    (run 'my-lint-layout-sql-check-keywords prefix)))
+(defun my-lint-layout-sql-check-batch-all (&optional prefix)
+  "Check Css"
+  (my-lint-layout-run-list
+   my-lint-layout-check-sql-functions prefix))
 
 (defun my-lint-layout-sql-buffer (&optional prefix)
-  "Check from `point-min' with `my-lint-layout-sql-main'."
+  "Check from `point-min' with `my-lint-layout-sql-check-batch-all'."
   (my-lint-layout-point-min
-    (my-lint-layout-sql-main)))
+    (my-lint-layout-sql-check-batch-all)))
 
 (defun my-lint-layout-sql-buffer-interactive (&optional prefix)
   "Run `my-lint-layout-sql-buffer'."
   (interactive)
-  (my-lint-with-result-buffer 'display
+  (my-lint-with-result-buffer 'erase 'display
     (my-lint-layout-sql-buffer prefix)))
 
 ;;; ............................................................. &css ...
@@ -2224,7 +2361,8 @@ MySQL:
 	     (not (string-match "\\<a" (match-string 1)))
 	     (looking-at "\\([^ \t\r\n]+[a-z]:\\([^ \t\r\n]+\\)\\)"))
     (my-lint-layout-message
-     (format "[css] No space between colon and attribute value: %s" (match-string 1))
+     (format "[css] No space between colon and attribute value: %s"
+	     (match-string 1))
      (my-lint-layout-current-line-number)
      prefix)))
 
@@ -2304,24 +2442,23 @@ MySQL:
 	   (my-lint-layout-current-line-number)
 	   prefix))))))
 
-(defun my-lint-layout-css-check-main (&optional prefix)
+(defun my-lint-layout-css-check-batch-all (&optional prefix)
   "Check Css"
-  (my-lint-layout-flet-run-at-point
-    (run 'my-lint-layout-check-comment-javadoc-invalid prefix)
-    (run 'my-lint-layout-css-check-generic prefix)))
+  (my-lint-layout-run-list
+   my-lint-layout-check-css-functions prefix))
 
 (defun my-lint-layout-css-check-buffer (&optional prefix)
-  "Check from `point-min' with `my-lint-layout-css-check-main'."
+  "Check from `point-min'."
   (my-lint-layout-point-min
-    (my-lint-layout-css-check-main prefix)))
+    (my-lint-layout-css-check-batch-all prefix)))
 
 (defun my-lint-layout-css-check-buffer-interactive (&optional prefix)
   "Run `my-lint-layout-css-check-buffer'."
   (interactive)
-  (my-lint-with-result-buffer 'display
+  (my-lint-with-result-buffer 'erase 'display
     (my-lint-layout-css-check-buffer prefix)))
 
-;;; ......................................................... &line-up ...
+;;; ........................................................ &lined-up ...
 
 (defun my-php-layout-test-line-up-p (col)
   "Check current COL of '=' and next line."
@@ -2553,7 +2690,8 @@ DATA is the full function content."
 	 (1+ line)
 	 prefix))))
 
-(defun my-php-layout-doc-examine-content-other--first-capital (line &optional prefix)
+(defun my-php-layout-doc-examine-content-other--first-capital
+  (line &optional prefix)
   "Check first line capital letter."
     (my-lint-layout-with-case
       (unless (looking-at "^[ \t]+[*][ \t]*[A-Z]")
@@ -2606,7 +2744,8 @@ DATA is the full function content."
        (+ line (my-lint-layout-current-line-number))
        prefix))))
 
-(defun my-php-layout-doc-examine-content-other--indent-text (line &optional prefix)
+(defun my-php-layout-doc-examine-content-other--indent-text
+  (line &optional prefix)
   "Check proper indent."
   (when (my-lint-layout-doc-line-indent-p)
     (let ((text (match-string 2)))
@@ -2624,7 +2763,8 @@ DATA is the full function content."
    line
    prefix))
 
-(defun my-php-layout-doc-examine-content-other--indent-col (col line &optional prefix)
+(defun my-php-layout-doc-examine-content-other--indent-col
+  (col line &optional prefix)
   "Check that *-character is lined up at COL.
 Write error at LINE with PREFIX."
   (let (point)
@@ -2645,7 +2785,8 @@ Write error at LINE with PREFIX."
    line
    prefix))
 
-(defun my-php-layout-doc-examine-content-other--doc-block-start (line &optional type prefix)
+(defun my-php-layout-doc-examine-content-other--doc-block-start
+  (line &optional type prefix)
   "Check that /** is alone.
 
 /**<no characters here>
@@ -2661,7 +2802,8 @@ Write error at LINE with PREFIX."
 	 prefix
 	 str)))))
 
-(defun my-php-layout-doc-examine-content-other--all-lines (line &optional type prefix)
+(defun my-php-layout-doc-examine-content-other--all-lines
+  (line &optional type prefix)
   "Check until `point-min' all lines."
   (let (text-indent
 	col-indent)
@@ -2671,14 +2813,16 @@ Write error at LINE with PREFIX."
 		 (setq point (my-lint-layout-doc-line-startp-p)))
 	(goto-char (1+ point))
 	(setq col-indent (current-column))
-	(my-php-layout-doc-examine-content-other--doc-block-start line type prefix))
+	(my-php-layout-doc-examine-content-other--doc-block-start
+	 line type prefix))
       ;; *-line; Initial values from first line that contains text
       (when col-indent
 	(when (and (not text-indent)
 		   (my-lint-layout-doc-line-indent-p)
 		   (not (string= (match-string 2) "")))
 	  (setq text-indent (match-string 2)))
-	(my-php-layout-doc-examine-content-other--indent-col col-indent line prefix)
+	(my-php-layout-doc-examine-content-other--indent-col
+	 col-indent line prefix)
 	;; (my-php-layout-doc-examine-content-other--indent-text)
 	(my-php-layout-doc-examine-content-other--star-indent line prefix))
       (forward-line 1))))
@@ -2699,9 +2843,11 @@ Write error at LINE with PREFIX."
 		(memq 'class type)
 		(memq 'var-global type))
       (forward-line 1)
-      (my-php-layout-doc-examine-content-other--first-separator line prefix)
+      (my-php-layout-doc-examine-content-other--first-separator
+       line prefix)
       (forward-line 1)
-      (my-php-layout-doc-examine-content-other--empty-line-tokens line prefix))))
+      (my-php-layout-doc-examine-content-other--empty-line-tokens
+       line prefix))))
 
 (defun my-php-layout-doc-examine-typeof (str)
   "Examine what type of docstring."
@@ -2959,121 +3105,47 @@ Runs `my-lint-output-mode-hook'."
 	  global-font-lock-mode)
       (font-lock-fontify-buffer)))
 
-;;; ........................................................... &batch ...
+;;; ................................................. &php-interactive ...
 
-(put 'my-php-layout-run-check 'lisp-indent-function 0)
-(defmacro my-php-layout-run-check (&rest body)
-  `(save-excursion
-     ,@body))
+(defun my-php-layout-check-all-tests (&optional prefix)
+  "Run `my-lint-layout-check-php-generic-functions'."
+  (my-lint-layout-run-list
+   my-lint-layout-check-php-generic-functions prefix))
 
-(defun my-php-layout-check-all-1 (&optional prefix)
-  "Run all checks from curent point. Does not display result buffer."
-  (dolist (function
-	   '(my-lint-layout-generic-class-count
-	     my-lint-layout-generic-xml-tags-check-main
-	     my-php-layout-check-xml-tags-lazy
-	     my-php-layout-check-multiple-print
-	     my-php-layout-check-statement-end
-	     my-php-layout-check-statement-start
-	     my-php-layout-check-statement-start-2
-	     my-php-layout-check-comment-statements
-	     my-php-layout-check-control-statements
-	     my-php-layout-check-block-end-and-code
-	     my-php-layout-check-line-up-assignment
-	     my-php-layout-check-brace-extra-newline
-	     my-php-layout-check-regexp-occur-main
-	     my-php-layout-class-check-variables
-	     my-php-layout-check-doc-missing
-	     my-php-layout-check-doc-main
-	     my-php-layout-check-multiline-print
-	     my-php-layout-check-multiline-sql
-	     my-php-layout-check-words
-	     my-lint-layout-check-whitespace
-	     my-lint-layout-check-eof-marker
-	     ;; my-lint-layout-check-line-length
-	     ))
-    (my-php-layout-run-check
-      (my-lint-debug-message
-       "debug layout: check-all %s %s" function prefix)
-      (funcall function prefix))))
+(defun my-php-layout-check-code-run (&optional point prefix)
+  (my-lint-layout-run-list
+   (append
+    my-lint-layout-check-php-code-functions
+    my-lint-layout-check-generic-functions)
+   prefix
+   point))
 
-(defun my-php-layout-check-file-list (list &optional function)
-  "Check LIST of files.
-Run optional FUNCTION or `my-php-layout-check-all-1'."
-  (let ((default-directory default-directory)
-	(dir default-directory))
-    (or function
-	(setq function 'my-php-layout-check-all-1))
-    (unless (listp list)
-      (setq list (list list)))
-    (when list
-      (dolist (file list)
-	(cd dir)
-	(my-lint-debug-message
-	 "debug layout: Batch running %s %s %s" function file (file-exists-p file))
-	(when (file-exists-p file)
-	  (let (find-file-hooks)
-	    (find-file file)
-	    (goto-char (point-min))
-	    (funcall function file))))
-      (my-lint-layout-result-sort-lines))))
+(defun my-php-layout-check-code-interactive (&optional point prefix)
+  "Run code checks from current POINT forward.
+This includes:
+  `my-lint-layout-check-php-code-functions'
+  `my-lint-layout-check-generic-functions'"
+  (interactive)
+  (my-lint-with-result-buffer 'erase 'display
+    (my-php-layout-check-code-run) point prefix))
 
-(defun my-php-layout-check-command-line-batch (&optional function)
-  "Run FUNCTION (or list of) over files on command line."
-  (let ((debug-on-error t)
-	(files command-line-args-left)
-	debug-ignored-errors
-	(default-directory default-directory)
-	(dir default-directory))
-    (my-lint-debug-message
-     "debug layout: Batch cmdline %s and files %s" function files)
-    (my-lint-layout-result-erase-buffer)
-    (dolist (func (if (listp function)
-		      function
-		    (list function)))
-      (save-excursion
-	(goto-char (point-min))
-	(my-php-layout-check-file-list files func)))
-    (my-lint-layout-with-result-buffer
-      (my-lint-debug-message
-       "debug layout: Batch cmdline results %s %d" (buffer-name) (point-max))
-      ;; to stderr. Hm.
-      (unless (eq (point-min) (point-max))
-	(princ (buffer-string))))))
+(defun my-php-layout-check-phpdoc-run (&optional point prefix)
+  (my-lint-layout-run-list
+   my-lint-layout-check-php-doc-functions
+   prefix
+   point))
 
-(defun my-php-layout-check-command-line-batch-all ()
-  "Run all check functions over files on command line."
-  (my-php-layout-check-command-line-batch
-   'my-php-layout-check-all-1))
-
-(defun my-php-layout-test ()
-  (let ((command-line-args-left
-	 '("~/proj/05/application/signUp.php")))
-    (my-php-layout-check-command-line-batch
-     '(my-php-layout-check-all-1))))
-
-;;; ..................................................... &interactive ...
+(defun my-php-layout-check-phpdoc-interactive (&optional point prefix erase)
+  "Run `my-lint-layout-check-php-doc-functions' from current POINT forward."
+  (interactive)
+  (my-lint-with-result-buffer 'erase 'display
+    (my-php-layout-check-phpdoc-run point prefix)))
 
 (defun my-php-layout-check-all-interactive (&optional point prefix)
-  "Run all checks from current POINT forward."
+  "Run All PHP checks."
   (interactive)
-  (my-lint-with-result-buffer 'display
-    (save-excursion
-      (if point
-	  (goto-char point))
-      (dolist (function '(my-lint-layout-check-whitespace
-			  my-lint-layout-check-line-length
-			  my-php-layout-check-all-1))
-	(funcall function prefix)))))
-
-(defun my-php-layout-check-phpdoc-interactive (&optional prefix)
-  "Run PHPDoc checks."
-  (interactive)
-  (dolist (function
-	   '(my-php-layout-check-doc-missing
-	     my-php-layout-check-doc-main))
-    (my-php-layout-run-check
-      (funcall function prefix))))
+  (my-lint-with-result-buffer 'erase 'display
+    (my-php-layout-check-all-tests prefix)))
 
 (defun my-lint-layout-check-generic-interactive (&optional prefix)
   "Run check according to file extension: *.php, *.css, *.php."
@@ -3088,6 +3160,91 @@ Run optional FUNCTION or `my-php-layout-check-all-1'."
       (my-lint-layout-sql-buffer-interactive name))
      (t
       (message "no checks defined for: %s" name)))))
+
+;;; ........................................................... &batch ...
+
+(defun my-lint-layout-princ-results ()
+  "Write results."
+  (my-lint-layout-with-result-buffer
+    (my-lint-layout-result-sort-lines)
+    (my-lint-layout-debug-message
+     "debug layout: Batch results %s %d"
+     (buffer-name)
+     (point-max))
+    ;; to stderr. Hm.
+    (unless (eq (point-min) (point-max))
+      (princ (buffer-string)))))
+
+(defun my-lint-layout-check-file-list (list function-list)
+  "Check LIST of files with FUNCTION-LIST."
+  (if (and list
+	   (not (listp list)))
+      (setq list (list list)))
+  (if (and function-list
+	   (not (listp function-list)))
+      (setq function-list (list function-list)))
+  (dolist (file list)
+    (my-lint-layout-debug-message
+     "debug layout: Batch running %s %s"
+     (file-exists-p file)
+     file)
+    (if (not (file-exists-p file))
+	(message "WARN: No such file '%s'" file)
+      (let (find-file-hooks)
+	(with-temp-buffer
+	  (insert-file-contents file)
+	  (my-lint-layout-run-list
+	   function-list
+	   file
+	   (point-min)))))))
+
+(defun my-lint-layout-check-generic-file (file)
+  "Run checks according to file type over FILE.
+The type of file is determined from file extension.
+The `my-lint-layout-buffer-name' is not emptied nor displayed."
+  (my-lint-layout-debug-message "debug layout: Generic file: %s" file)
+  (cond
+   ((string-match "\\.php$" file)
+    (my-lint-layout-check-file-list
+     file
+     'my-php-layout-check-all-tests))
+   ((string-match "\\.css$" file)
+    (my-lint-layout-check-file-list
+     file
+     'my-lint-layout-css-check-batch-all))
+   ((string-match "\\.sql$" file)
+    (my-lint-layout-check-file-list
+     file
+     'my-lint-layout-sql-check-batch-all))
+   (t
+    (message "[WARN] No checks defined for '%s'" file))))
+
+(defun my-lint-layout-check-batch-file-list (files &optional function)
+  "Check FILES with FUNCTION (or list of)."
+  (let ((debug-on-error t)
+	debug-ignored-errors
+	(default-directory default-directory)
+	(dir default-directory))
+    (if (and function
+	     (not (listp function)))
+	(setq function (list function)))
+    (my-lint-layout-debug-message
+     "debug layout: Batch cmdline %s; files %s" function files)
+    (my-lint-layout-check-file-list files function)))
+
+;; Selectively run test for list of files
+(defun my-lint-layout-check-batch-command-line (&optional function)
+  "Run FUNCTION (or list of) over files on command line."
+  (my-lint-layout-check-batch-file-list
+   command-line-args-left function)
+  (my-lint-layout-princ-results))
+
+(defun my-lint-layout-check-batch-generic-command-line ()
+  "Run correct check for each type of file on command line."
+  (let ((debug-on-error t))
+    (dolist (file command-line-args-left)
+      (my-lint-layout-check-generic-file file))
+    (my-lint-layout-princ-results)))
 
 ;;      (message
 ;;       (replace-regexp-in-string "%" "%%" (buffer-string)))))))
