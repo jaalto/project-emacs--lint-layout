@@ -62,7 +62,15 @@
 ;;	o   Indentation multiple of 4.
 ;;	o   terminating semicolon checks: no loose "semicolons ;"
 ;;
-;;	Some of the PHP language checks include:
+;;	Some of the SQL checks include:
+;;
+;;	o   FIXME: todo
+;;
+;;	Some of the CSS checks include:
+;;
+;;	o   FIXME: todo
+;;
+;;	Some of the PHP checks include:
 ;;
 ;;	o   The use and definition of function or methods:
 ;;
