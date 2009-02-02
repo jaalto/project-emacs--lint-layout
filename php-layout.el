@@ -802,9 +802,8 @@ displayed."
     (concat
      "[$][a-z0-9_>-]+[.][$\"][^);]"
      "\\|\"[.][$][a-z_]"
-     "\\|\"[.][a-z_0-9]+"
      "\\|[)][.][\"][^);]")
-    "No surrounding spaces aroud concat(.)")
+    "No surrounding spaces around concat(.)")
 
    ;; if ( $query and mysql_result == false )
    (list
