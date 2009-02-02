@@ -2663,7 +2663,7 @@ DATA is the full function content."
      prefix)))
 
 (defun my-php-layout-doc-examine-content-other--test-doc-comment
-  (line &optional prefix)
+  (line &optional type prefix)
   "Check doc-comment."
     (unless (looking-at "^[ \t]+[*]")
       (my-lint-layout-message
@@ -2672,7 +2672,7 @@ DATA is the full function content."
        prefix)))
 
 (defun my-php-layout-doc-examine-content-other--test-period
-  (line &optional prefix)
+  (line &optional type prefix)
   "Check that line ends top period."
     ;;  Complete sentence ends to period.
     (unless (looking-at "^[ \t]+[*].*\\.")
@@ -2682,30 +2682,36 @@ DATA is the full function content."
        prefix)))
 
 (defun my-php-layout-doc-examine-content-other--first-sentence
-  (line &optional prefix)
+  (line &optional type prefix)
   "Check two words, that t1st line is sentence."
-    (when (and (not
-		(looking-at
-		 (concat ".*"
-			 my-lint-layout-generic-doc-1st-line-ignore-regexp)))
-	       (not (looking-at
-		     "^[ \t]+[*][ \t]*[^ \t\r\n]+[ \t][^ \t\r\n]+")))
-      ;; Search at least two words. Ignore toplevel comment
-      (when (not (memq 'file type))
-	(my-lint-layout-message
-	 "[phpdoc] Line does not explain code that follows"
-	 (1+ line)
-	 prefix))))
+  (when (and (not
+	      (looking-at
+	       (concat ".*"
+		       my-lint-layout-generic-doc-1st-line-ignore-regexp)))
+	     (not (looking-at
+		   "^[ \t]+[*][ \t]*[^ \t\r\n]+[ \t][^ \t\r\n]+")))
+    ;; Search at least two words. Ignore toplevel comment
+    (when (not (memq 'file type))
+      (my-lint-layout-message
+       (format "[phpdoc] Line does not explain code that follows%s"
+	       (if (memq 'include type)
+		   " (interpreted as require or include comment)"
+		 ""))
+       (1+ line)
+       prefix))))
 
 (defun my-php-layout-doc-examine-content-other--first-capital
-  (line &optional prefix)
+  (line &optional type prefix)
   "Check first line capital letter."
-    (my-lint-layout-with-case
-      (unless (looking-at "^[ \t]+[*][ \t]*[A-Z]")
-	(my-lint-layout-message
-	 "[phpdoc] Sentence does not start with capital letter"
-	 (1+ line)
-	 prefix))))
+  (my-lint-layout-with-case
+    (unless (looking-at "^[ \t]+[*][ \t]*[A-Z]")
+      (my-lint-layout-message
+       (format "[phpdoc] Sentence does not start with capital letter%s"
+	       (if (memq 'include type)
+		   " (interpreted as require include comment)"
+		 ""))
+       (1+ line)
+       prefix))))
 
 (defun my-php-layout-doc-examine-content-other--star-indent
   (line &optional prefix)
@@ -2725,7 +2731,7 @@ DATA is the full function content."
 	 prefix))))
 
 (defun my-php-layout-doc-examine-content-other--first-separator
-  (line &optional prefix)
+  (line &optional type prefix)
   "Check that first line is sperated by one empty line.
 /**
  *  First Line. Short description.
@@ -2741,7 +2747,7 @@ DATA is the full function content."
   (goto-char (point-min)))
 
 (defun my-php-layout-doc-examine-content-other--empty-line-tokens
-  (line &optional prefix)
+  (line &optional type prefix)
   "Check empty line before @-tokens."
   (when (re-search-forward "^[ \t]*[*][ \t]@" nil t)
     (forward-line -1)
@@ -2842,19 +2848,20 @@ Write error at LINE with PREFIX."
     (my-lint-layout-save-point
       (my-php-layout-doc-examine-content-other--all-lines line type prefix))
     (forward-line 1)
-    (my-php-layout-doc-examine-content-other--test-doc-comment line prefix)
-    (my-php-layout-doc-examine-content-other--test-period line prefix)
-    (my-php-layout-doc-examine-content-other--first-sentence line prefix)
-    (my-php-layout-doc-examine-content-other--first-capital line prefix)
+    (my-php-layout-doc-examine-content-other--test-doc-comment line type prefix)
+    (my-php-layout-doc-examine-content-other--test-period line type prefix)
+    (unless (memq 'file type)
+      (my-php-layout-doc-examine-content-other--first-sentence line type prefix)
+      (my-php-layout-doc-examine-content-other--first-capital line type prefix))
     (unless (or (memq 'include type)
 		(memq 'class type)
 		(memq 'var-global type))
       (forward-line 1)
       (my-php-layout-doc-examine-content-other--first-separator
-       line prefix)
+       line type prefix)
       (forward-line 1)
       (my-php-layout-doc-examine-content-other--empty-line-tokens
-       line prefix))))
+       line type prefix))))
 
 (defun my-php-layout-doc-examine-typeof (str)
   "Examine what type of docstring."
