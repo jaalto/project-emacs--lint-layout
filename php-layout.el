@@ -809,7 +809,7 @@ displayed."
    ;; if ( $query and mysql_result == false )
    (list
     (concat
-     "\\<\\(?:elseif\\|if\\|foreach\\|while\\)[ \t]*("
+     "\\<\\(?:else[ \t]*if\\|if\\|foreach\\|while\\)[ \t]*("
      ".*[ \t][$][^ 0-9\t\r\n]+\\>"
      "[ \t]*\\(?:&&\\|[|][|]\\|and\\|or\\)[ \t]+"
      "[a-z0-9_]+[) \t\r\n]")
