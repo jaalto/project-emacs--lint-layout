@@ -145,22 +145,17 @@
   "PHP symbolic literals.")
 
 (defconst my-php-layout-function-call-keywords-no-paren
-  (concat
-   "\\<"
    (regexp-opt
     '("include"
       "include_once"
       "require"
       "require_once"
       "print"
-      "echo"
-      ))
-   "\\>")
+      "echo")
+    'words)
   "PHP functions that can be called without parens()")
 
 (defconst my-php-layout-function-call-keywords-generic
-  (concat
-   "\\<"
    (regexp-opt
     '("ereg"
       "preg_[a-z]+"
@@ -170,9 +165,8 @@
       "date"
       "strftime"
       "header"
-      "mysql_[a-z_]+"
-      ))
-   "\\>")
+      "mysql_[a-z_]+")
+    'words)
   "Typical PHP functions.")
 
 (defconst my-php-layout-function-call-keywords-list
@@ -281,7 +275,8 @@
        "\\|"
        my-lint-layout-generic-control-statement-regexp
        "\\|"
-       "\\(?:" my-lint-layout-generic-access-modifier-regexp "[ \t]+\\)" "function"
+       "\\(?:" my-lint-layout-generic-access-modifier-regexp
+               "[ \t]+\\)" "function"
    "\\).*"
    "\\([ \t\r\n]*{\\|[ \t].*(.*)[ \t\r\n]*{\\)")
   "Left anchored statement with brace.")
