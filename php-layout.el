@@ -749,6 +749,9 @@ displayed."
    '("^[ \t]*var[ \t]*[a-z]"
      "Old vardef. Migrate to syntax public|protected: ")
 
+   '("\"[$]_*[a-zA-Z0-9]+\""
+     "Double quotes around simple variable not needed")
+
    '("\\<ereg[_a-z]*(.*)"
      "preg*() function family recommended for")
 
@@ -2677,7 +2680,11 @@ DATA is the full function content."
     ;;  Complete sentence ends to period.
     (unless (looking-at "^[ \t]+[*].*\\.")
       (my-lint-layout-message
-       "[phpdoc] Line is not a complete sentence ending to period(.)"
+       (format
+	"[phpdoc] Line is not a complete sentence ending to period(.)%s"
+	(if (memq 'include type)
+	    " (interpreted as require or include comment)"
+	  ""))
        (1+ line)
        prefix)))
 
