@@ -159,17 +159,21 @@
 
 (defconst my-lint-layout-php-doc-location-regexp
    (concat
-    "^[ \t]*"
+    ;; Prefix
+    "^\\(?:[ \t]*"
+         "\\|[<][?][a-z]*[ \t]*\\)" ;; <?php
+    ;; Keywords
     "\\("
-    my-lint-layout-generic-access-modifier-regexp
-    "\\|\\<"
-    (regexp-opt
-     '("var"
-       "function"
-       "require"
-       "include")
-     t)
-    "\\>\\)")
+        my-lint-layout-generic-access-modifier-regexp
+        "\\|\\<"
+        (regexp-opt
+        '("var"
+	  "function"
+	  "require"
+	  "include")
+	t)
+	"\\>"
+    "\\)")
   "Location, where documentation should exist.")
 
 (defconst my-lint-layout-generic-control-statement-start-regexp
@@ -312,8 +316,6 @@ without brace requirement.")
     my-php-layout-check-brace-extra-newline
     my-php-layout-check-regexp-occur-main
     my-php-layout-class-check-variables
-    my-php-layout-check-doc-missing
-    my-php-layout-check-doc-main
     my-php-layout-check-multiline-print
     my-php-layout-check-multiline-sql
     my-php-layout-check-words
@@ -749,6 +751,7 @@ displayed."
    '("^[ \t]*var[ \t]*[a-z]"
      "Old vardef. Migrate to syntax public|protected: ")
 
+   ;; "$var" . "string"
    '("\"[$]_*[a-zA-Z0-9]+\""
      "Double quotes around simple variable not needed")
 
@@ -1121,7 +1124,8 @@ Return variable content string."
 
 (defun my-php-layout-doc-above-p ()
   "Check if phpdoc is in above line."
-  (let ((type (my-php-layout-doc-examine-typeof (my-lint-layout-current-line-string))))
+  (let ((type (my-php-layout-doc-examine-typeof
+	       (my-lint-layout-current-line-string))))
     (save-excursion
       (goto-char (line-beginning-position))
       (skip-chars-backward "  \t\r\n") ;;  At the end of "*/"
@@ -1157,14 +1161,18 @@ Return variable content string."
 	  (cond
 	   ((string-match "\\<var\\>" str)
 	    (my-lint-layout-message
-	     "[code] Deprecated 'var'; expecting private, public etc. access modifiers"
+	     (concat
+	      "[code] Deprecated 'var'; expecting "
+	      "private, public etc. access modifiers")
 	     line prefix))
 	   ((string-match
 	     my-lint-layout-generic-access-modifier-regexp
 	     str)) ;; OK, do nothing
 	   (t
 	    (my-lint-layout-message
-	     "[code] Possibly missing access modifier like private, public etc."
+	     (concat
+	     "[code] Possibly missing access modifier "
+	     "like private, public etc.")
 	     line prefix))))))))
 
 (defun my-php-layout-check-doc-missing (&optional prefix)
@@ -1189,8 +1197,11 @@ Return variable content string."
 	  (my-lint-layout-message
 	   "[phpdoc] function not documented"
 	   line prefix))
-	 ;; Skip "function files"
-	 ((my-lint-layout-type-include-string-p str))
+	 ;; Skip "function files" FIXME: ???
+	 ((my-lint-layout-type-include-string-p str)
+	  (my-lint-layout-message
+	   "[phpdoc] require or include not documented (non-class context)"
+	   line prefix))
 	 ((my-lint-layout-type-statement-string-p str)
 	  (my-lint-layout-message
 	   "[phpdoc] variable not documented"
