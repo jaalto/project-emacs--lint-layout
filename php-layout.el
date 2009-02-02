@@ -134,6 +134,52 @@
 (defconst my-lint-layout-generic-indent-step 4
   "*Indent step.")
 
+(defvar my-php-layout-variable-literals
+  (concat
+   "\\<"
+   (regexp-opt
+    '("false"
+      "true"
+      "null"))
+   "\\>")
+  "PHP symbolic literals.")
+
+(defconst my-php-layout-function-call-keywords-no-paren
+  (concat
+   "\\<"
+   (regexp-opt
+    '("include"
+      "include_once"
+      "require"
+      "require_once"
+      "print"
+      "echo"
+      ))
+   "\\>")
+  "PHP functions that can be called without parens()")
+
+(defconst my-php-layout-function-call-keywords-generic
+  (concat
+   "\\<"
+   (regexp-opt
+    '("ereg"
+      "preg_[a-z]+"
+      "isset"
+      "empty"
+      "array"
+      "date"
+      "strftime"
+      "header"
+      "mysql_[a-z_]+"
+      ))
+   "\\>")
+  "Typical PHP functions.")
+
+(defconst my-php-layout-function-call-keywords-list
+  (list my-php-layout-function-call-keywords-no-paren
+	my-php-layout-function-call-keywords-generic)
+  "PHP keyword list")
+
 (defconst my-lint-layout-generic-access-modifier-regexp
   (concat
    "\\<"
@@ -319,6 +365,7 @@ without brace requirement.")
     my-php-layout-check-multiline-print
     my-php-layout-check-multiline-sql
     my-php-layout-check-words
+    my-php-layout-check-keywords-main
     my-lint-layout-check-whitespace
     my-lint-layout-check-eof-marker
     ;; my-lint-layout-check-line-length
@@ -1517,6 +1564,50 @@ if ( check );
 	       (my-lint-layout-current-line-string))
        (my-lint-layout-current-line-number)
        prefix))))
+
+;;; ........................................................ &keywords ...
+
+(defun my-php-layout-check-keyword-spelling-lowercase
+  (str &optional prefix)
+  "Check lowercase."
+  (unless (string= (downcase str)
+		   str)
+    (my-lint-layout-message
+     (format "[misc] Lowercase keyword expected for `%s'"
+	     str)
+     (my-lint-layout-current-line-number)
+     prefix)))
+
+(defun my-php-layout-check-keyword-start-function-paren
+  (str indent &optional prefix)
+  "Check that <function keyword>() is next to starting paren."
+  (when (> (length indent) 0)
+    (my-lint-layout-message
+     (format "[misc] Function call keyword `%s' and extra whitespace"
+	     str)
+     (my-lint-layout-current-line-number)
+     prefix)))
+
+(defun my-php-layout-check-keywords-main (&optional prefix)
+  "Check correct lowercase spelling.
+See `my-php-layout-function-call-keywords-list'."
+  (let (class-p
+	function-p
+	str
+	re
+	indent
+	line)
+    (save-excursion
+      (setq class-p (my-lint-layout-search-forward-class-p)))
+    (setq re my-php-layout-function-call-keywords-generic)
+    (save-excursion
+      (while (re-search-forward re nil t)
+	(setq str (match-string 0))
+	(when (looking-at "\\([ \t]*\\)(")
+	  (setq indent (match-string 1))
+	  (my-php-layout-check-keyword-spelling-lowercase str prefix)
+	  (my-php-layout-check-keyword-start-function-paren
+	   str indent prefix))))))
 
 ;;; ........................................................ &spelling ...
 
