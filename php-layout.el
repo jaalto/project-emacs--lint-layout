@@ -217,39 +217,30 @@
   "Location, where documentation should exist.")
 
 (defconst my-lint-layout-generic-control-statement-start-regexp
-  (concat
-   "\\<"
-   (regexp-opt
-    '("if"
-      "while"
-      "for"
-      "foreach"
-      "try")
-    t)
-   "\\>")
+  (regexp-opt
+   '("if"
+     "while"
+     "for"
+     "foreach"
+     "try")
+   'words)
   "Control statement keyword regexp.")
 
 (defconst my-lint-layout-generic-control-statement-continue-regexp
-  (concat
-   "\\<"
-   (regexp-opt
-    '("else"
-      "elsif"
-      "elseif"
-      "else[ \t]+if"
-      "catch")
-    t)
-   "\\>")
+  (regexp-opt
+   '("else"
+     "elsif"
+     "elseif"
+     "else[ \t]+if"
+     "catch")
+   'words)
   "Control statement continue keyword regexp.")
 
 (defconst my-lint-layout-generic-class-statement
-  (concat
-   "\\<"
-   (regexp-opt
-    '("class"
-      "interface")
-    t)
-   "\\>")
+  (regexp-opt
+   '("class"
+     "interface")
+   'words)
   "Class statement keyword regexp.")
 
 (defconst my-lint-layout-generic-control-statement-regexp
@@ -652,14 +643,9 @@ without brace requirement.")
        "\\)\\>"))
    (match-string 1)))
 
-(defsubst my-lint-layout-looking-at-comment-p (str)
+(defsubst my-lint-layout-string-comment-p (str)
   "Check if STR looks like comment."
   (string-match "^[ \t]*\\([*]\\|//\\)" str))
-
-(defsubst my-lint-layout-looking-at-comment-line-p ()
-  "Check if line looks like comment."
-  (string-match "^[ \t]*\\([*]\\|//\\)"
-		(my-lint-layout-current-line-string)))
 
 (defsubst my-lint-layout-looking-at-assignment-column-p ()
   "Return assignmnet '=' column position."
@@ -674,6 +660,56 @@ without brace requirement.")
 	      buffer-file-name
 	    (buffer-name))
 	  (format-time-string "%Y-%m-%d %H:%M")))
+
+;; FIXME: comment-type 'sigle 'multi
+(defsubst my-lint-layout-looking-at-comment-start-p ()
+  "If `looking-at' at comment start."
+  (looking-at "^[ \t]*\\(/?[*]\\|//\\)"))
+
+(defsubst my-lint-layout-looking-at-comment-end-p ()
+  "If `looking-at' at comment end."
+  (looking-at "^[ \t]*\\(//\\|[*]/\\)"))
+
+;; FIXME: use string-match
+(defsubst my-lint-layout-looking-at-comment-point-p ()
+  "If `looking-at' at comment."
+  (my-lint-layout-save-point
+    (goto-char (line-beginning-position))
+    (looking-at "^[ \t]*\\(/?[*]\\|//\\|[*]/\\)")))
+
+(defsubst my-lint-layout-looking-at-comment-line-p ()
+  "Check if line looks like comment."
+  (string-match "^[ \t]*\\([*]\\|//\\)"
+		(my-lint-layout-current-line-string)))
+
+(defsubst my-lint-layout-looking-at-statement-p ()
+  "If `looking-at' at semicolon at the end of line."
+  (my-lint-layout-save-point
+    (goto-char (line-end-position))
+    (search-backward ";" (line-beginning-position) t)))
+
+(defsubst my-lint-layout-looking-at-variable-at-line-p ()
+  "If `looking-at' at variable at line"
+  (my-lint-layout-save-point
+    (goto-char (line-beginning-position))
+    (re-search-forward "[$]_*[a-z0.9]+" (line-end-position) t)))
+
+(defsubst my-lint-layout-looking-at-conditional-p ()
+  "If `looking-at' conditional statement."
+  (looking-at (concat
+	       "^[ \t]*"
+	       my-lint-layout-generic-control-statement-start-regexp)))
+
+(defsubst my-lint-layout-looking-at-continue-statement-p ()
+  "If `looking-at' continued statement, like 'else'."
+  (looking-at (concat
+	       "^[ \t]*"
+	       my-lint-layout-generic-control-statement-continue-regexp)))
+
+(defsubst my-lint-layout-looking-at-control-statement-p ()
+  "if..else."
+  (or (my-lint-layout-looking-at-conditional-p)
+      (my-lint-layout-looking-at-continue-statement-p)))
 
 (defsubst my-lint-layout-result-header-string-insert ()
   "Insert file and time string."
@@ -906,7 +942,7 @@ displayed."
 	(save-excursion
 	  (while (re-search-forward re nil t)
 	    (setq line (my-lint-layout-current-line-string))
-	    (when (and (not (my-lint-layout-looking-at-comment-p line))
+	    (when (and (not (my-lint-layout-string-comment-p line))
 		       (or (null not-re)
 			   (save-match-data
 			     (not (string-match not-re line))))
@@ -966,6 +1002,17 @@ displayed."
        prefix))))
 
 
+(defun my-lint-layout-conditional-above-p ()
+  "Check if fif/else line is above."
+    (save-excursion
+      (goto-char (line-beginning-position))
+      (or (my-lint-layout-looking-at-control-statement-p)
+	  ;; FIXME: does't work for multiline if ( .... )
+	  ;; Only few lines backward
+	  (unless (zerop (skip-chars-backward "^{" (* 80 4)))
+	    (forward-line -1)
+	    (my-lint-layout-looking-at-control-statement-p)))))
+
 ;;; ........................................................... &print ...
 
 (defun my-php-layout-check-multiple-print (&optional prefix)
@@ -1014,6 +1061,24 @@ print 'this' .
 	   "Possible maintenance problem, HERE doc syntax suggested (<<<)"
 	   (- (my-lint-layout-current-line-number) lines)
 	   prefix))))))
+
+;;; ............................................................. &sql ...
+
+(defun my-sql-re-search-forward ()
+  "Search start of SQl keyword."
+  )
+
+(defun my-sql-re-search-backward ()
+  "Search start of SQl keyword."
+  )
+
+(defun my-sql-layout-type-p ()
+  "Determine type of SQL command."
+  )
+
+(defun my-sql-layout-interactive ()
+  ""
+  )
 
 ;;; ......................................................... &php-sql ...
 
@@ -1072,8 +1137,9 @@ Return variable content string."
       (when (string= str "<?")
 	(unless (looking-at tag)
 	  (my-lint-layout-message
-	   (format "Unknown opening short xml tag, expecting long <?tag (found: %s)"
-		   (my-lint-layout-current-line-string))
+	   (format
+	    "Unknown opening short xml tag, expecting long <?tag (found: %s)"
+	    (my-lint-layout-current-line-string))
 	   (my-lint-layout-current-line-number)
 	   prefix))))))
 
@@ -1126,7 +1192,7 @@ Return variable content string."
     (while (re-search-forward my-php-layout-brace-and-code-regexp nil t)
       (setq str (buffer-substring (match-beginning 1) (match-end 1)))
       (when (and
-	     (not (my-lint-layout-looking-at-comment-p str))
+	     (not (my-lint-layout-string-comment-p str))
 	     (not (string-match
 		   (concat
 		    my-lint-layout-generic-control-statement-regexp
@@ -1230,6 +1296,10 @@ Return variable content string."
 	    line (my-lint-layout-current-line-number))
       (unless (my-php-layout-doc-above-p)
 	(cond
+	 ;; if (...)
+	 ;;    require "this" . ar;
+	 ((and (my-lint-layout-conditional-above-p)
+	       (my-lint-layout-looking-at-variable-at-line-p)))
 	 ((and class-p
 	       (my-lint-layout-type-include-string-p str))
 	  (my-lint-layout-message
