@@ -655,7 +655,13 @@ without brace requirement.")
 (defsubst my-lint-layout-looking-at-assignment-column-p ()
   "Return assignmnet '=' column position."
   ;;  Do not count equal '=='
-  (when (looking-at "^[ \]*[$a-z0-9_]+[^=\r\n]*=[^=]")
+  (when (looking-at
+	 `,(concat
+	   "^[ \t]*"
+	   my-lint-layout-generic-access-modifier-regexp
+	   "?[ \t]*"
+	   "[$a-z0-9_->]+[^=\r\n]*=[^=]"
+	   ))
     (- (length (match-string 0)) 2)))
 
 (defsubst  my-lint-layout-make-result-header-string ()
@@ -2647,11 +2653,11 @@ MySQL:
   "Check current COL of '=' and next line."
   (let ((ret t)
 	next)
-    (when (and col
+    (when (and (numberp col)
 	       (> col 0))
       (save-excursion
 	(move-to-column col)
-	(if (not (looking-at ".*[$][a-zA-Z].*="))
+	(if (not (looking-at "="))
 	    ;;  var =
 	    ;;      "is too big to include in line";
 	    ;;
@@ -2666,15 +2672,15 @@ MySQL:
   "Check that '=' line up."
   (let (str
 	col
-	len
-	line)
+	len)
     (while (re-search-forward "^[ \t]*[$][a-zA-Z0-9_>. \t-]+=[^=]" nil t)
-      (setq col      (- (current-column) 2)
-	    line     (my-lint-layout-current-line-number))
+      (setq col (- (current-column) 2))
       (unless (my-php-layout-test-line-up-p col)
 	(my-lint-layout-message
-	 (format "[assignment] Token '=' is not lined-up at column %d" col)
-	 line prefix))
+	 (format "[assignment] Assignment '=' at col %d possibly not lined-up"
+		 col)
+	 (my-lint-layout-current-line-number)
+	 prefix))
       (forward-line 1))))
 
 ;;; ............................................................. &doc ...
