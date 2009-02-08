@@ -61,7 +61,7 @@
 ;;	o   Brace placement (lined-up; no K&R support yet)
 ;;	o   Indentation multiple of 4.
 ;;	o   terminating semicolon checks: no loose "semicolons ;"
-;;2
+;;
 ;;	Some of the SQL checks include:
 ;;
 ;;	o   FIXME: todo
@@ -878,7 +878,7 @@ displayed."
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t])[ \t]*$"
      "In statement, no space before closing paren")
 
-   '("this->[^][ )\t\r\n]+[ \t]("
+   '("this->[^][ )\t\r\n]+[ \t]+("
      "In funcall, possibly extra space before opening paren")
 
    ;; code );
@@ -887,11 +887,22 @@ displayed."
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
    ;; function ( param, def)
-   '("^[ \t]*function[ \t]*.*([ \t]"
-     "In funcdef, extra space after starting paren")
+   (list
+    (concat
+     "^[ \t\r\n]*"
+     my-lint-layout-generic-access-modifier-regexp "?[ \t\r\n]*"
+     "function[ \t]+"
+     ".*([ \t]")
+     "In funcdef, extra space after opening paren")
+
    ;; function (param, def )
-   '("^[ \t]*function[ \t]*.*([^)\r\n]*[ \t])"
-     "In funcdef, extra space before closing paren")
+   (list
+    (concat
+     "^[ \t\r\n]*"
+     my-lint-layout-generic-access-modifier-regexp "?[ \t\r\n]*"
+     "function[ \t]+"
+     ".*([^)\r\n]*[ \t])")
+    "In funcdef, extra space before closing paren")
 
    (list
     (concat
@@ -1659,7 +1670,7 @@ if ( check );
   "Check that <function keyword>() is next to starting paren."
   (when (> (length indent) 0)
     (my-lint-layout-message
-     (format "[misc] Function call keyword `%s' and extra whitespace"
+     (format "[misc] Funcall `%s' and extra whitespace"
 	     str)
      (my-lint-layout-current-line-number)
      prefix)))
