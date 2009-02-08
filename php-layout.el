@@ -156,17 +156,22 @@
   "PHP functions that can be called without parens()")
 
 (defconst my-php-layout-function-call-keywords-generic
-   (regexp-opt
+  (concat
+   "\\(\\<"
+   (mapconcat
+    'concat
     '("ereg"
-      "preg_[a-z]+"
       "isset"
       "empty"
       "array"
       "date"
       "strftime"
       "header"
+      "preg_[a-z]+"
+      "is_[a-z]+"
       "mysql_[a-z_]+")
-    'words)
+    "\\|")
+   "\\)\\>")
   "Typical PHP functions.")
 
 (defconst my-php-layout-function-call-keywords-list
@@ -1653,9 +1658,9 @@ if ( check );
      (my-lint-layout-current-line-number)
      prefix)))
 
-(defun my-php-layout-check-keywords-main (&optional prefix)
+(defun my-php-layout-check-keywords-main (&optional prefix keyword-re)
   "Check correct lowercase spelling.
-See `my-php-layout-function-call-keywords-list'."
+KEYWORD-RE defaults to `my-php-layout-function-call-keywords-list'."
   (let (class-p
 	function-p
 	str
@@ -1664,9 +1669,10 @@ See `my-php-layout-function-call-keywords-list'."
 	line)
     (save-excursion
       (setq class-p (my-lint-layout-search-forward-class-p)))
-    (setq re my-php-layout-function-call-keywords-generic)
+    (or keyword-re
+	(setq keyword-re my-php-layout-function-call-keywords-generic))
     (save-excursion
-      (while (re-search-forward re nil t)
+      (while (re-search-forward keyword-re nil t)
 	(setq str (match-string 0))
 	(when (looking-at "\\([ \t]*\\)(")
 	  (setq indent (match-string 1))
