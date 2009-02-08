@@ -881,9 +881,19 @@ displayed."
    '("this->[^][ )\t\r\n]+[ \t]+("
      "In funcall, possibly extra space before opening paren")
 
-   ;; code );
-   '("[a-z][_a-z0-9]+([^)\r\n]*[ \t]+)\\|[^) \t\r\n]+[ \t]+);"
+   ;; funcall(code )
+   '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([^)\r\n]*[ \t]+)"
      "In funcall, possibly extra space before closing paren"
+     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+
+   ;; funcall( code)
+   '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
+     "In funcall, possibly extra space after opening paren"
+     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+
+   ;; code );
+   '("[^) \t\r\n]+[ \t]+);"
+     "In funcall, possibly extra space before closing paren (statement)"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
    ;; function ( param, def)
