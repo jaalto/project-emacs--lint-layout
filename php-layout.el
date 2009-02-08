@@ -161,6 +161,7 @@
    (mapconcat
     'concat
     '("ereg"
+      "array_[a-z_]+"
       "isset"
       "empty"
       "array"
@@ -880,6 +881,14 @@ displayed."
 
    '("this->[^][ )\t\r\n]+[ \t]+("
      "In funcall, possibly extra space before opening paren")
+
+   ;; this ->var;
+   '("\\<$?this[ \t]+->[ \t]*[_a-zA-Z]"
+     "In ref, leading space before token ->")
+
+   ;; this ->var;
+   '("\\<$?this->[ \t]+[_a-zA-Z]"
+     "In ref, leading space after token ->")
 
    ;; funcall(code )
    '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([^)\r\n]*[ \t]+)"
@@ -1675,15 +1684,32 @@ if ( check );
      (my-lint-layout-current-line-number)
      prefix)))
 
-(defun my-php-layout-check-keyword-start-function-paren
-  (str indent &optional prefix)
-  "Check that <function keyword>() is next to starting paren."
-  (when (> (length indent) 0)
-    (my-lint-layout-message
-     (format "[misc] Funcall `%s' and extra whitespace"
-	     str)
-     (my-lint-layout-current-line-number)
-     prefix)))
+(defun my-php-layout-check-keywords-error-opening-paren-leading
+  (str &optional prefix)
+  "Error: <keyword><space>(); Leading <space>."
+  (my-lint-layout-message
+   (format "[misc] In funcall, `%s' and extra space before opening paren"
+	   str)
+   (my-lint-layout-current-line-number)
+   prefix))
+
+(defun my-php-layout-check-keywords-error-opening-paren-trailing
+  (str &optional prefix)
+  "Error: <keyword>(<space>...; trailing <space>."
+  (my-lint-layout-message
+   (format "[misc] In funcall, `%s' and extra space after opening paren"
+	   str)
+   (my-lint-layout-current-line-number)
+   prefix))
+
+(defun my-php-layout-check-keywords-error-closing-paren-leading
+  (str &optional prefix)
+  "Error: <keyword>(...<space>); trailing <space>."
+  (my-lint-layout-message
+   (format "[misc] In funcall, `%s' and extra space before closing paren"
+	   str)
+   (my-lint-layout-current-line-number)
+   prefix))
 
 (defun my-php-layout-check-keywords-main (&optional prefix keyword-re)
   "Check correct lowercase spelling.
@@ -1704,8 +1730,15 @@ KEYWORD-RE defaults to `my-php-layout-function-call-keywords-list'."
 	(when (looking-at "\\([ \t]*\\)(")
 	  (setq indent (match-string 1))
 	  (my-php-layout-check-keyword-spelling-lowercase str prefix)
-	  (my-php-layout-check-keyword-start-function-paren
-	   str indent prefix))))))
+	  (when (> (length indent) 0)
+	    (my-php-layout-check-keywords-error-opening-paren-leading
+	     str prefix))
+	  (when (looking-at "[ \t]*([ \t]")
+	    (my-php-layout-check-keywords-error-opening-paren-trailing
+	     str prefix))
+	  (when (looking-at "[ \t]*([^)\r\n]+[ \t])")
+	    (my-php-layout-check-keywords-error-closing-paren-leading
+	     str prefix)))))))
 
 ;;; ........................................................ &spelling ...
 
