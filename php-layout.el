@@ -61,7 +61,7 @@
 ;;	o   Brace placement (lined-up; no K&R support yet)
 ;;	o   Indentation multiple of 4.
 ;;	o   terminating semicolon checks: no loose "semicolons ;"
-;;
+;;2
 ;;	Some of the SQL checks include:
 ;;
 ;;	o   FIXME: todo
@@ -902,8 +902,8 @@ displayed."
    (list
     (concat
      "\\<\\(?:elseif\\|if\\|foreach\\|while\\)[ \t]*("
-     ".*[ \t][^ 0-9\t\r\n]+\\>"
-     "[ \t]*\\(?:&&\\|[|][|]\\|and\\|or\\)[ \t]+"
+     "[ \t][^ $0-9\t\r\n]+\\>"
+     "[ \t]*\\(?:&&\\|[|][|]\\|\\<and\\>\\|\\<or\\>\\)[ \t]*"
      "[$][a-z0-9_]+[) \t\r\n]")
     "Possibly missing vardef($) in relational test at left")
 
