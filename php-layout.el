@@ -95,7 +95,9 @@
 ;;      "buffer" is mentioned:
 ;;
 ;;	    ;; Decides correct test set for *.css, *.php, *.sql file
-;;	    my-lint-layout-check-generic-interactive
+;;	    my-lint-layout-check-generic-buffer
+;;	    my-lint-layout-check-generic-file
+;;	    my-lint-layout-check-generic-directory
 ;;
 ;;	    my-lint-layout-php-check-all-interactive
 ;;	    my-lint-layout-php-check-phpdoc-interactive
@@ -3496,19 +3498,49 @@ This includes:
   (my-lint-with-result-buffer 'erase 'display
     (my-lint-layout-php-check-all-tests prefix)))
 
-(defun my-lint-layout-check-generic-interactive (&optional prefix)
-  "Run check according to file extension: *.php, *.css, *.php."
-  (interactive)
+(defun my-lint-layout-check-generic-buffer
+  (&optional prefix verb)
+  "Run checks. PREFIX is displayed at the beginning of line. VERB.
+According to file extension: *.php, *.css, *.php."
+  (interactive
+   (list nil 'verbose))
   (let ((name (buffer-name)))
+    (or prefix
+	(setq prefix name))
     (cond
      ((string-match "\\.php" name)
-      (my-lint-layout-php-check-all-interactive (point-min) name))
+      (my-lint-layout-php-check-all-interactive (point-min) prefix))
      ((string-match "\\.css" name)
-      (my-lint-layout-css-check-buffer-interactive name))
+      (my-lint-layout-css-check-buffer-interactive prefix))
      ((string-match "\\.sql" name)
-      (my-lint-layout-sql-buffer-interactive name))
+      (my-lint-layout-sql-buffer-interactive prefix))
      (t
-      (message "no checks defined for: %s" name)))))
+      (if verb
+	  (message "no checks defined for: %s" prefix))))))
+
+(defun my-lint-layout-check-generic-file (file &optional verb)
+  "Run check on FILE. VERB."
+  (interactive
+   (list (read-file-name "File to check:")
+	 'verbose))
+  (let (find-file-hooks)
+    (with-current-buffer (find-file file)
+      (goto-char (point-min))
+      (my-lint-layout-check-generic-buffer
+       file
+       verb))))
+
+(defun my-lint-layout-check-generic-directory
+  (dir &optional verb)
+  "Run check in DIR for files. VERB.
+See `my-lint-layout-check-generic-buffer'"
+  (interactive
+   (list (read-directory-name "Directory to check: ")
+	 'verb))
+  (dolist ((file (directory-files dir 'fullpath)))
+    (when (and (not (file-directory-p file))
+	       (file-exists-p file))
+      (my-lint-layout-check-generic-file file verb))))
 
 ;;; ........................................................... &batch ...
 
