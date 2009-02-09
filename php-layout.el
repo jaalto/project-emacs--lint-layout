@@ -109,7 +109,7 @@
 ;;	    my-lint-layout-css-check-buffer-interactive
 ;;	    my-lint-layout-sql-buffer-interactive
 ;;
-;;	Look at results in `my-layout-changelog-check-main' buffer which
+;;	Look at results in `my-lint-layout-changelog-check-main' buffer which
 ;;	by default is `my-lint-layout-buffer-name'.
 ;;
 ;; Batch command line usage
@@ -2011,20 +2011,20 @@ KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
 
 ;;; ..................................................... &gpl-license ...
 
-(defsubst my-layout-license-gpl-search-forward ()
+(defsubst my-lint-layout-license-gpl-search-forward ()
   "Position point to License line."
   (re-search-forward "\\<GNU General Public License\\>" nil t))
 
-(defun my-layout-license-not-exists (&optional prefix)
+(defun my-lint-layout-license-not-exists (&optional prefix)
   "Check if License exists."
-  (unless (my-layout-license-gpl-search-forward)
+  (unless (my-lint-layout-license-gpl-search-forward)
     (my-lint-layout-message
      "[licence] GNU General Public License not found."
      1
      prefix)
     t))
 
-(defun my-layout-license-text (text &optional prefix)
+(defun my-lint-layout-license-text (text &optional prefix)
   "Check that License TEXT exists."
   (unless (re-search-forward (regexp-quote text) nil t)
     (my-lint-layout-message
@@ -2032,60 +2032,60 @@ KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
      1
      prefix)))
 
-(defun my-layout-license-check-main (&optional prefix)
+(defun my-lint-layout-license-check-main (&optional prefix)
   "Check License syntax.
 Optional PREFIX is used add filename to the beginning of line."
   (when (my-lint-layout-buffer-data-p)
-    (if (my-layout-license-not-exists prefix)
+    (if (my-lint-layout-license-not-exists prefix)
 	t
       ;; The order is important
-      (my-layout-license-text
+      (my-lint-layout-license-text
        "published by the Free Software Foundation" prefix)
       (my-lint-layout-with-case
-	(my-layout-license-text
+	(my-lint-layout-license-text
 	 "WITHOUT ANY WARRANTY" prefix))
-      (my-layout-license-text
+      (my-lint-layout-license-text
        "You should have received a copy" prefix)
-      (my-layout-license-text
+      (my-lint-layout-license-text
        "http://www.gnu.org/licenses" prefix))))
 
-(defun my-layout-license-check-buffer (&optional prefix)
-  "Check from `point-min' with `my-layout-license-check-main'."
+(defun my-lint-layout-license-check-buffer (&optional prefix)
+  "Check from `point-min' with `my-lint-layout-license-check-main'."
   (my-lint-layout-point-min
-    (my-layout-license-check-main prefix)))
+    (my-lint-layout-license-check-main prefix)))
 
-(defun my-layout-license-check-main-interactive (&optional prefix)
-  "Call `my-layout-license-check-buffer'."
+(defun my-lint-layout-license-check-main-interactive (&optional prefix)
+  "Call `my-lint-layout-license-check-buffer'."
   (interactive)
   (my-lint-layout-with-interactive
-    (my-layout-license-check-buffer)))
+    (my-lint-layout-license-check-buffer)))
 
 ;;; ....................................................... &copyright ...
 
-(defsubst my-layout-copyright-line-p ()
+(defsubst my-lint-layout-copyright-line-p ()
   "Check if current point is copyright line.
-Should be called right after `my-layout-copyright-search-forward'."
+Should be called right after `my-lint-layout-copyright-search-forward'."
   (not (looking-at ".*information")))
 
-(defsubst my-layout-copyright-search-forward ()
+(defsubst my-lint-layout-copyright-search-forward ()
   "Position point to 'Copyright' line."
   (let (moved)
     (while (and (setq moved
 		      (re-search-forward "\\<copyright\\>" nil t))
-		(not (my-layout-copyright-line-p))))
+		(not (my-lint-layout-copyright-line-p))))
     (and moved
-	 (my-layout-copyright-line-p))))
+	 (my-lint-layout-copyright-line-p))))
 
-(defun my-layout-copyright-not-exists (&optional prefix)
+(defun my-lint-layout-copyright-not-exists (&optional prefix)
   "Check if Copyright exists."
-  (unless (my-layout-copyright-search-forward)
+  (unless (my-lint-layout-copyright-search-forward)
     (my-lint-layout-message
      "[copyright] Not found"
      1
      prefix)
     t))
 
-(defun my-layout-copyright-line-syntax (&optional prefix)
+(defun my-lint-layout-copyright-line-syntax (&optional prefix)
   "Check Copyright line syntax."
   (let ((line (my-lint-layout-current-line-number))
 	(string (my-lint-layout-current-line-string)))
@@ -2123,38 +2123,38 @@ Should be called right after `my-layout-copyright-search-forward'."
        line
        prefix))))
 
-(defun my-layout-copyright-check-main (&optional prefix)
+(defun my-lint-layout-copyright-check-main (&optional prefix)
   "Check Copyright syntax.
 Optional PREFIX is used add filename to the beginning of line."
-  (if (my-layout-copyright-not-exists prefix)
+  (if (my-lint-layout-copyright-not-exists prefix)
       t
-    (my-layout-copyright-line-syntax prefix)
-    (while (my-layout-copyright-search-forward)
-      (my-layout-copyright-line-syntax prefix))))
+    (my-lint-layout-copyright-line-syntax prefix)
+    (while (my-lint-layout-copyright-search-forward)
+      (my-lint-layout-copyright-line-syntax prefix))))
 
-(defun my-layout-copyright-check-buffer (&optional prefix)
-  "Check from `point-min' with `my-layout-copyright-check-main'."
+(defun my-lint-layout-copyright-check-buffer (&optional prefix)
+  "Check from `point-min' with `my-lint-layout-copyright-check-main'."
   (my-lint-layout-point-min
-    (my-layout-copyright-check-main prefix)))
+    (my-lint-layout-copyright-check-main prefix)))
 
-(defun my-layout-copyright-check-main-interactive ()
-  "Call `my-layout-copyright-check-buffer'."
+(defun my-lint-layout-copyright-check-main-interactive ()
+  "Call `my-lint-layout-copyright-check-buffer'."
   (interactive)
   (my-lint-layout-with-interactive
-    (my-layout-copyright-check-buffer)))
+    (my-lint-layout-copyright-check-buffer)))
 
 ;;; ....................................................... &changelog ...
 
-(defconst my-layout-changelog-item-regexp
+(defconst my-lint-layout-changelog-item-regexp
   "^[ \t][*]\\( *\\)\\([^ :()\t\r\n]+\\)")
 
-(defconst my-layout-changelog-wordlist-regexp
+(defconst my-lint-layout-changelog-wordlist-regexp
   "\\(\
 \\<[a-z]+ed\\>\
 \\|<[a-z]+ing\\>\
 \\)")
 
-(defun my-layout-word-tense (word message) ;Primitive
+(defun my-lint-layout-word-tense (word message) ;Primitive
   "Check non-active tense."
   (when (and word
 	     (string-match "\\(ed\\|ing\\)$" word))
@@ -2163,16 +2163,16 @@ Optional PREFIX is used add filename to the beginning of line."
      (my-lint-layout-current-line-number)
      prefix)))
 
-(defun my-layout-changelog-wording (&optional prefix)
+(defun my-lint-layout-changelog-wording (&optional prefix)
   "Search for words in non-active tense."
-  (while (re-search-forward my-layout-changelog-wordlist-regexp nil t)
+  (while (re-search-forward my-lint-layout-changelog-wordlist-regexp nil t)
     (my-lint-layout-message
      (format "[changelog] word possibly in wrong tense '%s'"
 	     (match-string 0))
      (my-lint-layout-current-line-number)
      prefix)))
 
-(defun my-layout-changelog-file-items (&optional prefix)
+(defun my-lint-layout-changelog-file-items (&optional prefix)
   "Check ChangeLog syntax. The wording: Add, Modify, Change ..."
   (let (change
 	word)
@@ -2181,7 +2181,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	    word   (and (looking-at " *\\([^ \t\r\n]+\\)")
 			(match-string 1)))
       (when word
-	(my-layout-word-tense
+	(my-lint-layout-word-tense
 	 word
 	 (format "[changelog] change marker, wrong tense of verb '%s'" word)))
       (when (looking-at "  ")
@@ -2198,7 +2198,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	  change)
 	 (my-lint-layout-current-line-number))))))
 
-(defun my-layout-changelog-file-bullet (&optional prefix)
+(defun my-lint-layout-changelog-file-bullet (&optional prefix)
   "Check ChangeLog syntax. The filename line:
 
   * application/template/overview.php: Add new file.
@@ -2207,7 +2207,7 @@ Optional PREFIX is used add filename to the beginning of line."
   (let (indent
 	word
 	file)
-    (while (re-search-forward my-layout-changelog-item-regexp nil t)
+    (while (re-search-forward my-lint-layout-changelog-item-regexp nil t)
       (setq indent (match-string 1)
 	    file   (match-string 2)
 	    word   (or (and (looking-at
@@ -2236,7 +2236,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	 (my-lint-layout-current-line-number)
 	 prefix))
       (when word
-	(my-layout-word-tense
+	(my-lint-layout-word-tense
 	 word
 	 (format "[changelog] at *, wrong tense of verb '%s'" word)))
       (when (and (string-match " " indent)
@@ -2247,25 +2247,25 @@ Optional PREFIX is used add filename to the beginning of line."
 	 prefix))
       (forward-line 1))))
 
-(defun my-layout-changelog-check-main (&optional prefix)
+(defun my-lint-layout-changelog-check-main (&optional prefix)
   "Check ChangeLog syntax.
 Optional PREFIX is used add filename to the beginning of line."
   (my-lint-layout-generic-check-mixed-eol-crlf prefix)
-  (my-layout-changelog-file-bullet prefix)
-  (my-layout-changelog-file-items prefix)
-  (my-layout-changelog-wording prefix))
+  (my-lint-layout-changelog-file-bullet prefix)
+  (my-lint-layout-changelog-file-items prefix)
+  (my-lint-layout-changelog-wording prefix))
 
-(defun my-layout-changelog-check-standard-main (&optional prefix)
+(defun my-lint-layout-changelog-check-standard-main (&optional prefix)
   "Check ChangeLog syntax. With standard checks."
-  (my-layout-changelog-check-main prefix)
+  (my-lint-layout-changelog-check-main prefix)
   (my-lint-layout-check-whitespace-buffer prefix)
   (my-lint-layout-check-line-length prefix))
 
-(defun my-layout-changelog-check-main-interactive ()
-  "Call my-layout-changelog-check-main and other relevant checks."
+(defun my-lint-layout-changelog-check-main-interactive ()
+  "Call my-lint-layout-changelog-check-main and other relevant checks."
   (interactive)
   (my-lint-layout-with-interactive
-    (my-layout-changelog-check-standard-main)))
+    (my-lint-layout-changelog-check-standard-main)))
 
 ;;; ........................................................... &brace ...
 
