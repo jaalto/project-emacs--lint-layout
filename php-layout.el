@@ -326,6 +326,7 @@ without brace requirement.")
    (mapconcat
     'concat
     '("ereg"
+      "array"
       "array_[a-z_]+"
       "isset"
       "empty"
