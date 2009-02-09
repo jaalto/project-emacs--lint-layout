@@ -134,6 +134,18 @@
 (defconst my-lint-layout-generic-indent-step 4
   "*Indent step.")
 
+(defconst my-lint-layout-generic-assignment-line-up-treshold 5
+  "Number of characters apart, that assignments should be lined up.
+If value is nil, line up is always checked.
+
+An example:
+
+    var = 100;
+    variable = 100;
+
+With threshold value 5, the assignments are within it and the '='
+tokens could be lined up.")
+
 (defvar my-php-layout-variable-literals
   (concat
    "\\<"
@@ -490,7 +502,7 @@ without brace requirement.")
 (defun my-lint-layout-current-line-number ()
   "Return line number. Lines are counted from 1..x"
   ;;  - always use line beginning as reference
-  ;;  - The count-lines returns 0 for 1st line --> 1+
+  ;;  - The count-lines returns 0 for 1st line, therefore 1+
   (let ((beg (line-beginning-position))
 	(i 1))
     (save-excursion
@@ -2703,23 +2715,27 @@ MySQL:
 
 ;;; ........................................................ &lined-up ...
 
-(defun my-php-layout-test-line-up-p (col)
-  "Check current COL of '=' and next line."
-  (let ((ret t)
+(defun my-php-layout-test-line-up-p (&optional col)
+  "Check current `current-column' or COL for '=' and next line."
+  (let ((treshold my-lint-layout-generic-assignment-line-up-treshold)
+        (ret t)
 	next)
-    (when (and (numberp col)
-	       (> col 0))
-      (save-excursion
-	(move-to-column col)
-	(if (not (looking-at "="))
-	    ;;  var =
-	    ;;      "is too big to include in line";
-	    ;;
-	    ;; Accept this as is
-	    'no-variable-follows
-	  (forward-line 1)
-	  (if (setq next (my-lint-layout-looking-at-assignment-column-p))
-	      (setq ret (eq col next))))))
+    (or col
+	(setq col (current-column)))
+    (save-excursion
+      (move-to-column col)
+      (if (not (looking-at "="))
+	  ;;  var =
+	  ;;      "is too big to include in line";
+	  ;;
+	  ;; Accept this as is
+	  'no-variable-follows
+	(forward-line 1)
+	(setq next (my-lint-layout-looking-at-assignment-column-p))))
+    (when (and next
+	       (or (null treshold)
+		   (<= (abs (- col next)) treshold)))
+      (setq ret (eq col next)))
     ret))
 
 (defun my-php-layout-check-line-up-assignment (&optional prefix)
@@ -2731,7 +2747,7 @@ MySQL:
       (setq col (- (current-column) 2))
       (unless (my-php-layout-test-line-up-p col)
 	(my-lint-layout-message
-	 (format "[assignment] Assignment '=' at col %d possibly not lined-up"
+	 (format "[assignment] Assignment(=) at col %d possibly not lined-up"
 		 col)
 	 (my-lint-layout-current-line-number)
 	 prefix))
