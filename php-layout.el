@@ -952,9 +952,6 @@ displayed."
    '("[.=][ \t]*\\<date(.*)"
      "POSIX standard strftime() recommended for")
 
-   '("^[ \t]*else[ \t]+if\\>"
-     "Standard elseif keyword not used")
-
    '("\\<\\(if\\|else\\|elseif\\)[ \t]*(.*[$a-z][ \t]*=[ \t]*[$a-z]"
      "Assignment inside statement"
      "mysql")
