@@ -914,8 +914,9 @@ displayed."
 
    (list
     (concat
-     "^[ \]*"
-     "\\(class\\|function\\|if\\|elsewhile\\|abstract\\|interface\\|foreach\\)[ \t]*("
+     "^[ \t]*"
+     "\\<\\(function\\|if\\|else(?:[ \t\r\n]*if\\)?\\|while\\|class\\|abstract\\|interface\\|foreach\\)"
+     "[ \t]*("
      "\\>")
     "Possibly misspelled keyword, expect lowercase"
     nil
