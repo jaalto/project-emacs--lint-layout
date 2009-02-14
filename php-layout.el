@@ -915,7 +915,7 @@ displayed."
    (list
     (concat
      "^[ \t]*"
-     "\\<\\(function\\|if\\|else(?:[ \t\r\n]*if\\)?\\|while\\|class\\|abstract\\|interface\\|foreach\\)"
+     "\\<\\(function\\|if\\|else\\(?:[ \t\r\n]*if\\)?\\|while\\|class\\|abstract\\|interface\\|foreach\\)"
      "[ \t]*("
      "\\>")
     "Possibly misspelled keyword, expect lowercase"
