@@ -322,7 +322,7 @@ without brace requirement.")
 
 (defconst my-lint-layout-php-function-call-keywords-generic
   (concat
-   "\\(\\<"
+   "[^a-zA-Z0-9_]\\("
    (mapconcat
     'concat
     '("ereg"
@@ -338,7 +338,7 @@ without brace requirement.")
       "is_[a-z]+"
       "mysql_[a-z_]+")
     "\\|")
-   "\\)\\>")
+   "\\)[^a-zA-Z0-9_]")
   "Typical PHP functions.")
 
 (defconst my-lint-layout-php-function-call-keywords-list
