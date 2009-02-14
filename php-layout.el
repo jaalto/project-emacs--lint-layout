@@ -2522,9 +2522,27 @@ MySQL:
   "Check non-standard comment syntax."
   (when (string-match "#\\|/[*]" str)
     (my-lint-layout-message
-     (format "[sql] non-standard comment syntax: %s" str)
+     (format "[sql] Non-standard comment syntax: %s" str)
      (my-lint-layout-current-line-number)
      prefix)))
+
+(defun my-lint-layout-sql-check-iso-date (str)
+  "Check YYYY-MM-DD in string."
+  (when (and (string-match
+	      "\\(.\\)[0-9]\\{4,4\\}-[0-9][0-9]-[0-9][0-9]\\(.?\\)" str))
+    (let ((match (match-string 0 str))
+	  (open (match-string 1 str))
+	  (close (match-string 2 str)))
+      (flet ((test
+	      (str)
+	      (unless (string= "'" str)
+		(my-lint-layout-message
+		 (format "[sql] Incorrect or missing quotes around date [%s]"
+			 match)
+		 (my-lint-layout-current-line-number)
+		 prefix))))
+	(test open)
+	(test close)))))
 
 (defun my-lint-layout-sql-check-keywords (&optional prefix)
   "Check SQL syntax."
@@ -2545,6 +2563,9 @@ MySQL:
 	 word)
     (while (re-search-forward "^\\([ \t]*[^-\r\n].*\\)" nil t)
       (setq str (match-string 1))
+      ;; Filter out "-- in-line comments"
+      (when (string-match "^\\(.+\\)-- " str)
+	(setq str (match-string 1)))
       (setq non-std-kwd-p nil)
       (my-lint-layout-sql-backquote str)
       (my-lint-layout-sql-comment str)
@@ -2568,6 +2589,7 @@ MySQL:
 		 (match-string 0 str))
 	 (my-lint-layout-current-line-number)
 	 prefix))
+      (my-lint-layout-sql-check-iso-date str)
       (setq word nil)
       (cond
        ((string-match "^[ \t]*\\(.+[^ \t]+\\)[ \t]+NOT[ \t]+NULL" str)
