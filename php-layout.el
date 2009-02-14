@@ -2821,7 +2821,7 @@ MySQL:
   (let (str
 	col
 	len)
-    (while (re-search-forward "^[ \t]*[$][a-zA-Z0-9_>. \t-]+=[^=]" nil t)
+    (while (re-search-forward "^[ \t]*[$][a-zA-Z0-9_>. \t-]+=[^=\r\n]" nil t)
       (setq col (- (current-column) 2))
       (unless (my-lint-layout-php-test-line-up-p col)
 	(my-lint-layout-message
