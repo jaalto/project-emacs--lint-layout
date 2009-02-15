@@ -467,8 +467,11 @@ without brace requirement.")
   "List of all PHP check functions.")
 
 (defvar my-lint-layout-check-sql-functions
-  '(my-lint-layout-sql-check-create-table
-    my-lint-layout-sql-check-keywords)
+  '(my-lint-layout-sql-check-statement-create-table-main
+    my-lint-layout-sql-check-statement-select-main
+    my-lint-layout-sql-check-statement-insert-into-main
+;;;    my-lint-layout-sql-check-keywords
+    my-lint-layout-sql-comment)
   "*List of functions for SQL.")
 
 (defvar my-lint-layout-check-css-functions
@@ -506,9 +509,9 @@ without brace requirement.")
   `(let (case-fold-search)
      ,@body))
 
-(put 'my-lint-layout-point-min 'lisp-indent-function 0)
-(put 'my-lint-layout-point-min 'edebug-form-spec '(body))
-(defmacro my-lint-layout-point-min (&rest body)
+(put 'my-lint-layout-with-point-min 'lisp-indent-function 0)
+(put 'my-lint-layout-with-point-min 'edebug-form-spec '(body))
+(defmacro my-lint-layout-with-point-min (&rest body)
   "Run BODY with from `point-min'. Point is preserved."
   `(save-excursion
     (goto-char (point-min))
@@ -572,6 +575,10 @@ without brace requirement.")
 (defsubst my-lint-layout-current-line-string ()
   "Current line."
   (buffer-substring (line-beginning-position) (line-end-position)))
+
+(defsubst my-lint-layout-expand-tabs (str)
+  "Expand tabs to spaces."
+  (replace-regexp-in-string "\t" `,(make-string 8 ?\ ) str))
 
 (defsubst my-lint-layout-paragraph-end-point ()
   "Return empty line or `point-max'."
@@ -1096,7 +1103,7 @@ displayed."
 
 (defun my-lint-layout-php-check-regexp-occur-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-php-check-regexp-occur'."
-  (my-lint-layout-point-min
+  (my-lint-layout-with-point-min
     (my-lint-layout-php-check-regexp-occur-main prefix)))
 
 (defun my-lint-layout-php-check-regexp-occur-buffer-interactive ()
@@ -1856,7 +1863,7 @@ KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
 
 (defun my-lint-layout-php-check-words-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-php-check-words'."
-  (my-lint-layout-point-min
+  (my-lint-layout-with-point-min
     (my-lint-layout-php-check-words prefix)))
 
 (defun my-lint-layout-php-check-words-buffer-interactive ()
@@ -1951,7 +1958,7 @@ KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
 
 (defun my-lint-layout-check-whitespace-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-check-whitespace'."
-  (my-lint-layout-point-min
+  (my-lint-layout-with-point-min
     (my-lint-layout-check-whitespace prefix)))
 
 (defun my-lint-layout-check-whitespace-buffer-interactive ()
@@ -1968,7 +1975,7 @@ KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
 
 (defun my-lint-layout-line-ending-lf-p ()
   "Check if buffer contains one line with LF line ending."
-  (my-lint-layout-point-min
+  (my-lint-layout-with-point-min
     (my-lint-layout-line-ending-lf-1-p)))
 
 (defun my-lint-layout-generic-check-mixed-eol-crlf (&optional prefix)
@@ -1999,7 +2006,7 @@ KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
 
 (defun my-lint-layout-check-line-length-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-check-line-length'."
-  (my-lint-layout-point-min
+  (my-lint-layout-with-point-min
     (my-lint-layout-check-line-length)))
 
 (defun my-lint-layout-check-line-length-buffer-interactive (&optional prefix)
@@ -2049,7 +2056,7 @@ Optional PREFIX is used add filename to the beginning of line."
 
 (defun my-lint-layout-license-check-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-license-check-main'."
-  (my-lint-layout-point-min
+  (my-lint-layout-with-point-min
     (my-lint-layout-license-check-main prefix)))
 
 (defun my-lint-layout-license-check-main-interactive (&optional prefix)
@@ -2101,10 +2108,17 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
     (when (and (not (looking-at ".*<.+>"))
 	       ;;  Tag "@copyright ....."
 	       (not (string-match "@copyright" string)))
-      (my-lint-layout-message
-       (format "[copyright] missing email address: %s" string)
-       line
-       prefix))
+      (cond
+       ((looking-at ".*@")
+	(my-lint-layout-message
+	 (format "[copyright] missing <> around email address: %s" string)
+	 line
+	 prefix))
+       (t
+	(my-lint-layout-message
+	 (format "[copyright] missing email address: %s" string)
+	 line
+	 prefix))))
     (when (and (looking-at ".*<\\(.+\\)>")
 	       (string-match
 		"foo\\|bar\\|quux\\|example"
@@ -2132,7 +2146,7 @@ Optional PREFIX is used add filename to the beginning of line."
 
 (defun my-lint-layout-copyright-check-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-copyright-check-main'."
-  (my-lint-layout-point-min
+  (my-lint-layout-with-point-min
     (my-lint-layout-copyright-check-main prefix)))
 
 (defun my-lint-layout-copyright-check-main-interactive ()
@@ -2413,50 +2427,66 @@ Optional PREFIX is used add filename to the beginning of line."
   "SQL reserved keywords.")
 
 (defconst my-lint-layout-sql-keywords-column-mysql
-  (eval-when-compile
-    (concat
-     "\\b"
-     (regexp-opt
-      '("AUTO_INCREMENT"
-	"UNSIGNED"
-	"ZEROFILL"
-	;; CREATE TABLE xxx (...) ENGINE = InnoDB;
-	"ENGINE"
-	"InnoDB"
-	) t) "\\b"))
+  (concat
+   "\\<"
+   (regexp-opt
+    '("auto_increment"
+      "unsigned"
+      "zerofill"
+      ;; create table xxx (...) engine = innodb;
+      "engine"
+      "innodb"
+      ) t) "\\>")
   "MySQL column keywords.")
 
+(defconst my-lint-layout-sql-keywords-sql92-for-column-word-re
+  '("not[ \t\r\n]+null"
+    "primary[ \t\r\n]+key"
+    "references"
+    "unique")
+  "SQL92 column definition keywords in CREATE TABLE statement.
+List of word regexps.")
+
+(defconst my-lint-layout-sql-keywords-sql92-for-column
+  (concat
+   "\\<\\(?:"
+   (mapconcat
+    'concat
+    my-lint-layout-sql-keywords-sql92-for-column-word-re
+    "\\|")
+   "\\>\\)")
+  "SQL92 column definition keywords in CREATE TABLE statement.
+One ORing regexp.")
+
 (defconst my-lint-layout-sql-keywords-sql92-data-types
-  (eval-when-compile
-    (concat
-     "\\b"
-     (regexp-opt
-      '(
-	"BIT"
-	"CHAR"
-	"CHARACTER"
-	"CURRENCY"
-	"DATE"
-	"DEC"
-	"DECIMAL"
-	"DOUBLE PRECISION"
-	"FLOAT"
-	"INT"
-	"INTEGER"
-	"INTERVAL"
-	"MONEY"
-	"NCHAR"
-	"NATIONAL"
-	"NUMERIC"
-	"REAL"
-	"SMALLINT"
-	"TIME"
-	"TIMESTAMP"
-	"VARCHAR"
-	"VARYING"
-	)
-      t) "\\b"))
-  "SQL reserved keywords.")
+  (concat
+   "\\<\\(?:"
+   (regexp-opt
+    '(
+      "bit"
+      "char"
+      "character"
+      "currency"
+      "date"
+      "dec"
+      "decimal"
+      "double precision"
+      "float"
+      "int"
+      "integer"
+      "interval"
+      "money"
+      "nchar"
+      "national"
+      "numeric"
+      "real"
+      "smallint"
+      "time"
+      "timestamp"
+      "varchar"
+      "varying"))
+   "\\>\\)")
+  "SQL92 reserved data type keywords.")
 
 ;; BIT data type in MS SQL Server stores a bit of data (0 or 1) and
 ;; does not correspond to previously described SQL99 BIT. The literal
@@ -2467,24 +2497,23 @@ Optional PREFIX is used add filename to the beginning of line."
 ;; smaller than that for INTEGER.
 
 (defconst my-lint-layout-sql-keywords-sql99-data-types
-  (eval-when-compile
-    (concat
-     "\\b"
-     (regexp-opt
-      '("ARRAY"
-	"BOOLEAN"
-	"BLOB"
-	"CLOB"
-	"LIST"
-	"SET"
-	"SMALLINT"
-	)
-      t) "\\b"))
+  (concat
+   "\\<\\(?:"
+   (regexp-opt
+    '("array"
+      "boolean"
+      "blob"
+      "clob"
+      "list"
+      "set"
+      "smallint"
+      ))
+   "\\)\\>")
   "SQL reserved keywords.")
 
 (defconst my-lint-layout-sql-keywords-sql-types
   (concat
-   "\\("
+   "\\(?:"
    my-lint-layout-sql-keywords-sql92-data-types
    "\\|"
    my-lint-layout-sql-keywords-sql99-data-types
@@ -2504,21 +2533,7 @@ Optional PREFIX is used add filename to the beginning of line."
    "\\)")
   "SQL reserved keywords.")
 
-(defsubst my-lint-layout-sql-backquote (str)
-  "Check unknown backquote character.
-MySQL:
-  CREATE TABLE  `service`
-  (
-    `id`         INT(10)      NOT NULL,
-    PRIMARY KEY  (`id`)
-  );"
-  (when (string-match "[`]" str)
-    (my-lint-layout-message
-     "[sql] Non-standard backquote character"
-     (my-lint-layout-current-line-number)
-     prefix)))
-
-(defsubst my-lint-layout-sql-comment (str)
+(defsubst my-lint-layout-sql-comment (str &optional prefix)
   "Check non-standard comment syntax."
   (when (string-match "#\\|/[*]" str)
     (my-lint-layout-message
@@ -2526,143 +2541,653 @@ MySQL:
      (my-lint-layout-current-line-number)
      prefix)))
 
-(defun my-lint-layout-sql-check-iso-date (str)
-  "Check YYYY-MM-DD in string."
-  (when (and (string-match
-	      "\\(.\\)[0-9]\\{4,4\\}-[0-9][0-9]-[0-9][0-9]\\(.?\\)" str))
-    (let ((match (match-string 0 str))
-	  (open (match-string 1 str))
-	  (close (match-string 2 str)))
-      (flet ((test
-	      (str)
-	      (unless (string= "'" str)
-		(my-lint-layout-message
-		 (format "[sql] Incorrect or missing quotes around date [%s]"
-			 match)
-		 (my-lint-layout-current-line-number)
-		 prefix))))
+(defun my-lint-layout-sql-check-indent (str &optional prefix)
+  "Check left comma lines:
+
+INSERT INTO kalleria_imgs
+\(
+col
+, col
+, col
+..."
+  (when (string-match "^\\([ \t]*\\)," str)
+    (let ((i (length (match-string 1 str))))
+      (if (or (not (> i 0))
+	      (not (zerop (% i 4))))
+	  (my-lint-layout-message
+	   (format "[sql] Possibly incorrect indentation at col %d" i)
+	   (my-lint-layout-current-line-number)
+	   prefix)))))
+
+(defun my-lint-layout-sql-check-mixed-case (str &optional prefix)
+  "Check mixedCase variable name."
+  (when (my-lint-layout-with-case
+	  (string-match "[^ \t\r\n]*[a-z]+[A-Z]+[^ \t\r\n]*" str))
+    (my-lint-layout-message
+     (format "[sql] Portability problem in mixed case name: %s"
+	     (match-string 0 str))
+     (my-lint-layout-current-line-number)
+     prefix)))
+
+(defsubst my-lint-layout-insert-into-forward ()
+  "Search INSERT INTO forward.
+The submatches are as follows. The point is at '!':
+
+    INSERT INTO table (<columns>) VALUES (<values>) ;
+    |---------- |----  |--------  !
+    1           2      3          Point
+
+Note, that the statement does not necessarily haave VLAUES part.
+This can be tested with `looking-at' at the position of point:
+
+    INSERT INTO table (<values>) ;
+                                 |
+                                 Point"
+  ;; FIXEME; This does not work if the data contains ")"
+  (re-search-forward
+   `,(concat
+      "^[ \t]*"
+      "\\(insert[ \t\r\n]+into\\)"
+      "[ \t\r\n]+"
+      "\\([^ \t\r\n]+\\)"
+      "[ \t\r\n]*("
+      "\\([^)]+\\))[ \t\r\n]*"
+      )
+   nil t))
+
+(defsubst my-lint-layout-sql-check-iso-date-p (str)
+  "Match YYYY-MM-DD.
+The submatches are:
+    YYYY-MM-DD
+   122222222223
+   |          |character after
+   Character before"
+  (string-match
+   "\\(.?\\)\\<\\([0-9]\\{4,4\\}-[0-9][0-9]-[0-9][0-9]\\)\\>\\(.?\\)"
+   str))
+
+(defsubst my-lint-layout-sql-error-generic
+  (message &optional prefix line)
+  "Signal error MESSAGE."
+  (my-lint-layout-message
+   message
+   (or line (my-lint-layout-current-line-number))
+   prefix))
+
+(defsubst my-lint-layout-sql-check-mixed-case-p (str)
+  "Check MixedCase STR."
+  (my-lint-layout-with-case
+    (string-match "[a-z][A-Z]\\|[A-Z][a-z]" str)))
+
+(defsubst my-lint-layout-sql-check-mixed-case
+  (str message &optional prefix line)
+  "Check if STR is mixedCase and signal error MESSAGE. PREFIX, LINE."
+  (when (my-lint-layout-sql-check-mixed-case-p str)
+    (my-lint-layout-sql-error-generic
+     message
+     prefix
+     (or line (my-lint-layout-current-line-number)))))
+
+(defsubst my-lint-layout-sql-check-all-uppercase-p (str)
+  "Check uppercase STR."
+  (not (string-match "^[A-Z]+$" str)))
+
+(defsubst my-lint-layout-sql-check-all-uppercase
+  (str message &optional prefix line)
+  (unless (my-lint-layout-sql-check-all-uppercase-p str)
+    (my-lint-layout-sql-error-generic message prefix line)))
+
+(defsubst my-lint-layout-sql-check-charset-p (str)
+  "Check STR aagainst charset [a-zA-Z0-9_]."
+  (not (string-match "[^a-zA-Z0-9_ \t\r\n]" str)))
+
+(defsubst my-lint-layout-sql-check-charset
+  (str message &optional prefix line)
+  (unless (my-lint-layout-sql-check-charset-p str)
+    (my-lint-layout-sql-error-generic message prefix line)))
+
+(defun my-lint-layout-sql-clean-comments-buffer (&optional point)
+ "Remove all kind of comments from `point-min' or optional POINT forward."
+ (or point
+     (setq point (point-min)))
+ (flet ((clean
+	 (re)
+	 (goto-char point)
+	 (while (re-search-forward re nil t)
+	   (replace-match ""))))
+   (clean "[ \t]*#.*")   ;; MySQL hash comments
+   (clean "[ \t]*--.*")  ;; Standard SQL comments
+   (clean "[ \t]*/[*].*"))) ;; C-style comments /* .... */
+
+(defsubst my-lint-layout-sql-clean-comments-string (string)
+ "Remove all kind of comments at the end of STRING"
+ (with-temp-buffer
+   (insert string)
+   (my-lint-layout-sql-clean-comments-buffer)
+   (buffer-string)))
+
+(defun my-lint-layout-sql-check-element-indent-check
+  (indent &optional prefix line)
+  "Check numeric INDENT."
+  (cond
+   ((eq 0 indent)
+    (my-lint-layout-message
+     (format
+      "[sql] Possibly missing indentation at col %d"
+      indent)
+     (+ (or line 0) (my-lint-layout-current-line-number))
+     prefix))
+   ((not (zerop (% indent step)))
+    (my-lint-layout-message
+     (format
+      "[sql] Possibly incorrect at col %d where multiple of %d expected"
+      indent step)
+     (+ (or line 0) (my-lint-layout-current-line-number))
+     prefix))))
+
+(defun my-lint-layout-sql-check-element-indentation (&optional prefix line)
+  "Check left margin indentation of every line from current point.
+LINE is added to current line number."
+  (let ((step  my-lint-layout-generic-indent-step)
+	indent)
+    (save-excursion
+      (goto-char (line-beginning-position))
+      (while (not (eobp))
+	;;  Do not check line that has terminating ';'
+	;;  Or single "(" and ")" lines
+	(when (and (not (looking-at "^.*;[ \t]*$"))
+		   (not (looking-at "^[ \t]*$"))
+		   (not (looking-at "^[ \t]*[();]+[ \t]*$"))
+		   (looking-at "^\\([ \t]*\\)[^ \t]"))
+	  (setq indent (length (my-lint-layout-expand-tabs
+				(match-string 1))))
+	  (my-lint-layout-sql-check-element-indent-check
+	   indent prefix line))
+	(forward-line 1)))))
+
+(defun my-lint-layout-sql-check-insert-into-column-part
+  (beg end &optional prefix line)
+  "Check column definition in region BEG END. LINE. PREFIX."
+  (let ((string (buffer-substring beg end))
+	match
+	word)
+    (with-temp-buffer
+      (insert string)
+      (my-lint-layout-sql-clean-comments-buffer)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-element-indentation prefix line)
+      (goto-char (point-min))
+      ;; check every word: the column names
+      (while (re-search-forward ".\\([^ ,\t\r\n]+\\).?" nil t)
+	(setq match (match-string 0)
+	      word  (match-string 1))
+	(my-lint-layout-sql-check-charset
+	 word
+	 (format "[sql] In INSERT, Non-alphadigit characters in %s" word)
+	 prefix
+	 (+ line (my-lint-layout-current-line-number)))
+	(my-lint-layout-sql-check-mixed-case
+	 match
+	 (format "[sql] In INSERT, portability problem with mixed case: %s"
+		 match)
+	 prefix
+	 (+ line (my-lint-layout-current-line-number)))
+	))))
+
+(defun my-lint-layout-sql-check-iso-date (&optional prefix line)
+  "Check YYYY-MM-DD in string.
+LINE is added to current line number."
+  (let (match
+	open
+	close)
+    (flet ((test
+	    (str)
+	    (unless (string= "'" str)
+	      (my-lint-layout-message
+	       (format "[sql] Incorrect or missing quotes around date [%s]"
+		       match)
+	       (+ (or line 0) (my-lint-layout-current-line-number))
+	       prefix))))
+      (while (re-search-forward
+	      "\\(.\\)[0-9]\\{4,4\\}-[0-9][0-9]-[0-9][0-9]\\(.?\\)"
+	      nil t)
+	(setq match (match-string 0)
+	      open  (match-string 1)
+	      close (match-string 2))
 	(test open)
 	(test close)))))
 
-(defun my-lint-layout-sql-check-keywords (&optional prefix)
-  "Check SQL syntax."
-  (require 'sql)
-  (let* ((sql-re         my-lint-layout-sql-keywords-all)
-	 (type-sql92-re  my-lint-layout-sql-keywords-sql92-data-types)
-	 (type-re        my-lint-layout-sql-keywords-sql-types)
-	 ;;  "VARCHAR (80)"
-	 (type-re-space (concat type-re "[ \t]+([ \t]*[0-9]+[ \t]*)"))
-	 (mysql-re my-lint-layout-sql-keywords-column-mysql)
-	 (step my-lint-layout-generic-indent-step)
-	 mysql-p
-	 non-std-kwd-p
-	 non-std92-kwd-p
-	 str
-	 tmp
-	 datatype
-	 word)
-    (while (re-search-forward "^\\([ \t]*[^-\r\n].*\\)" nil t)
-      (setq str (match-string 1))
-      ;; Filter out "-- in-line comments"
-      (when (string-match "^\\(.+\\)-- " str)
-	(setq str (match-string 1)))
-      (setq non-std-kwd-p nil)
-      (my-lint-layout-sql-backquote str)
-      (my-lint-layout-sql-comment str)
-      (when (string-match mysql-re str)
-	(setq non-std-kwd-p t)
-	(my-lint-layout-message
-	 (format "[sql] Non-standard keyword: %s" (match-string 0 str))
-	 (my-lint-layout-current-line-number)
-	 prefix))
-      (my-lint-layout-with-case
-	(when (and (not non-std-kwd-p)
-		   (string-match "[^ \t\r\n]*[a-z]+[A-Z]+[^ \t\r\n]*" str))
-	  (my-lint-layout-message
-	   (format "[sql] Portability problem in mixed case name: %s"
-		   (match-string 0 str))
-	   (my-lint-layout-current-line-number)
-	   prefix)))
-      (when (string-match type-re-space str)
-	(my-lint-layout-message
-	 (format "[sql] Extra space found near size definition: %s"
-		 (match-string 0 str))
-	 (my-lint-layout-current-line-number)
-	 prefix))
-      (my-lint-layout-sql-check-iso-date str)
-      (setq word nil)
+(defun my-lint-layout-sql-check-null-literal (&optional prefix line)
+  "Check literal NULL form `current-point'.
+The valueof LINE is added to current line. PREFIX."
+  (while (re-search-forward "[\"\']NULL\\>." nil t)
+    (my-lint-layout-message
+     (format
+      "[sql] In INSERT, possibly extra quotes around literal: %s"
+      (match-string 0))
+     (+ (or line 0) (my-lint-layout-current-line-number))
+     prefix)))
+
+(defun my-lint-layout-sql-check-insert-into-values-part
+  (beg end &optional prefix line)
+  "Check INSERT INTO <values> part."
+  (let ((string (buffer-substring beg end))
+	word)
+    (with-temp-buffer
+      (insert string)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-null-literal prefix line)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-iso-date prefix line)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-element-indentation prefix line))))
+
+(defun my-lint-layout-sql-check-statement-insert-into-main
+  (&optional prefix)
+  "Check INSERT INTO statements. PREFIX."
+  (let (point
+	keyword
+	table
+	parenbeg
+	paren-end
+	line)
+    (while (my-lint-layout-insert-into-forward)
+      (setq keyword   (match-string 1)
+	    table     (match-string 2)
+	    paren     (match-string 3)
+	    paren-beg (match-beginning 3)
+	    paren-end (match-end 3)
+	    line      (save-excursion
+			(goto-char (match-beginning 0))
+			(my-lint-layout-current-line-number)))
+      (my-lint-layout-sql-check-all-uppercase
+       keyword
+       (format "[sql] In INSERT, keyword not uppercase: %s"
+	       keyword)
+       prefix line)
+      (my-lint-layout-sql-check-mixed-case
+       table
+       (format "[sql] In INSERT, portability problem with mixed case: %s"
+	       table)
+       prefix line)
       (cond
-       ((string-match "^[ \t]*\\(.+[^ \t]+\\)[ \t]+NOT[ \t]+NULL" str)
-	(setq tmp (match-string 1 str))
-	;; FIXME "FLOAT(1, 2)"
-	(when (string-match
-	       "\\(?:\\([a-z]+\\)\\(([ \t]*[,0-9 \t]+)\\)?\\)$"
-	       tmp)
-	  (setq word (match-string 1 tmp))))
-       ((and (string-match "NULL" str)
-	     (not (string-match "NOT[ \t]+NULL" str)))
-	(when (string-match "NULL" str) ;; FIXME: NULL itself is not SQL92
-	  (my-lint-layout-message
-	   (format "[sql] Non-standard NULL keyword: %s"
-		   str)
-	   (my-lint-layout-current-line-number)
-	   prefix))))
-      (when word
-	(when (and (null non-std-kwd-p) ; Not yet checked
-		   (not (string-match type-re word)))
-	  (setq non-std-kwd-p t)
-	  (my-lint-layout-message
-	   (format "[sql] Non-standard keyword or datatype: %s" word)
-	   (my-lint-layout-current-line-number)
-	   prefix))
-	(when (and (null non-std-kwd-p)
-		   (not (string-match type-sql92-re word)))
-	  (my-lint-layout-message
-	   (format "[sql] Non-SQL92 may cause portability problems: %s" word)
-	   (my-lint-layout-current-line-number)
-	   prefix))
-	;; FIXME: tests only datatype now
-	(when (and (string-match sql-re word)
-		   (my-lint-layout-with-case
-		     (not (string-match sql-re word))))
-	  (my-lint-layout-message
-	   (format "[sql] Keyword not in uppercase: %s" word)
-	   (my-lint-layout-current-line-number)
-	   prefix))
-	(unless (string-match "^[ \t]+" str)
-	  (my-lint-layout-message
-	   (format "[sql] Statement not indented (by %d)" step)
-	   (my-lint-layout-current-line-number)
-	   prefix))))))
+       ((looking-at "\\(values\\)[ \t\r\n]*(\\([^;]+\\)")
+	(let ((keyword (match-string 1))
+	      (beg     (match-beginning 2))
+	      (end     (match-end 2)))
+	  (my-lint-layout-sql-check-all-uppercase
+	   keyword
+	   (format "[sql] In INSERT, keyword not uppercase: %s" keyword)
+	   prefix line)
+	  (my-lint-layout-sql-check-insert-into-column-part
+	   paren-beg paren-end prefix line)
+	  (my-lint-layout-sql-check-insert-into-values-part
+	   beg end prefix line)))
+       (t
+	(my-lint-layout-message
+	 "[sql] In INSERT, column names not listed"
+	 (my-lint-layout-current-line-number)
+	 prefix)
+	(my-lint-layout-sql-check-insert-into-values-part
+	 paren-beg paren-end prefix line))))))
 
-(defun my-lint-layout-sql-create-table (table)
-  "Check CREATE TABLE."
+(defsubst my-lint-layout-statement-select-forward ()
+  "Search INSERT INTO forward.
+The submatches are as follows. The point is at '!':
+
+    SELECT <select> FROM ...
+    |----  |------- !
+    1      2        Point"
+  (re-search-forward
+   `,(concat
+      "^[ \t]*"
+      "\\(select\\)"
+      "[ \t\r\n]+"
+      "\\([^;]+\\)"
+      "[ \t\r\n]+"
+      "\\(from\\)"
+      "[ \t\r\n]+")
+   nil t))
+
+(defun my-lint-layout-sql-check-select-col-as-part
+  (keyword string &optional prefix line)
+  "Examine keyword 'AS' and rest of the STRING."
+  (my-lint-layout-sql-check-all-uppercase
+   keyword
+   (format "[sql] In SELECT, keyword not uppercase: %s" keyword)
+   prefix line)
+  (cond
+   ((string-match "^[ \t]*\"" string)) ;; ok
+   ((string-match "^[ \t]*'" string)
+    (my-lint-layout-message
+     (format
+      "[sql] In SELECT, double quotes suggested for portability in AS: %s"
+      string)
+     line prefix))
+   (t
+    (my-lint-layout-message
+     (format "[sql] In SELECT, quotes expected for AS alias: %s"
+	     string)
+     line prefix))))
+
+(defun my-lint-layout-sql-check-select-col-part
+  (string &optional prefix line)
+  "Examine column STRING."
+  (when (string-match
+	 `,(concat
+	    ;; <col word|expr> [<rest>]
+	    ;; 1               2
+	    "\\([^ ,\t\r\n]+\\)"
+	    "[ \t\r\n]*"
+	    "\\(.*\\)")
+	 string)
+    (let ((match (match-string 0 string))
+	  (word  (match-string 1 string))
+	  (rest  (match-string 2 string)))
+      ;; FIXME: only first word is checked
+      (my-lint-layout-sql-check-mixed-case
+       word
+       (format
+	"[sql] In SELECT, portability problem with mixed case: %s"
+	word)
+       prefix line)
+      (when (string-match "\\(\\<AS\\>\\)[ \t\r\n]+\\(.*\\)" rest)
+	(my-lint-layout-sql-check-select-col-as-part
+	 (match-string 1 rest)
+	 (match-string 2 rest)
+	 prefix line))
+      )))
+
+(defun my-lint-layout-sql-check-statement-select-display-part
+  (beg end &optional prefix line)
+  "Check SELECT <display> part."
+  (let ((string (buffer-substring beg end)))
+    (with-temp-buffer
+      (insert string)
+      (my-lint-layout-sql-clean-comments-buffer)
+      (goto-char (point-min))
+      (let (match
+	    curline)
+	(while (re-search-forward "[ \t]*\\([^,]+\\)" nil t)
+	  (setq match    (match-string 1)
+		curline  (+ line (1- (my-lint-layout-current-line-number))))
+	  (when (looking-at ",.*[,;]")
+	    (my-lint-layout-message
+	     "[sql] In SELECT, possibly multiple column(,) definitions"
+	     curline
+	     prefix))
+	  (my-lint-layout-sql-check-select-col-part
+	   match prefix curline))))))
+
+(defun my-lint-layout-sql-check-statement-select-from-part ()
+  (beg end &optional prefix line)
+  "Check SELECT display FROM <from part>."
+  (let ((string (buffer-substring beg end))
+	match
+	word)
+    (with-temp-buffer
+      (insert string)
+      (my-lint-layout-sql-clean-comments-buffer)
+      (goto-char (point-min))
+      ;; (my-lint-layout-sql-check-element-indentation prefix line)
+      ;; (goto-char (point-min))
+      ;; check every word: the column names
+      ;; (while (re-search-forward ".\\([^ ,\t\r\n]+\\).?" nil t)
+      ;; FIXME
+      )))
+
+(defun my-lint-layout-sql-check-statement-select-main (&optional prefix)
+  "Check all INSERT INTO lines. PREFIX."
+  (let (point
+	select
+	select
+	from
+	fromp
+	table
+	beg
+	end
+	line)
+    (while (my-lint-layout-statement-select-forward)
+      (setq select    (match-string 1)
+	    beg       (match-beginning 2)
+	    end       (match-end 2)
+	    from      (match-string 3)
+	    fromp     (match-beginning 3)
+	    line      (save-excursion
+			(goto-char (match-beginning 0))
+			(my-lint-layout-current-line-number)))
+      (my-lint-layout-sql-check-all-uppercase
+       select
+       (format "[sql] In SELECT, keyword not uppercase: %s" select)
+       prefix line)
+      (unless (my-lint-layout-sql-check-all-uppercase-p from)
+	(my-lint-layout-sql-error-generic
+	 (format "[sql] In SELECT, keyword not uppercase: %s" from)
+	 prefix
+	 (save-excursion
+	  (goto-char fromp)
+	  (my-lint-layout-current-line-number))))
+      (my-lint-layout-sql-check-statement-select-display-part
+       beg end prefix line)
+      ;; FIXME
+      ;; my-lint-layout-sql-check-statement-select-from-part
+      )))
+
+(defsubst my-lint-layout-sql-check-create-table-col-part-lower1
+  (string &optional prefix line)
+  "Check lowercase value of REGEXP from `point-min'."
+  (my-lint-layout-message
+   (format "[sql] In CREATE TABLE, keyword not uppercase: %s" string)
+   line
+   prefix))
+
+(defun my-lint-layout-sql-check-create-table-col-part-lower
+  (string &optional prefix line)
+  "Check STRING against lowercase keywords."
   (my-lint-layout-with-case
-    (when (string-match "[A-Z]" table)
-      (my-lint-layout-message
-       (format "[SQL] Portability problem, mixed case table name: %s" table)
-       (my-lint-layout-current-line-number)
-       prefix))))
+    (dolist (re (list
+		 my-lint-layout-sql-keywords-sql92-for-column
+		 my-lint-layout-sql-keywords-sql92-data-types
+		 my-lint-layout-sql-keywords-sql99-data-types))
+      (when (string-match `,(concat "\\(" re "\\)") string)
+	(my-lint-layout-sql-check-create-table-col-part-lower1
+	 (match-string 1 string)
+	 prefix
+	 (or line
+	     (my-lint-layout-current-line-number)=))))))
 
-(defun my-lint-layout-sql-check-create-table (&optional prefix)
-  "Check SQL syntax."
-  (let (line
-	table)
-    (while (re-search-forward
-	    "^[ \t]*\\(CREATE[ \t]+TABLE\\)[ \t]+\\([^ \t\r\n]+\\).*" nil t)
-      (setq line  (match-string 0)
-	    table (match-string 2))
-      (my-lint-layout-sql-create-table table)
-      (when (string-match "[`]" line)
+(defun my-lint-layout-sql-check-create-table-col-error-type-close-paren
+  (string &optional prefix line)
+  "Signal error, extra space before paren in STRING. PREFIX, LINE."
+  (my-lint-layout-message
+   (format "[sql] In CREATE TABLE, extra space before closing paren: %s"
+	   string)
+   (or line (my-lint-layout-current-line-number))
+   prefix))
+
+(defun my-lint-layout-sql-check-create-table-col-error-unknown-word
+  (string &optional prefix line)
+  "Signal error, unknown keyword STRING. PREFIX, LINE."
+  (my-lint-layout-message
+   (format "[sql] In CREATE TABLE, unknown keyword: %s" string)
+   (or line (my-lint-layout-current-line-number))
+   prefix))
+
+(defun my-lint-layout-sql-check-create-table-col-words
+  (string &optional prefix line)
+  "Split STRING against unknown keywords."
+  (let ((clean
+	 (replace-regexp-in-string
+	  ;; Remove known keywords
+	  my-lint-layout-sql-keywords-sql92-for-column
+	  ""
+	  (my-lint-layout-sql-clean-comments-string string))))
+    (dolist (word (split-string clean))
+      (when (string-match "^[a-z_]+$" word)
+	(my-lint-layout-sql-check-create-table-col-error-unknown-word
+	 word prefix line)))))
+
+(defun my-lint-layout-sql-check-create-table-col-size
+  (string &optional prefix line)
+  "Check <type>(SIZE) defintioion from STRING."
+  (when (string-match "\\([ \t]*\\)\\(([ ,0-9\t]+)+\\)" string)
+    (let ((space (match-string 1 string))
+	  (paren (match-string 2 string)))
+      (unless (string= "" space)
 	(my-lint-layout-message
-	 "[sql] Non-standard backquote character"
-	 (my-lint-layout-current-line-number)
+	 (format "[sql] In CREATE TABLE, extra space before opening paren: %s"
+		 string)
+	 line prefix))
+      (when (string-match "[ \t]+)" paren)
+	(my-lint-layout-sql-check-create-table-col-error-type-close-paren
+	 paren prefix line)))))
+
+(defun my-lint-layout-sql-check-create-table-col-part-rest
+  (string &optional prefix line)
+  "In '<column name> <type <rest>', check the <rest> STRING."
+  (my-lint-layout-sql-check-create-table-col-size
+   string prefix line)
+  (my-lint-layout-sql-check-create-table-col-words
+   string prefix line))
+
+(defun my-lint-layout-sql-check-create-table-col-part
+  (string &optional prefix line)
+  "Examine column defintion in STRING."
+  (when (string-match
+	 `,(concat
+	    ;; <col name> <type> <rest>
+	    ;; 1          2     3
+	    "\\([^ ,\t\r\n]+\\)"
+	    "[ \t\r\n]+"
+	    "\\([^ ,(\t\r\n]+\\)"
+	    "\\(.*\\)")
+	 string)
+    (let ((match (match-string 0 string))
+	  (name  (match-string 1 string))
+	  (type  (match-string 2 string))
+	  (rest  (match-string 3 string)))
+      (my-lint-layout-sql-check-create-table-col-part-lower
+       type prefix line)
+      (my-lint-layout-sql-check-mixed-case
+       name
+       (format
+	"[sql] In CREATE TABLE, portability problem with mixed case: %s"
+	name)
+       prefix
+       line)
+      (unless (string-match
+	       my-lint-layout-sql-keywords-sql-types
+	       type)
+	(my-lint-layout-message
+	 (format "[sql] In CREATE TABLE, unknown data type: %s" type)
+	 (or line (my-lint-layout-current-line-number))
 	 prefix))
-      (when (string-match "[(]" line)
+      (unless (string= "" rest)
+	(my-lint-layout-sql-check-create-table-col-part-rest
+	 rest prefix line))
+      )))
+
+(defun my-lint-layout-sql-check-statement-create-tables-no-semicolon
+  (&optional prefix line)
+  "Check cases, where semicolon is possibly missing.
+An example:
+    CREATE TABLE
+    (
+
+    )-!- missing semicolon"
+  (while (re-search-forward "^[ \t]*)[ \t]*$" nil t)
+    (my-lint-layout-message
+     "[sql] In CREATE TABLE, possibly missing semicolon(;)"
+     (+ (or line 0) (1- (my-lint-layout-current-line-number)))
+     prefix)))
+
+(defun my-lint-layout-sql-check-statement-create-table-part
+  (beg end &optional prefix line)
+  "Check CREATE TABLE content."
+  (let ((string (buffer-substring beg end)))
+    (with-temp-buffer
+      (insert string)
+      (my-lint-layout-sql-clean-comments-buffer)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-element-indentation prefix line)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-statement-create-tables-no-semicolon
+       prefix line)
+      (goto-char (point-min))
+      (let (match
+	    curline)
+	(while (re-search-forward "[ \t]*\\([^,]+\\)" nil t)
+	  (setq match    (match-string 1)
+		curline  (+ line (1- (my-lint-layout-current-line-number))))
+	  ;; Multiple, definitions, in line
+	  ;; FIXME: Does not handle comments
+	  (when (looking-at ",.*[,;]")
+	    (my-lint-layout-message
+	     "[sql] In CREATE TABLE, possibly multiple column(,) definitions"
+	     curline
+	     prefix))
+	  (my-lint-layout-sql-check-create-table-col-part
+	   match prefix curline)
+	  )))))
+
+(defsubst my-lint-layout-create-table-forward ()
+  "Search CREATE TABLE forward.
+The submatches are as follows: The point is at '!':
+
+    CREATE TABLE name (<definition>) ;
+    |----------- |---  |-----------  !
+    1            2     3             Point"
+  (re-search-forward
+   `,(concat
+      "^[ \t]*"
+      "\\(create[ \t\r\n]+table\\)"
+      "[ \t\r\n]+"
+      "\\([^ \t\r\n]+\\)"
+      "[ \t\r\n]*("
+      "\\([^;]+\\);")
+   nil t))
+
+(defun my-lint-layout-sql-check-statement-create-table-main
+  (&optional prefix)
+  "Check SQL syntax."
+  (let (point
+	line
+	match
+	keyword
+	table
+	content
+	beg
+	end)
+    (while (my-lint-layout-create-table-forward)
+      (setq point   (match-beginning 0)
+            match   (match-string 0)
+            keyword (match-string 1)
+	    table   (match-string 2)
+	    beg     (match-beginning 3)
+	    end     (point)
+	    line    (save-excursion
+		      (goto-char point)
+		      (my-lint-layout-current-line-number)))
+      (my-lint-layout-sql-check-all-uppercase
+       keyword
+       (format "[sql] In CREATE TABLE, keyword not uppercase: %s"
+	       keyword)
+       prefix line)
+      (my-lint-layout-sql-check-mixed-case
+       table
+       (format "[sql] In CREATE TABLE, portability problem with mixed case: %s"
+	       table)
+       prefix line)
+      (my-lint-layout-sql-check-charset
+       table
+       (format "[sql] In CREATE TABLE, Non-alphadigit characters in %s" table)
+       prefix line)
+      (when (string-match "create.*table.*(" match)
 	(my-lint-layout-message
-	 "[sql] Misplaced starting paren (possibly not lined-up)"
-	 (my-lint-layout-current-line-number)
-	 prefix)))))
+	 "[sql] In CREATE TABLE, misplaced starting paren (expecting line-up)"
+	 prefix line))
+      (my-lint-layout-sql-check-statement-create-table-part
+       beg end prefix line))))
 
 (defun my-lint-layout-sql-check-batch-all (&optional prefix)
   "Check Css"
@@ -2671,7 +3196,7 @@ MySQL:
 
 (defun my-lint-layout-sql-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-sql-check-batch-all'."
-  (my-lint-layout-point-min
+  (my-lint-layout-with-point-min
     (my-lint-layout-sql-check-batch-all)))
 
 (defun my-lint-layout-sql-buffer-interactive (&optional prefix)
@@ -2682,7 +3207,8 @@ MySQL:
 
 ;;; ............................................................. &css ...
 
-(defsubst my-lint-layout-php-check-multiple-statements-error (msg &optional prefix)
+(defsubst my-lint-layout-php-check-multiple-statements-error
+  (msg &optional prefix)
   "Write error."
   (my-lint-layout-message
    msg
@@ -2804,7 +3330,7 @@ MySQL:
 
 (defun my-lint-layout-css-check-buffer (&optional prefix)
   "Check from `point-min'."
-  (my-lint-layout-point-min
+  (my-lint-layout-with-point-min
     (my-lint-layout-css-check-batch-all prefix)))
 
 (defun my-lint-layout-css-check-buffer-interactive (&optional prefix)
