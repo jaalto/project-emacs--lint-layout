@@ -935,8 +935,10 @@ displayed."
    '("[|][|]\\|&&"
      "Consider readable alternative for relational op")
 
+   ;;  #button { border: ... }
    '("^[ \t]*#"
-     "Not a recommended comment style")
+     "Not a recommended comment style"
+     "[{]")
 
    '("^[ \t]*var[ \t]*[a-z]"
      "Old vardef. Migrate to syntax public|protected: ")
@@ -1343,30 +1345,41 @@ Return variable content string."
 	 line
        prefix)))))
 
+(defun my-lint-layout-php-check-comment-statement-examine ()
+  (str &optional prefix)
+  "Examine comment STR and text around point."
+  (when (string-match "#" str)
+    (my-lint-layout-message
+     "[comment] unknown syntax."
+     (my-lint-layout-current-line-number)
+     prefix))
+  (when (looking-at "[^ \t\r\n]")
+    (my-lint-layout-message
+     "[comment] no space between comment marker and text"
+     (my-lint-layout-current-line-number)
+     prefix))
+  ;; Peek previous line
+  (save-excursion
+    (forward-line -1)
+    (unless (looking-at (concat re "\\|^[ {}\t\r]*$"))
+      (my-lint-layout-message
+       "[comment] no empty line before comment start"
+       (1+ (my-lint-layout-current-line-number))
+       prefix))))
+
 (defun my-lint-layout-php-check-comment-statements (&optional prefix)
   "Check comment markers."
   (let ((re "^[ \t]*\\([#]\\|//\\|/[*][^*]\\)")
 	str)
     (while (re-search-forward re nil t)
       (setq str (match-string 1))
-      (when (string-match "#" str)
-	(my-lint-layout-message
-	 "[comment] unknown syntax."
-	 (my-lint-layout-current-line-number)
-	 prefix))
-      (when (looking-at "[^ \t\r\n]")
-	(my-lint-layout-message
-	 "[comment] no space between comment marker and text"
-	 (my-lint-layout-current-line-number)
-	 prefix))
-      ;; Peek previous line
-      (save-excursion
-	(forward-line -1)
-	(unless (looking-at (concat re "\\|^[ {}\t\r]*$"))
-	  (my-lint-layout-message
-	   "[comment] no empty line before comment start"
-	   (1+ (my-lint-layout-current-line-number))
-	   prefix))))))
+      (cond
+       ;; #button { border: 1px; }
+       ((and (string= "#")
+	     (looking-at "[_a-z].*{")))
+       (t
+	(my-lint-layout-php-check-comment-statement-examine
+	 str prefix))))))
 
 (defun my-lint-layout-php-doc-above-p ()
   "Check if phpdoc is in above line."
@@ -2025,8 +2038,7 @@ KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
   (unless (my-lint-layout-license-gpl-search-forward)
     (my-lint-layout-message
      "[licence] GNU General Public License not found."
-     1
-     prefix)
+     1 prefix)
     t))
 
 (defun my-lint-layout-license-text (text &optional prefix)
@@ -2073,7 +2085,7 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
   ;; Copyright information
   (and (not (looking-at ".*information"))
        ;;  Foo Bar
-       (looking-at "[ \t]+[a-z]")))
+       (looking-at "[ \t]+.*[a-z]")))
 
 (defsubst my-lint-layout-copyright-search-forward ()
   "Position point to 'Copyright <text>' line."
@@ -2085,15 +2097,6 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
 		(not (my-lint-layout-copyright-line-p))))
     (and moved
 	 (my-lint-layout-copyright-line-p))))
-
-(defun my-lint-layout-copyright-not-exists (&optional prefix)
-  "Check if Copyright exists."
-  (unless (my-lint-layout-copyright-search-forward)
-    (my-lint-layout-message
-     "[copyright] Not found"
-     1
-     prefix)
-    t))
 
 (defun my-lint-layout-copyright-line-syntax (&optional prefix)
   "Check Copyright line syntax."
@@ -2143,10 +2146,15 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
 (defun my-lint-layout-copyright-check-main (&optional prefix)
   "Check Copyright syntax.
 Optional PREFIX is used add filename to the beginning of line."
-  (if (my-lint-layout-copyright-not-exists prefix)
-      t
+  (let (found)
     (while (my-lint-layout-copyright-search-forward)
-      (my-lint-layout-copyright-line-syntax prefix))))
+      (setq found t)
+      (my-lint-layout-copyright-line-syntax prefix))
+    (unless found
+      (my-lint-layout-message
+       "[copyright] not found"
+       1 prefix))
+    found))
 
 (defun my-lint-layout-copyright-check-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-copyright-check-main'."
