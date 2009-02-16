@@ -2396,11 +2396,10 @@ Optional PREFIX is used add filename to the beginning of line."
 ;; sql.el::sql-mode-ansi-font-lock-keywords
 
 (defconst my-lint-layout-sql-keywords-reserved
-  (eval-when-compile
-    (concat
-     "\\b"
-     (regexp-opt
-      '(
+  (concat
+   "\\b"
+   (regexp-opt
+    '(
 	"ALL" "AND" "ANY" "AS" "ASC" "BETWEEN" "BY" "CHECK" "CREATE"
 	"CURRENT" "DEFAULT" "DELETE" "DESC" "DISTINCT" "EXISTS" "FOR"
 	"FROM" "GRANT" "GROUP" "HAVING" "IN" "INSERT" "INTO" "IS"
@@ -2412,22 +2411,29 @@ Optional PREFIX is used add filename to the beginning of line."
 	"CURSOR"
 	"DECLARE" "END" "ESCAPE"
 	)
-      t) "\\b"))
-  "SQL reserved keywords.")
+      t) "\\b")
+  "SQL standard reserved keywords.")
 
-(defconst my-lint-layout-sql-keywords-functions
-  (eval-when-compile
-    (concat
-     "\\b"
-     (regexp-opt
-      '("AVG"
-	"COUNT"
-	"MAX"
-	"MIN"
-	"SUM")
-      t)
-     "\\b"))
-  "SQL reserved keywords.")
+(defconst my-lint-layout-sql-keywords-function-list
+  '("avg"
+    "count"
+    "length"
+    "lower"
+    "max"
+    "min"
+    "substring"
+    "sum"
+    "trim"
+    "upper")
+  "SQL standard reserved keywords for functions, list.")
+
+(defconst my-lint-layout-sql-keywords-function-regexp
+  (concat
+   "\\<\\(?:"
+   (regexp-opt
+    my-lint-layout-sql-keywords-function-list)
+   "\\)\\>")
+  "SQL standard reserved keywords for functions, OR regexp.")
 
 (defconst my-lint-layout-sql-keywords-column-mysql
   (concat
@@ -2447,7 +2453,7 @@ Optional PREFIX is used add filename to the beginning of line."
     "primary[ \t\r\n]+key"
     "references"
     "unique")
-  "SQL92 column definition keywords in CREATE TABLE statement.
+  "SQL-92 column definition keywords in CREATE TABLE statement.
 List of word regexps.")
 
 (defconst my-lint-layout-sql-keywords-sql92-for-column
@@ -2458,21 +2464,24 @@ List of word regexps.")
     my-lint-layout-sql-keywords-sql92-for-column-word-re
     "\\|")
    "\\)\\>")
-  "SQL92 column definition keywords in CREATE TABLE statement.
+  "SQL-92 column definition keywords in CREATE TABLE statement.
 One ORing regexp.")
 
 (defconst my-lint-layout-sql-keywords-from-statement
   '(
-    "as"
-    "and"
-    "or"
-    "(?:inner[ \t\r\n]+)?join"
     "(?:(?:left\\|right\\|full[ \t\r\n]+)?outer[ \t\r\n]+)join"
-    "on"
-    "order[ \t\r\n]+by"
+    "(?:inner[ \t\r\n]+)?join"
+    "and"
+    "as"
+    "between"
     "having"
+    "in"
     "like"
-    "unique")
+    "on"
+    "or"
+    "order[ \t\r\n]+by"
+    "unique"
+    )
   "List of regexp keywords appearing in FROM part of SELECT.")
 
 (defconst my-lint-layout-sql-keywords-from-statement-regexp
@@ -2513,7 +2522,7 @@ One ORing regexp.")
       "varchar"
       "varying"))
    "\\>\\)")
-  "SQL92 reserved data type keywords.")
+  "SQL standard keywords for reserved data types.")
 
 ;; BIT data type in MS SQL Server stores a bit of data (0 or 1) and
 ;; does not correspond to previously described SQL99 BIT. The literal
@@ -2541,19 +2550,6 @@ One ORing regexp.")
 (defconst my-lint-layout-sql-keywords-sql-types
   (concat
    "\\(?:"
-   my-lint-layout-sql-keywords-sql92-data-types
-   "\\|"
-   my-lint-layout-sql-keywords-sql99-data-types
-   "\\)")
-  "SQL reserved keywords.")
-
-(defconst my-lint-layout-sql-keywords-all
-  (concat
-   "\\("
-   my-lint-layout-sql-keywords-reserved
-   "\\|"
-   my-lint-layout-sql-keywords-functions
-   "\\|"
    my-lint-layout-sql-keywords-sql92-data-types
    "\\|"
    my-lint-layout-sql-keywords-sql99-data-types
@@ -2994,7 +2990,7 @@ The submatches are as follows. The point is at '!':
 		curline  (+ line (1- (my-lint-layout-current-line-number))))
 	  (when (looking-at ",.*[,;]")
 	    (my-lint-layout-message
-	     "[sql] In SELECT, possibly multiple column(,) definitions"
+	     "[sql] In SELECT, possibly multiple columns(,) listed at same line"
 	     curline
 	     prefix))
 	  (my-lint-layout-sql-check-select-col-part
@@ -3013,14 +3009,82 @@ The submatches are as follows. The point is at '!':
   "Check SELECT ... FROM <from part> for known keywords."
   (my-lint-layout-with-case
     (dolist (re (list
-		 my-lint-layout-sql-keywords-from-statement-regexp))
-      (let ((regexp (concat "\\(" re "\\)")))
-	(while (re-search-forward regexp nil t)
-	  (my-lint-layout-sql-check-statement-select-from-part-keyword-case1
-	   (match-string 1)
-	   prefix
-	   (or line
-	       (my-lint-layout-current-line-number)=)))))))
+		 my-lint-layout-sql-keywords-from-statement-regexp
+		 my-lint-layout-sql-keywords-function-regexp))
+      (when (stringp re)
+	(let ((regexp (concat "\\(" re "\\)")))
+	  (while (re-search-forward regexp nil t)
+	    (my-lint-layout-sql-check-statement-select-from-part-keyword-case1
+	     (match-string 1)
+	     prefix
+	     (or line
+		 (my-lint-layout-current-line-number)))))))))
+
+(defun my-lint-layout-sql-check-statement-select-from-part-equals
+  (&optional prefix line)
+  "Check equal '=' lines."
+  (let (sign
+	match
+	before
+	after
+	curline
+	col)
+    (while (re-search-forward "\\(.\\)\\(<>\\|=[<>]?\\)\\(.\\)" nil t)
+      (setq match  (match-string 0)
+            before (match-string 1)
+	    sign   (match-string 2)
+	    after  (match-string 3)
+	    col    (1- (current-column))
+	    curline (if line
+			(+ line (1- (my-lint-layout-current-line-number)))
+		      (my-lint-layout-current-line-number)))
+      (unless (string-match "[ \t\r\n]" before)
+	(my-lint-layout-message
+	 (format "[sql] In SELECT, no space before '%s' sign at col %s"
+		 sign col)
+	 curline prefix))
+      (unless (string-match "[ \t\r\n]" after)
+	(my-lint-layout-message
+	 (format "[sql] In SELECT, no space after '%s' sign at col %s"
+		 sign col)
+	 curline
+	 prefix))
+      ;;  <column> = '<number>'
+      (when (looking-at "[ \t]*[\"'][0-9]+[\"']")
+	(my-lint-layout-message
+	 (format
+	  "[sql] In SELECT, possibly extra quotes to the right: %s"
+	  (concat match (match-string 0)))
+	 curline
+	 prefix)))))
+
+(defun my-lint-layout-sql-check-statement-select-from-part-quotes
+  (&optional prefix line)
+  "Check equal use of double quotes. SQL standard requires single quotes."
+  (let ((re  `,(concat
+		"\\(<>\\|=[<>]?"
+		"\\|\\<between"
+		"\\|\\<and"
+		"\\|\\<or"
+		"\\|\\<like"
+		"\\)[ \t]*\""))
+	sign
+	curline
+	col)
+    (while (re-search-forward re nil t)
+      (setq sign    (match-string 1)
+	    col     (match-beginning 1)
+	    curline (if line
+			(+ line (1- (my-lint-layout-current-line-number)))
+		      (my-lint-layout-current-line-number)))
+      (my-lint-layout-message
+       (format "[sql] In SELECT, single quote expected at %s near %s\"%s"
+	       col
+	       sign
+	       (if (looking-at "[^ \t\r\n]+")
+		   (match-string 0)
+		 ""))
+       curline prefix))))
 
 (defun my-lint-layout-sql-check-statement-select-from-part
   (beg end &optional prefix line)
@@ -3035,6 +3099,11 @@ The submatches are as follows. The point is at '!':
       (goto-char (point-min))
       (my-lint-layout-sql-check-statement-select-from-part-keyword-case
        prefix line)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-statement-select-from-part-equals
+       prefix line)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-statement-select-from-part-quotes)
       ;; FIXME indentation checks
 ;;       (let (match)
 ;; 	(while (re-search-forward "\\([^ ,\t\r\n]+\\)" nil t)
