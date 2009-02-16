@@ -1345,7 +1345,7 @@ Return variable content string."
 	 line
        prefix)))))
 
-(defun my-lint-layout-php-check-comment-statement-examine ()
+(defun my-lint-layout-php-check-comment-statement-examine
   (str &optional prefix)
   "Examine comment STR and text around point."
   (when (string-match "#" str)
@@ -1375,7 +1375,7 @@ Return variable content string."
       (setq str (match-string 1))
       (cond
        ;; #button { border: 1px; }
-       ((and (string= "#")
+       ((and (string= "#" str)
 	     (looking-at "[_a-z].*{")))
        (t
 	(my-lint-layout-php-check-comment-statement-examine
