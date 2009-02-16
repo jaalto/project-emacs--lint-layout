@@ -2744,8 +2744,9 @@ LINE is added to current line number."
 	    (str)
 	    (unless (string= "'" str)
 	      (my-lint-layout-message
-	       (format "[sql] Incorrect or missing quotes around date [%s]"
-		       match)
+	       (format
+		"[sql] Incorrect or missing single quotes around date [%s]"
+		match)
 	       (+ (or line 0) (my-lint-layout-current-line-number))
 	       prefix))))
       (while (re-search-forward
@@ -2759,11 +2760,33 @@ LINE is added to current line number."
 
 (defun my-lint-layout-sql-check-null-literal (&optional prefix line)
   "Check literal NULL form `current-point'.
-The valueof LINE is added to current line. PREFIX."
+The value of LINE is added to current line. PREFIX."
   (while (re-search-forward "[\"\']NULL\\>." nil t)
     (my-lint-layout-message
      (format
       "[sql] In INSERT, possibly extra quotes around literal: %s"
+      (match-string 0))
+     (+ (or line 0) (my-lint-layout-current-line-number))
+     prefix)))
+
+(defun my-lint-layout-sql-check-element-nbr-quotes (&optional prefix line)
+  "Check that numbers are not inserted in quotes '123'.
+The value of LINE is added to current line. PREFIX."
+  (while (re-search-forward "[\"'][1-9][0-9]*[\"']" nil t)
+    (my-lint-layout-message
+     (format
+      "[sql] In INSERT, possibly extra quotes around number: %s"
+      (match-string 0))
+     (+ (or line 0) (my-lint-layout-current-line-number))
+     prefix)))
+
+(defun my-lint-layout-sql-check-element-double-quotes (&optional prefix line)
+  "Check that values are enclosed in single quotes.
+The value of LINE is added to current line. PREFIX."
+  (while (re-search-forward "\"[^,\"\r\n]*\"" nil t)
+    (my-lint-layout-message
+     (format
+      "[sql] In INSERT, SQL standard defines strings in single quotes: %s"
       (match-string 0))
      (+ (or line 0) (my-lint-layout-current-line-number))
      prefix)))
@@ -2779,6 +2802,10 @@ The valueof LINE is added to current line. PREFIX."
       (my-lint-layout-sql-check-null-literal prefix line)
       (goto-char (point-min))
       (my-lint-layout-sql-check-iso-date prefix line)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-element-nbr-quotes prefix line)
+      (goto-char (point-min))
+      (my-lint-layout-sql-check-element-double-quotes prefix line)
       (goto-char (point-min))
       (my-lint-layout-sql-check-element-indentation prefix line))))
 
