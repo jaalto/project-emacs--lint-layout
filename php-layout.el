@@ -2630,7 +2630,7 @@ The submatches are:
 
 (defsubst my-lint-layout-sql-check-all-uppercase-p (str)
   "Check uppercase STR."
-  (not (string-match "^[A-Z]+$" str)))
+  (string-match "^[A-Z]+$" str))
 
 (defsubst my-lint-layout-sql-check-all-uppercase
   (str message &optional prefix line)
@@ -2893,7 +2893,7 @@ The submatches are as follows. The point is at '!':
      line prefix))
    (t
     (my-lint-layout-message
-     (format "[sql] In SELECT, quotes expected for AS alias: %s"
+     (format "[sql] In SELECT, double quotes expected for AS alias: %s"
 	     string)
      line prefix))))
 
