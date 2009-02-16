@@ -2113,16 +2113,16 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
        (format "[copyright] missing year: %s" string)
        line
        prefix))
-    (when (and (not (looking-at ".*<.+>"))
-	       ;;  Tag "@copyright ....."
-	       (not (string-match "@copyright" string)))
+    ;;  Tag "@copyright ....."
+    (when (not (string-match "@copyright" string))
       (cond
-       ((looking-at ".*@")
+       ((and (string-match "@" string)
+	     (not (string-match "<.+@.+>" string)))
 	(my-lint-layout-message
 	 (format "[copyright] missing <> around email address: %s" string)
 	 line
 	 prefix))
-       (t
+       ((not (string-match "@" string))
 	(my-lint-layout-message
 	 (format "[copyright] missing email address: %s" string)
 	 line
