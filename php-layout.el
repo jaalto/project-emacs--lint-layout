@@ -2653,7 +2653,7 @@ The submatches are:
 
 (defsubst my-lint-layout-sql-check-all-uppercase-p (str)
   "Check uppercase STR."
-  (string-match "^[A-Z]+$" str))
+  (string-match "^[A-Z \t\r\n]+$" str))
 
 (defsubst my-lint-layout-sql-check-all-uppercase
   (str message &optional prefix line)
