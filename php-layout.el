@@ -1888,7 +1888,7 @@ KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
 	       (min (point-min) (* 4 80))
 	       t)
 	(my-lint-layout-message
-	 (format "[misc] No exact EOF marker found: '%s'"
+	 (format "[misc] no exact EOF marker found: '%s'"
 		 my-lint-layout-eof-regexp)
 	 (my-lint-layout-current-line-number)
 	 prefix)))))
@@ -2420,8 +2420,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	"COUNT"
 	"MAX"
 	"MIN"
-	"SUM"
-	)
+	"SUM")
       t)
      "\\b"))
   "SQL reserved keywords.")
@@ -2454,9 +2453,33 @@ List of word regexps.")
     'concat
     my-lint-layout-sql-keywords-sql92-for-column-word-re
     "\\|")
-   "\\>\\)")
+   "\\)\\>")
   "SQL92 column definition keywords in CREATE TABLE statement.
 One ORing regexp.")
+
+(defconst my-lint-layout-sql-keywords-from-statement
+  '(
+    "as"
+    "and"
+    "or"
+    "(?:inner[ \t\r\n]+)?join"
+    "(?:(?:left\\|right\\|full[ \t\r\n]+)?outer[ \t\r\n]+)join"
+    "on"
+    "order[ \t\r\n]+by"
+    "having"
+    "like"
+    "unique")
+  "List of regexp keywords appearing in FROM part of SELECT.")
+
+(defconst my-lint-layout-sql-keywords-from-statement-regexp
+  (concat
+   "\\<\\(?:"
+   (mapconcat
+    'concat
+    my-lint-layout-sql-keywords-from-statement
+    "\\|")
+   "\\)\\>")
+  "OR regexp of `my-lint-layout-sql-keywords-from-statement'.")
 
 (defconst my-lint-layout-sql-keywords-sql92-data-types
   (concat
@@ -2946,7 +2969,29 @@ The submatches are as follows. The point is at '!':
 	  (my-lint-layout-sql-check-select-col-part
 	   match prefix curline))))))
 
-(defun my-lint-layout-sql-check-statement-select-from-part ()
+(defsubst my-lint-layout-sql-check-statement-select-from-part-keyword-case1
+  (string &optional prefix line)
+  "Signal lowecase keyword error."
+  (my-lint-layout-message
+   (format "[sql] In SELECT, FROM part possibly has non-uppercase keyword: %s"
+	   string)
+   line prefix))
+
+(defun my-lint-layout-sql-check-statement-select-from-part-keyword-case
+  (&optional prefix line)
+  "Check SELECT ... FROM <from part> for known keywords."
+  (my-lint-layout-with-case
+    (dolist (re (list
+		 my-lint-layout-sql-keywords-from-statement-regexp))
+      (let ((regexp (concat "\\(" re "\\)")))
+	(while (re-search-forward regexp nil t)
+	  (my-lint-layout-sql-check-statement-select-from-part-keyword-case1
+	   (match-string 1)
+	   prefix
+	   (or line
+	       (my-lint-layout-current-line-number)=)))))))
+
+(defun my-lint-layout-sql-check-statement-select-from-part
   (beg end &optional prefix line)
   "Check SELECT display FROM <from part>."
   (let ((string (buffer-substring beg end))
@@ -2954,13 +2999,17 @@ The submatches are as follows. The point is at '!':
 	word)
     (with-temp-buffer
       (insert string)
+      (display-buffer (current-buffer)) ;; FIXME
       (my-lint-layout-sql-clean-comments-buffer)
       (goto-char (point-min))
-      ;; (my-lint-layout-sql-check-element-indentation prefix line)
-      ;; (goto-char (point-min))
-      ;; check every word: the column names
-      ;; (while (re-search-forward ".\\([^ ,\t\r\n]+\\).?" nil t)
-      ;; FIXME
+      (my-lint-layout-sql-check-statement-select-from-part-keyword-case
+       prefix line)
+      ;; FIXME indentation checks
+;;       (let (match)
+;; 	(while (re-search-forward "\\([^ ,\t\r\n]+\\)" nil t)
+;; 	  (setq match (match-string 1))
+;; 	  (my-lint-layout-sql-check-statement-select-from-part-keyword-case
+;;	   match prefix line)))
       )))
 
 (defun my-lint-layout-sql-check-statement-select-main (&optional prefix)
@@ -2996,13 +3045,14 @@ The submatches are as follows. The point is at '!':
 	  (my-lint-layout-current-line-number))))
       (my-lint-layout-sql-check-statement-select-display-part
        beg end prefix line)
-      ;; FIXME
-      ;; my-lint-layout-sql-check-statement-select-from-part
+      (when (re-search-forward ")[ \t]*;\\|^[ \t]*;" nil t)
+	(my-lint-layout-sql-check-statement-select-from-part
+	 fromp (point) prefix line))
       )))
 
 (defsubst my-lint-layout-sql-check-create-table-col-part-lower1
   (string &optional prefix line)
-  "Check lowercase value of REGEXP from `point-min'."
+  "Signal lowercase keyword error."
   (my-lint-layout-message
    (format "[sql] In CREATE TABLE, keyword not uppercase: %s" string)
    line
@@ -3016,12 +3066,13 @@ The submatches are as follows. The point is at '!':
 		 my-lint-layout-sql-keywords-sql92-for-column
 		 my-lint-layout-sql-keywords-sql92-data-types
 		 my-lint-layout-sql-keywords-sql99-data-types))
-      (when (string-match `,(concat "\\(" re "\\)") string)
-	(my-lint-layout-sql-check-create-table-col-part-lower1
-	 (match-string 1 string)
-	 prefix
-	 (or line
-	     (my-lint-layout-current-line-number)=))))))
+      (let ((regexp (concat "\\(" re "\\)")))
+	(when (string-match regexp string)
+	  (my-lint-layout-sql-check-create-table-col-part-lower1
+	   (match-string 1 string)
+	   prefix
+	   (or line
+	       (my-lint-layout-current-line-number)=)))))))
 
 (defun my-lint-layout-sql-check-create-table-col-error-type-close-paren
   (string &optional prefix line)
