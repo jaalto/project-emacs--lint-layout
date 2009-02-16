@@ -2070,13 +2070,18 @@ Optional PREFIX is used add filename to the beginning of line."
 (defsubst my-lint-layout-copyright-line-p ()
   "Check if current point is copyright line.
 Should be called right after `my-lint-layout-copyright-search-forward'."
-  (not (looking-at ".*information")))
+  ;; Copyright information
+  (and (not (looking-at ".*information"))
+       ;;  Foo Bar
+       (looking-at "[ \t]+[a-z]")))
 
 (defsubst my-lint-layout-copyright-search-forward ()
-  "Position point to 'Copyright' line."
+  "Position point to 'Copyright <text>' line."
   (let (moved)
-    (while (and (setq moved
-		      (re-search-forward "\\<copyright\\>" nil t))
+    (while (and (re-search-forward
+		 "\\<copyright\\>"
+		 nil t)
+		(setq moved t)
 		(not (my-lint-layout-copyright-line-p))))
     (and moved
 	 (my-lint-layout-copyright-line-p))))
@@ -2140,7 +2145,6 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
 Optional PREFIX is used add filename to the beginning of line."
   (if (my-lint-layout-copyright-not-exists prefix)
       t
-    (my-lint-layout-copyright-line-syntax prefix)
     (while (my-lint-layout-copyright-search-forward)
       (my-lint-layout-copyright-line-syntax prefix))))
 
