@@ -2521,7 +2521,7 @@ One ORing regexp.")
       "timestamp"
       "varchar"
       "varying"))
-   "\\>\\)")
+   "\\)\\>")
   "SQL standard keywords for reserved data types.")
 
 ;; BIT data type in MS SQL Server stores a bit of data (0 or 1) and
@@ -2554,7 +2554,16 @@ One ORing regexp.")
    "\\|"
    my-lint-layout-sql-keywords-sql99-data-types
    "\\)")
-  "SQL reserved keywords.")
+  "SQL standard reserved keywords for data types.")
+
+(defconst my-lint-layout-sql-keywords-sql-type-abbreviations
+  (concat
+   "\\<\\(?:"
+   (regexp-opt
+    '("int"
+      "dec"))
+   "\\)\\>")
+  "SQL standard reserved data types (abbreviations).")
 
 ;; FIXME
 (defsubst my-lint-layout-sql-comment (str &optional prefix)
@@ -3150,7 +3159,7 @@ The submatches are as follows. The point is at '!':
 	 fromp (point) prefix line))
       )))
 
-(defsubst my-lint-layout-sql-check-create-table-col-part-lower1
+(defsubst my-lint-layout-sql-create-table-error-data-type-lower
   (string &optional prefix line)
   "Signal lowercase keyword error."
   (my-lint-layout-message
@@ -3158,21 +3167,52 @@ The submatches are as follows. The point is at '!':
    line
    prefix))
 
+(defsubst my-lint-layout-sql-create-table-error-data-type-abbrev
+  (abbrev string &optional prefix line)
+  "Signal abbreviated keyword error."
+  (my-lint-layout-message
+   (format "[sql] In CREATE TABLE, abbreviated '%s' keyword: %s"
+	   abbrev string)
+   line
+   prefix))
+
+(defsubst my-lint-layout-sql-create-table-error-data-type-size
+  (string &optional prefix line)
+  "Signal dtata type with size warning."
+  (my-lint-layout-message
+   (format "[sql] In CREATE TABLE, possibly unnecessary size spec: %s" string)
+   line
+   prefix))
+
 (defun my-lint-layout-sql-check-create-table-col-part-lower
   (string &optional prefix line)
-  "Check STRING against lowercase keywords."
+  "Check STRING keyword. E.g against lowercase and abbreviations."
   (my-lint-layout-with-case
     (dolist (re (list
 		 my-lint-layout-sql-keywords-sql92-for-column
-		 my-lint-layout-sql-keywords-sql92-data-types
-		 my-lint-layout-sql-keywords-sql99-data-types))
+		 my-lint-layout-sql-keywords-sql-types))
       (let ((regexp (concat "\\(" re "\\)")))
 	(when (string-match regexp string)
-	  (my-lint-layout-sql-check-create-table-col-part-lower1
+	  (my-lint-layout-sql-create-table-error-data-type-lower
 	   (match-string 1 string)
 	   prefix
 	   (or line
-	       (my-lint-layout-current-line-number)=)))))))
+	       (my-lint-layout-current-line-number))))
+	(when (string-match
+	       my-lint-layout-sql-keywords-sql-type-abbreviations
+	       string)
+	  (my-lint-layout-sql-create-table-error-data-type-abbrev
+	   (match-string 0 string)
+	   string
+	   prefix
+	   (or line
+	       (my-lint-layout-current-line-number))))
+	(when (string-match "\\<int.*(" string)
+	  (my-lint-layout-sql-create-table-error-data-type-size
+	   string
+	   prefix
+	   (or line
+	       (my-lint-layout-current-line-number))))))))
 
 (defun my-lint-layout-sql-check-create-table-col-error-type-close-paren
   (string &optional prefix line)
@@ -3231,39 +3271,41 @@ The submatches are as follows. The point is at '!':
 (defun my-lint-layout-sql-check-create-table-col-part
   (string &optional prefix line)
   "Examine column defintion in STRING."
-  (when (string-match
-	 `,(concat
-	    ;; <col name> <type> <rest>
-	    ;; 1          2     3
-	    "\\([^ ,\t\r\n]+\\)"
-	    "[ \t\r\n]+"
-	    "\\([^ ,(\t\r\n]+\\)"
-	    "\\(.*\\)")
-	 string)
-    (let ((match (match-string 0 string))
-	  (name  (match-string 1 string))
-	  (type  (match-string 2 string))
-	  (rest  (match-string 3 string)))
-      (my-lint-layout-sql-check-create-table-col-part-lower
-       type prefix line)
-      (my-lint-layout-sql-check-mixed-case
-       name
-       (format
-	"[sql] In CREATE TABLE, portability problem with mixed case: %s"
-	name)
-       prefix
-       line)
-      (unless (string-match
-	       my-lint-layout-sql-keywords-sql-types
-	       type)
-	(my-lint-layout-message
-	 (format "[sql] In CREATE TABLE, unknown data type: %s" type)
-	 (or line (my-lint-layout-current-line-number))
-	 prefix))
-      (unless (string= "" rest)
-	(my-lint-layout-sql-check-create-table-col-part-rest
-	 rest prefix line))
-      )))
+  (let ((re `,(concat
+	       ;; col DECIMAL(1, 3)  PRIMARY KEY NOT NULL
+	       ;;
+	       ;; <col name> <type> <rest>
+	       ;; 1          2 + 3
+	       "\\([^ ,\t\r\n]+\\)"  ;; 1
+	       "[ \t\r\n]+"
+	       "\\(\\([^ ,(\t\r\n]+\\)\\(?:[ \t]*([^)\r\n]+[ \t]*)\\)?\\)" ;; 2
+	       "\\(.*\\)")))         ;; 3
+    (when (string-match re string)
+      (let ((match (match-string 0 string))
+	    (name  (match-string 1 string))
+	    (fulltype  (match-string 2 string))
+	    (type  (match-string 3 string))
+	    (rest  (match-string 4 string)))
+	(my-lint-layout-sql-check-mixed-case
+	 name
+	 (format
+	  "[sql] In CREATE TABLE, portability problem with mixed case: %s"
+	  name)
+	 prefix
+	 line)
+	(my-lint-layout-sql-check-create-table-col-part-lower
+	 fulltype prefix line)
+	(unless (string-match
+		 my-lint-layout-sql-keywords-sql-types
+		 type)
+	  (my-lint-layout-message
+	   (format "[sql] In CREATE TABLE, unknown data type: %s" type)
+	   (or line (my-lint-layout-current-line-number))
+	   prefix))
+	(unless (string= "" rest)
+	  (my-lint-layout-sql-check-create-table-col-part-rest
+	   rest prefix line))
+	))))
 
 (defun my-lint-layout-sql-check-statement-create-tables-no-semicolon
   (&optional prefix line)
@@ -3279,34 +3321,42 @@ An example:
      (+ (or line 0) (1- (my-lint-layout-current-line-number)))
      prefix)))
 
+(defun my-lint-layout-sql-check-create-table-multiple-coldefs
+  (&optional prefix line)
+  "Check multiple columen definitions at the same line."
+  (let (match
+	curline)
+    (while (re-search-forward
+	    ;; <col>  <type>(3,2),
+	    "[ \t]*\\([^,]+\\(?:,[ \t]*[0-9]+\\)?\\)" nil t)
+      (setq match   (match-string 1)
+	    curline (if line
+			(+ line (1- (my-lint-layout-current-line-number)))
+		      (my-lint-layout-current-line-number)))
+      ;; Multiple, definitions, in line
+      ;; FIXME: Does not handle comments
+      (when (looking-at ",.*[,;]")
+	(my-lint-layout-message
+	 "[sql] In CREATE TABLE, possibly multiple columns(,) definitions"
+	 curline
+	 prefix))
+      (my-lint-layout-sql-check-create-table-col-part
+       match prefix curline))))
+
 (defun my-lint-layout-sql-check-statement-create-table-part
   (beg end &optional prefix line)
   "Check CREATE TABLE content."
   (let ((string (buffer-substring beg end)))
     (with-temp-buffer
       (insert string)
+      (display-buffer (current-buffer)) ;; FIXME
       (my-lint-layout-sql-clean-comments-buffer)
-      (goto-char (point-min))
-      (my-lint-layout-sql-check-element-indentation prefix line)
-      (goto-char (point-min))
-      (my-lint-layout-sql-check-statement-create-tables-no-semicolon
-       prefix line)
-      (goto-char (point-min))
-      (let (match
-	    curline)
-	(while (re-search-forward "[ \t]*\\([^,]+\\)" nil t)
-	  (setq match    (match-string 1)
-		curline  (+ line (1- (my-lint-layout-current-line-number))))
-	  ;; Multiple, definitions, in line
-	  ;; FIXME: Does not handle comments
-	  (when (looking-at ",.*[,;]")
-	    (my-lint-layout-message
-	     "[sql] In CREATE TABLE, possibly multiple column(,) definitions"
-	     curline
-	     prefix))
-	  (my-lint-layout-sql-check-create-table-col-part
-	   match prefix curline)
-	  )))))
+      (dolist (function
+	       '(my-lint-layout-sql-check-element-indentation
+		 my-lint-layout-sql-check-statement-create-tables-no-semicolon
+		 my-lint-layout-sql-check-create-table-multiple-coldefs))
+	(goto-char (point-min))
+	(funcall function prefix line)))))
 
 (defsubst my-lint-layout-create-table-forward ()
   "Search CREATE TABLE forward.
