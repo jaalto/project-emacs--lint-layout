@@ -2556,6 +2556,7 @@ One ORing regexp.")
    "\\)")
   "SQL reserved keywords.")
 
+;; FIXME
 (defsubst my-lint-layout-sql-comment (str &optional prefix)
   "Check non-standard comment syntax."
   (when (string-match "#\\|/[*]" str)
@@ -2563,6 +2564,45 @@ One ORing regexp.")
      (format "[sql] Non-standard comment syntax: %s" str)
      (my-lint-layout-current-line-number)
      prefix)))
+
+(defsubst my-lint-layout-sql-statement-end-forward ()
+  "Search next SQL statement end (semicolon).
+Only SQL standrd comments are recognized. Not non-standard '#' etc.
+Examples of ending lines:
+
+o   <statement> );
+o   ;
+o   INSERT .... ( ); -- last comment
+"
+  (re-search-forward
+    `,(concat
+       "^[ \t]*)?;[ \t]*\\(?:--+.*\\)?$"
+       "\\|)?;[ \t]*\\(?:--+.*\\)?$")
+    nil t))
+
+(defsubst my-lint-layout-sql-insert-into-forward ()
+  "Search INSERT INTO forward.
+The submatches are as follows. The point is at '!':
+
+    INSERT INTO table (<columns>) VALUES (<values>) ;
+    |---------- |----  |--------  !
+    1           2      3          Point
+
+Note, that the statement does not necessarily haave VLAUES part.
+This can be tested with `looking-at' at the position of point:
+
+    INSERT INTO table (<values>) ;
+                                 |
+                                 Point"
+  ;; FIXEME; This does not work if the data contains ")"
+  (re-search-forward
+   `,(concat
+      "^[ \t]*"
+      "\\(insert[ \t\r\n]+into\\)"	; 1
+      "[ \t\r\n]+"
+      "\\([^ \t\r\n]+\\)"		; 2
+      "\\([ \t\r\n]*([^)]+\\))[ \t\r\n]*")	; 3
+   nil t))
 
 (defun my-lint-layout-sql-check-indent (str &optional prefix)
   "Check left comma lines:
@@ -2591,32 +2631,6 @@ col
 	     (match-string 0 str))
      (my-lint-layout-current-line-number)
      prefix)))
-
-(defsubst my-lint-layout-insert-into-forward ()
-  "Search INSERT INTO forward.
-The submatches are as follows. The point is at '!':
-
-    INSERT INTO table (<columns>) VALUES (<values>) ;
-    |---------- |----  |--------  !
-    1           2      3          Point
-
-Note, that the statement does not necessarily haave VLAUES part.
-This can be tested with `looking-at' at the position of point:
-
-    INSERT INTO table (<values>) ;
-                                 |
-                                 Point"
-  ;; FIXEME; This does not work if the data contains ")"
-  (re-search-forward
-   `,(concat
-      "^[ \t]*"
-      "\\(insert[ \t\r\n]+into\\)"
-      "[ \t\r\n]+"
-      "\\([^ \t\r\n]+\\)"
-      "[ \t\r\n]*("
-      "\\([^)]+\\))[ \t\r\n]*"
-      )
-   nil t))
 
 (defsubst my-lint-layout-sql-check-iso-date-p (str)
   "Match YYYY-MM-DD.
@@ -2736,23 +2750,25 @@ LINE is added to current line number."
 	word)
     (with-temp-buffer
       (insert string)
+;;;      (display-buffer (current-buffer)) ;; FIXME
       (my-lint-layout-sql-clean-comments-buffer)
       (goto-char (point-min))
       (my-lint-layout-sql-check-element-indentation prefix line)
       (goto-char (point-min))
       ;; check every word: the column names
-      (while (re-search-forward ".\\([^ ,\t\r\n]+\\).?" nil t)
+      (while (re-search-forward ".\\([^ ,()\t\r\n]+\\).?" nil t)
 	(setq match (match-string 0)
 	      word  (match-string 1))
 	(my-lint-layout-sql-check-charset
 	 word
-	 (format "[sql] In INSERT, Non-alphadigit characters in %s" word)
+	 (format "[sql] In INSERT, col Non-alphadigit characters in %s" word)
 	 prefix
 	 (+ line (my-lint-layout-current-line-number)))
 	(my-lint-layout-sql-check-mixed-case
 	 match
-	 (format "[sql] In INSERT, portability problem with mixed case: %s"
-		 match)
+	 (format
+	  "[sql] In INSERT, col portability problem with mixed case: %s"
+	  match)
 	 prefix
 	 (+ line (my-lint-layout-current-line-number)))
 	))))
@@ -2760,7 +2776,13 @@ LINE is added to current line number."
 (defun my-lint-layout-sql-check-iso-date (&optional prefix line)
   "Check YYYY-MM-DD in string.
 LINE is added to current line number."
-  (let (match
+  (let ((re (concat
+	     "\\(.\\)"
+	     "[0-9]\\{4,4\\}-[0-9][0-9]-[0-9][0-9]" ;; YYYY-MM-DD
+	     ;; HH:MM:SS
+	     "\\(?:[ \t]+[0-9][0-9]\\(?::[0-9][0-9]\\)\\{1,2\\}?\\)?"
+	     "\\(.?\\)"))
+	match
 	open
 	close)
     (flet ((test
@@ -2772,9 +2794,7 @@ LINE is added to current line number."
 		match)
 	       (+ (or line 0) (my-lint-layout-current-line-number))
 	       prefix))))
-      (while (re-search-forward
-	      "\\(.\\)[0-9]\\{4,4\\}-[0-9][0-9]-[0-9][0-9]\\(.?\\)"
-	      nil t)
+      (while (re-search-forward re nil t)
 	(setq match (match-string 0)
 	      open  (match-string 1)
 	      close (match-string 2))
@@ -2841,7 +2861,7 @@ The value of LINE is added to current line. PREFIX."
 	parenbeg
 	paren-end
 	line)
-    (while (my-lint-layout-insert-into-forward)
+    (while (my-lint-layout-sql-insert-into-forward)
       (setq keyword   (match-string 1)
 	    table     (match-string 2)
 	    paren     (match-string 3)
@@ -2861,18 +2881,25 @@ The value of LINE is added to current line. PREFIX."
 	       table)
        prefix line)
       (cond
-       ((looking-at "\\(values\\)[ \t\r\n]*(\\([^;]+\\)")
-	(let ((keyword (match-string 1))
-	      (beg     (match-beginning 2))
-	      (end     (match-end 2)))
+       ;;  FIXME: RE-search
+       ((looking-at "values")
+	(let ((keyword (match-string 0))
+	      (beg     (match-end 0))
+	      end)
 	  (my-lint-layout-sql-check-all-uppercase
 	   keyword
 	   (format "[sql] In INSERT, keyword not uppercase: %s" keyword)
 	   prefix line)
 	  (my-lint-layout-sql-check-insert-into-column-part
 	   paren-beg paren-end prefix line)
-	  (my-lint-layout-sql-check-insert-into-values-part
-	   beg end prefix line)))
+	  (if (null (setq end
+			  (my-lint-layout-sql-statement-end-forward)))
+	      (my-lint-layout-message
+	       "[sql] In INSERT, cannot find statement end marker(;)"
+	       (my-lint-layout-current-line-number)
+	       prefix)
+	    (my-lint-layout-sql-check-insert-into-values-part
+	     beg end prefix line))))
        (t
 	(my-lint-layout-message
 	 "[sql] In INSERT, column names not listed"
@@ -2999,7 +3026,7 @@ The submatches are as follows. The point is at '!':
 	word)
     (with-temp-buffer
       (insert string)
-      (display-buffer (current-buffer)) ;; FIXME
+;;;      (display-buffer (current-buffer)) ;; FIXME
       (my-lint-layout-sql-clean-comments-buffer)
       (goto-char (point-min))
       (my-lint-layout-sql-check-statement-select-from-part-keyword-case
