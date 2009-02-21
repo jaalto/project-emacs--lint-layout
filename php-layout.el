@@ -3424,7 +3424,7 @@ The submatches are as follows: The point is at '!':
       (when (string-match "create.*table.*(" match)
 	(my-lint-layout-message
 	 "[sql] In CREATE TABLE, misplaced starting paren (expecting line-up)"
-	 prefix line))
+	 line prefix))
       (my-lint-layout-sql-check-statement-create-table-part
        beg end prefix line))))
 
