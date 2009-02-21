@@ -1202,24 +1202,6 @@ print 'this' .
 	   (- (my-lint-layout-current-line-number) lines)
 	   prefix))))))
 
-;;; ............................................................. &sql ...
-
-(defun my-sql-re-search-forward ()
-  "Search start of SQl keyword."
-  )
-
-(defun my-sql-re-search-backward ()
-  "Search start of SQl keyword."
-  )
-
-(defun my-sql-layout-type-p ()
-  "Determine type of SQL command."
-  )
-
-(defun my-sql-layout-interactive ()
-  ""
-  )
-
 ;;; ......................................................... &php-sql ...
 
 (defsubst my-lint-layout-php-var-forward-1 ()
@@ -2450,6 +2432,8 @@ Optional PREFIX is used add filename to the beginning of line."
     '("auto_increment"
       "unsigned"
       "zerofill"
+      "current_timestamp"
+      "default"
       ;; create table xxx (...) engine = innodb;
       "engine"
       "innodb"
@@ -3212,7 +3196,7 @@ The submatches are as follows. The point is at '!':
 	  (my-lint-layout-sql-create-table-error-data-type-abbrev
 	   (match-string 0 string)
 	   string
-	   prefix
+           prefix
 	   (or line
 	       (my-lint-layout-current-line-number))))
 	(when (string-match "\\<int.*(" string)
@@ -3276,10 +3260,20 @@ The submatches are as follows. The point is at '!':
   (my-lint-layout-sql-check-create-table-col-words
    string prefix line))
 
+(defun my-lint-layout-sql-check-create-table-non-column-name
+  (str match &optional line prefix)
+  (my-lint-layout-message
+   (format "[sql] In CREATE TABLE, reserved keywords before column name: %s"
+           str)
+   (or line
+       (my-lint-layout-current-line-number))
+   prefix))
+
 (defun my-lint-layout-sql-check-create-table-col-part
   (string &optional prefix line)
   "Examine column defintion in STRING."
   (let ((re `,(concat
+               ;; PRIMARY KEY(user_id),
 	       ;; col DECIMAL(1, 3)  PRIMARY KEY NOT NULL
 	       ;;
 	       ;; <col name> <type> <rest>
@@ -3299,8 +3293,17 @@ The submatches are as follows. The point is at '!':
 	 (format
 	  "[sql] In CREATE TABLE, portability problem with mixed case: %s"
 	  name)
-	 prefix
-	 line)
+         prefix line)
+        (my-lint-layout-sql-check-charset
+         match
+         (format "[sql] In CREATE TABLE, non-alphadigit characters: %s" match)
+         prefix line)
+        (when (string-match
+               (concat "^[ \t\r\n]*"
+                       my-lint-layout-sql-keywords-sql92-for-column)
+               match)
+          (my-lint-layout-sql-check-create-table-non-column-name
+           match (match-string 0 match) line prefix))
 	(my-lint-layout-sql-check-create-table-col-part-lower
 	 fulltype prefix line)
 	(unless (string-match
@@ -3416,7 +3419,7 @@ The submatches are as follows: The point is at '!':
        prefix line)
       (my-lint-layout-sql-check-charset
        table
-       (format "[sql] In CREATE TABLE, Non-alphadigit characters in %s" table)
+       (format "[sql] In CREATE TABLE, non-alphadigit characters in %s" table)
        prefix line)
       (when (string-match "create.*table.*(" match)
 	(my-lint-layout-message
