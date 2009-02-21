@@ -2676,12 +2676,21 @@ The submatches are:
     (my-lint-layout-sql-error-generic message prefix line)))
 
 (defsubst my-lint-layout-sql-check-charset-p (str)
-  "Check STR aagainst charset [a-zA-Z0-9_]."
+  "Check STR against typical alphadigit charset"
   (not (string-match "[^a-zA-Z0-9_ \t\r\n]" str)))
 
 (defsubst my-lint-layout-sql-check-charset
   (str message &optional prefix line)
   (unless (my-lint-layout-sql-check-charset-p str)
+    (my-lint-layout-sql-error-generic message prefix line)))
+
+(defsubst my-lint-layout-sql-check-charset-column-p (str)
+  "Check STR against typical charset."
+  (not (string-match "[^a-zA-Z0-9,()_ \t\r\n]" str)))
+
+(defsubst my-lint-layout-sql-check-column-charset
+  (str message &optional prefix line)
+  (unless (my-lint-layout-sql-check-charset-column-p str)
     (my-lint-layout-sql-error-generic message prefix line)))
 
 (defun my-lint-layout-sql-clean-comments-buffer (&optional point)
@@ -2762,7 +2771,7 @@ LINE is added to current line number."
 	      word  (match-string 1))
 	(my-lint-layout-sql-check-charset
 	 word
-	 (format "[sql] In INSERT, col Non-alphadigit characters in %s" word)
+	 (format "[sql] In INSERT, col non-alphadigit characters in %s" word)
 	 prefix
 	 (+ line (my-lint-layout-current-line-number)))
 	(my-lint-layout-sql-check-mixed-case
@@ -3263,8 +3272,8 @@ The submatches are as follows. The point is at '!':
 (defun my-lint-layout-sql-check-create-table-non-column-name
   (str match &optional line prefix)
   (my-lint-layout-message
-   (format "[sql] In CREATE TABLE, reserved keywords before column name: %s"
-           str)
+   (format "[sql] In CREATE TABLE, reserved keyword '%s' before column name: %s"
+           match str)
    (or line
        (my-lint-layout-current-line-number))
    prefix))
@@ -3294,7 +3303,7 @@ The submatches are as follows. The point is at '!':
 	  "[sql] In CREATE TABLE, portability problem with mixed case: %s"
 	  name)
          prefix line)
-        (my-lint-layout-sql-check-charset
+        (my-lint-layout-sql-check-column-charset
          match
          (format "[sql] In CREATE TABLE, non-alphadigit characters: %s" match)
          prefix line)
