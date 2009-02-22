@@ -3369,7 +3369,7 @@ An example:
   (let ((string (buffer-substring beg end)))
     (with-temp-buffer
       (insert string)
-      (display-buffer (current-buffer)) ;; FIXME
+;;;      (display-buffer (current-buffer)) ;; FIXME
       (my-lint-layout-sql-clean-comments-buffer)
       (dolist (function
 	       '(my-lint-layout-sql-check-element-indentation
