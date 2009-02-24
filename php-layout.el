@@ -3322,7 +3322,7 @@ The submatches are as follows. The point is at '!':
 		 my-lint-layout-sql-keywords-sql-types
 		 type)
 	  (my-lint-layout-message
-	   (format "[sql] in CREATE TABLE, unknown data type: %s" type)
+	   (format "[sql] in CREATE TABLE, non-standard or unknown data type: %s" type)
 	   (or line (my-lint-layout-current-line-number))
 	   prefix))
 	(unless (string= "" rest)
