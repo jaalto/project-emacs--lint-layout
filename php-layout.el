@@ -3651,7 +3651,7 @@ The submatches are as follows: The point is at '!':
 
 (defun my-lint-layout-css-attribute (&optional prefix)
   "Check attribute."
-  (when (and (looking-at "\\(.*[a-z]\\):")
+  (when (and (looking-at "\\(.*[a-z]\\):[^{]+;")
 	     ;;  a:hover
 	     (not (string-match "\\<a" (match-string 1)))
 	     (looking-at "\\([^ \t\r\n]+[a-z]:\\([^ \t\r\n]+\\)\\)"))
