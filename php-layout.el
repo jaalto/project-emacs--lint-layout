@@ -591,7 +591,7 @@ without brace requirement.")
   (let ((count 0)
         (pos   0))
     (while (< pos (length s))
-      (if (char= (aref s pos) c)
+      (if (char-equal (aref s pos) c)
           (incf  count))
       (incf  pos))
     count))
@@ -2400,7 +2400,7 @@ Optional PREFIX is used add filename to the beginning of line."
 
 (defconst my-lint-layout-sql-keywords-reserved
   (concat
-   "\\b"
+   "\\<"
    (regexp-opt
     '(
 	"ALL" "AND" "ANY" "AS" "ASC" "BETWEEN" "BY" "CHECK" "CREATE"
@@ -2414,7 +2414,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	"CURSOR"
 	"DECLARE" "END" "ESCAPE"
 	)
-      t) "\\b")
+      t) "\\>")
   "SQL standard reserved keywords.")
 
 (defconst my-lint-layout-sql-keywords-function-list
@@ -3362,8 +3362,7 @@ The submatches are as follows. The point is at '!':
 (defsubst my-lint-layout-sql-create-table-adjust-line-number (str line)
   "STR Could match extra newline and point is at
 wrong position. Match first non-LF up till last LF"
-  (let ((count (my-lint-layout-count-char-in-string ?\n str)))
-    (- line count)))
+  (- line  (my-lint-layout-count-char-in-string ?\n str)))
 
 (defun my-lint-layout-sql-create-table-adjust-line-maybe (string line)
   "Check STRING for embedded newlines at the end."
@@ -3375,11 +3374,11 @@ wrong position. Match first non-LF up till last LF"
   ;;     ...
   ;;     col <TYPE>
   ;;  );
-  (when (string-match "[^\n][^\001]+\n\\([^\001]*\n\\)" string)
-    (setq line
-          (my-lint-layout-sql-create-table-adjust-line-number
-           (match-string 1 string)
-           line)))
+  (when (and (stringp string)
+             (string-match "[^\n][^\001]+\n\\([^\001]*\n\\)" string))
+    (let ((str (match-string 1 string)))
+      (setq line
+            (my-lint-layout-sql-create-table-adjust-line-number str line))))
   line)
 
 (defun my-lint-layout-sql-check-create-table-col-part
@@ -3401,9 +3400,13 @@ wrong position. Match first non-LF up till last LF"
              (fulltype  (match-string 2 string))
              (type  (match-string 3 string))
              (rest  (match-string 4 string)))
+        (my-lint-layout-debug-message
+         "debug layout: CREATE A col part %d <<%s>>" line string)
         (setq line
               (my-lint-layout-sql-create-table-adjust-line-maybe
                string line))
+        (my-lint-layout-debug-message
+         "debug layout: CREATE col part %d [[%s]]" line string)
 	(my-lint-layout-sql-check-mixed-case
 	 name
 	 (format
@@ -3452,7 +3455,7 @@ An example:
      (+ (or line 0) (my-lint-layout-current-line-number))
      prefix)))
 
-(defun my-lint-layout-sql-check-create-table-multiple-coldefs
+(defun my-lint-layout-sql-check-create-table-multiple-col-defs
   (&optional prefix line)
   "Check multiple columen definitions at the same line."
   (let (match
@@ -3464,6 +3467,8 @@ An example:
 	    curline (if line
 			(+ line (1- (my-lint-layout-current-line-number)))
 		      (my-lint-layout-current-line-number)))
+      (my-lint-layout-debug-message
+       "debug layout: multiple-col-defs %d '%s'" curline match)
       ;; Multiple, definitions, in line
       ;; FIXME: Does not handle comments
       (when (looking-at ",.*[,;]")
@@ -3485,8 +3490,10 @@ An example:
       (dolist (function
 	       '(my-lint-layout-sql-check-element-indentation
 		 my-lint-layout-sql-check-statement-create-tables-no-semicolon
-		 my-lint-layout-sql-check-create-table-multiple-coldefs))
+		 my-lint-layout-sql-check-create-table-multiple-col-defs))
 	(goto-char (point-min))
+        (my-lint-layout-debug-message
+         "debug layout: %s prefix %s line %s" function prefix (or line 0))
 	(funcall function prefix line)))))
 
 (defsubst my-lint-layout-create-table-forward ()
@@ -3571,14 +3578,18 @@ The submatches are as follows: The point is at '!':
 
 (defsubst my-lint-layout-sql-check-comment-leading (&optional prefix)
   "Check SQL comments."
-  (while (re-search-forward "^[ \t]*\\(#\\|/[*]\\)" nil t)
+  (while (re-search-forward
+          "^[ \t]*\\(#\\|/[*]\\|//\\)"
+          nil t)
     (my-lint-layout-sql-error-non-standard-comment
      nil prefix (match-string 1))))
 
 (defsubst my-lint-layout-sql-check-comment-trailing (&optional prefix)
   "Check SQL comments."
   (let (str)
-    (while (re-search-forward "\\(#+[^#\r\n]*\\|/[*].*[*]/\\)[ \t]*\r?\n" nil t)
+    (while (re-search-forward
+            "\\(#+[^#\r\n]*\\|/[*].*[*]/\\)[ \t]*\r?\n"
+            nil t)
       (setq str (match-string 1))
       (save-excursion
         (goto-char (match-beginning 1))
@@ -3593,7 +3604,7 @@ The submatches are as follows: The point is at '!':
     (goto-char point)))
 
 (defun my-lint-layout-sql-check-batch-all (&optional prefix)
-  "Check Css"
+  "Check SQL"
   (my-lint-layout-run-list
    my-lint-layout-check-sql-functions prefix))
 
