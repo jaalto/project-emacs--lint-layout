@@ -2408,16 +2408,43 @@ Optional PREFIX is used add filename to the beginning of line."
   "SQL standard reserved keywords.")
 
 (defconst my-lint-layout-sql-keywords-function-list
-  '("avg"
+  '(
+    "avg"
+    "bit_length"
+    "cast"
+    "char_length"
+    "character_length"
+    "coalesce"
+    "concat"
+    "convert"
     "count"
+    "distinct"
+    "extract"
     "length"
     "lower"
     "max"
     "min"
+    "nullif"
+    "octet_length"
+    "position"
     "substring"
     "sum"
+    "translate"
     "trim"
-    "upper")
+    "upper"
+;; FIXME
+;;     (concat
+;;     "trim"
+;;     "\\(?:[ \t\r\r]*([ \t\r\r]*"
+;;           "\\(?:leading\\|trailing\\|both\\)"
+;;     "\\)?")
+;;     (concat
+;;      "substring"
+;;      "\\(?:[ \t\r\r]*([ \t\r\r]*"
+;;            "\\(?:from[ \t\r\r]+[0-9]+"
+;;                  "\\(?:[ \t\r\r]+for[ \t\r\r]+[0-9]+\\)?\\)"
+;;      "\\)?")
+    )
   "SQL standard reserved keywords for functions, list.")
 
 (defconst my-lint-layout-sql-keywords-function-regexp
@@ -2447,6 +2474,8 @@ Optional PREFIX is used add filename to the beginning of line."
   '("not[ \t\r\n]+null"
     "primary[ \t\r\n]+key"
     "references"
+    "match\\(?:[ \t\r\n]+\\(?:unique\\|partial\\|full\\)\\)?"
+    "overlaps"
     "unique")
   "SQL-92 column definition keywords in CREATE TABLE statement.
 List of word regexps.")
@@ -2463,19 +2492,62 @@ List of word regexps.")
 One ORing regexp.")
 
 (defconst my-lint-layout-sql-keywords-from-statement
-  '(
-    "(?:(?:left\\|right\\|full[ \t\r\n]+)?outer[ \t\r\n]+)join"
-    "(?:inner[ \t\r\n]+)?join"
+  (list
+   (concat
+    "\\(?:\\<natural[ \t\r\n]+\\?)"
+    "(?:(?:left\\|right\\|full[ \t\r\n]+\\)?"
+    "\\<outer[ \t\r\n]+\\)join")
+    (concat
+     "\\(?:\\<natural[ \t\r\n]+\\?)"
+     "(?:\\<inner[ \t\r\n]+)?\\<join")
+    "cross[ \t\r\n]+join"
+    "all"
     "and"
+    "any"
     "as"
     "between"
+    "case"
+    "corresponding[ \t\r\n]+by"
+    "current_date"
+    "current_time"
+    "current_timestamp"
+;;; "day"
+    "else"
+    "end"
+    "escape"
+    "except"
+    "exists"
+    "false"
+    "for"
+    "from"
+    "group[ \t\r\n]+by"
     "having"
+;;;    "hour"
     "in"
+    "interval"
+    "intersect"
+    "is[ \t\r\n]+null"
+    "is[ \t\r\n]+not[ \t\r\n]+null"
     "like"
+    "local"
+;;;    "minute"
+    "not"
+    "null"
     "on"
     "or"
     "order[ \t\r\n]+by"
+;;;    "second"
+    "some"
+    "time zone"
+    "timezone_hour"
+    "timezone_minute"
+    "true"
     "unique"
+    "union"
+    "unknwown"
+    "using"
+    "when"
+;;; "year"
     )
   "List of regexp keywords appearing in FROM part of SELECT.")
 
@@ -2494,8 +2566,11 @@ One ORing regexp.")
    "\\<\\(?:"
    (regexp-opt
     '(
+      "bit varying"
       "bit"
+      "char varying"
       "char"
+      "character varying"
       "character"
       "currency"
       "date"
@@ -2507,15 +2582,18 @@ One ORing regexp.")
       "integer"
       "interval"
       "money"
+      "national char varying"
+      "national char"
+      "national character"
+      "nchar varying"
       "nchar"
-      "national"
       "numeric"
       "real"
       "smallint"
       "time"
       "timestamp"
       "varchar"
-      "varying"))
+      ))
    "\\)\\>")
   "SQL standard keywords for reserved data types.")
 
@@ -2536,9 +2614,7 @@ One ORing regexp.")
       "blob"
       "clob"
       "list"
-      "set"
-      "smallint"
-      ))
+      "set"))
    "\\)\\>")
   "SQL reserved keywords.")
 
@@ -2555,7 +2631,8 @@ One ORing regexp.")
   (concat
    "\\<\\(?:"
    (regexp-opt
-    '("int"
+    '("char"
+      "int"
       "dec"))
    "\\)\\>")
   "SQL standard reserved data types (abbreviations).")
