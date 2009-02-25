@@ -1200,7 +1200,7 @@ displayed."
 (defun my-lint-layout-php-check-regexp-occur-main (&optional prefix)
   "Run all occur checks."
   (my-lint-layout-generic-run-occur-variable-list
-   my-lint-layout-php-check-regexp-occur-variable))
+   my-lint-layout-php-check-regexp-occur-variable prefix))
 
 (defun my-lint-layout-php-check-regexp-occur-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-php-check-regexp-occur-main'."
@@ -3801,6 +3801,14 @@ The submatches are as follows: The point is at '!':
 	 (format "[css] extra %d empty lines after token '{'" (1- lines))
 	 line prefix)))
       (my-lint-layout-current-line-string)
+      (when (looking-at ".*}")
+	(my-lint-layout-message
+	 "[css] inline {} body, expect line-up"
+	 line prefix))
+      (when (looking-at ".*;\\([^ \t\r\n]\\)")
+	(my-lint-layout-message
+	 (format "[css] non-whitespace character after semicolon: %s" (match-string 1))
+	 line prefix))
       (when (eq col 0)
 	(my-lint-layout-message
 	 (format "[css] not indented (by %d)"
@@ -3846,7 +3854,7 @@ The submatches are as follows: The point is at '!':
 (defun my-lint-layout-css-check-regexp-occur-main (&optional prefix)
   "Run all occur checks."
   (my-lint-layout-generic-run-occur-variable-list
-   my-lint-layout-php-check-regexp-occur-variable))
+   my-lint-layout-php-check-regexp-occur-variable prefix))
 
 (defun my-lint-layout-css-check-batch-all (&optional prefix)
   "Check Css"
