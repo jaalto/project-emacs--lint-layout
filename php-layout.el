@@ -3470,6 +3470,19 @@ wrong position. Match first non-LF up till last LF"
             (my-lint-layout-sql-create-table-adjust-line-number str line))))
   line)
 
+(defun my-lint-layout-sql-check-create-table-primary-key (col str line prefix)
+  "Check PRIMARY KEY line."
+  ;;  error_id   INT   NOT NULL PRIMARY KEY AUTO_INCREMENT
+  ;;  => the "error_" is probably redundant, simple 'id' will do.
+  (cond
+   ((string-match "^\\([^ \t\r\n]+\\)id" col)
+    (my-lint-layout-message
+     (format
+      "[sql] in CREATE TABLE, probably unnecessary '%s' prefix in PK column: %s"
+      (match-string 1 col)
+      (my-lint-layout-current-line-number)
+      prefix)))))
+
 (defun my-lint-layout-sql-check-create-table-col-part
   (string &optional prefix line)
   "Examine column defintion in STRING."
@@ -3489,6 +3502,9 @@ wrong position. Match first non-LF up till last LF"
              (fulltype  (match-string 2 string))
              (type  (match-string 3 string))
              (rest  (match-string 4 string)))
+        (when (string-match "primary[ \t\r\n]+key")
+          (my-lint-layout-sql-check-create-table-primary-key
+           name string line prefix))
         (my-lint-layout-debug-message
          "debug layout: CREATE A col part %d <<%s>>" line string)
         (setq line
