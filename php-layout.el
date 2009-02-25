@@ -2599,6 +2599,9 @@ One ORing regexp.")
     (concat
      "\\(?:\\<natural[ \t\r\n]+\\?)"
      "(?:\\<inner[ \t\r\n]+)?\\<join")
+    "ancestor"
+    "ancestor_of"
+    "child"
     "cross[ \t\r\n]+join"
     "all"
     "and"
@@ -2636,6 +2639,8 @@ One ORing regexp.")
     "or"
     "order[ \t\r\n]+by"
 ;;;    "second"
+    "parent"
+    "parent_of"
     "some"
     "time zone"
     "timezone_hour"
@@ -2713,6 +2718,9 @@ One ORing regexp.")
       "blob"
       "clob"
       "list"
+;;;      "money" FIXME check?
+      "ref" ;; OID
+      "row"
       "set"))
    "\\)\\>")
   "SQL reserved keywords.")
@@ -3479,9 +3487,9 @@ wrong position. Match first non-LF up till last LF"
     (my-lint-layout-message
      (format
       "[sql] in CREATE TABLE, probably unnecessary '%s' prefix in PK column: %s"
-      (match-string 1 col)
-      (my-lint-layout-current-line-number)
-      prefix)))))
+      (match-string 1 col) col)
+     (my-lint-layout-current-line-number)
+     prefix))))
 
 (defun my-lint-layout-sql-check-create-table-col-part
   (string &optional prefix line)
@@ -3502,9 +3510,16 @@ wrong position. Match first non-LF up till last LF"
              (fulltype  (match-string 2 string))
              (type  (match-string 3 string))
              (rest  (match-string 4 string)))
-        (when (string-match "primary[ \t\r\n]+key")
+        (cond
+         ((string-match "primary[ \t\r\n]+key" string)
           (my-lint-layout-sql-check-create-table-primary-key
            name string line prefix))
+         ((string-match
+           (concat "^[ \t\r\n]*"
+                   my-lint-layout-sql-keywords-sql92-for-column)
+           match)
+          (my-lint-layout-sql-check-create-table-non-column-name
+           match (match-string 0 match) line prefix)))
         (my-lint-layout-debug-message
          "debug layout: CREATE A col part %d <<%s>>" line string)
         (setq line
@@ -3518,32 +3533,28 @@ wrong position. Match first non-LF up till last LF"
 	  "[sql] in CREATE TABLE, portability problem with mixed case: %s"
 	  name)
          prefix line)
-        (my-lint-layout-sql-check-column-charset
-         match
-         (format "[sql] in CREATE TABLE, non-alphadigit characters: %s"
-                 match)
-         prefix line)
-        (when (string-match
-               (concat "^[ \t\r\n]*"
-                       my-lint-layout-sql-keywords-sql92-for-column)
-               match)
-          (my-lint-layout-sql-check-create-table-non-column-name
-           match (match-string 0 match) line prefix))
-	(my-lint-layout-sql-check-create-table-col-part-lower
-	 fulltype prefix line)
-	(unless (string-match
-		 my-lint-layout-sql-keywords-sql-types
-		 type)
-	  (my-lint-layout-message
-	   (format
-            "[sql] in CREATE TABLE, non-standard or unknown data type: %s"
-            type)
-	   (or line (my-lint-layout-current-line-number))
-	   prefix))
-	(unless (string= "" rest)
-	  (my-lint-layout-sql-check-create-table-col-part-rest
-	   rest prefix line))
-	))))
+        ;; PRIMARY KEY (a, b)
+        (unless (string-match "^[ \t\r\n]*primary[ \t\r\n]+key" string)
+          (my-lint-layout-sql-check-column-charset
+           match
+           (format "[sql] in CREATE TABLE, non-alphadigit characters: %s"
+                   match)
+           prefix line)
+          (my-lint-layout-sql-check-create-table-col-part-lower
+           fulltype prefix line)
+          (unless (string-match
+                   my-lint-layout-sql-keywords-sql-types
+                   type)
+            (my-lint-layout-message
+             (format
+              "[sql] in CREATE TABLE, non-standard or unknown data type: %s"
+              type)
+             (or line (my-lint-layout-current-line-number))
+             prefix))
+          (unless (string= "" rest)
+            (my-lint-layout-sql-check-create-table-col-part-rest
+             rest prefix line)))
+	)))) ;; let
 
 (defun my-lint-layout-sql-check-statement-create-tables-no-semicolon
   (&optional prefix line)
@@ -3560,29 +3571,61 @@ An example:
      (+ (or line 0) (my-lint-layout-current-line-number))
      prefix)))
 
+(defsubst my-lint-layout-sql-check-create-table-segment-primitive ()
+  "Go to next segment primitive."
+  (re-search-forward "\\([^,)]+)?\\)" nil t))
+
+(defun my-lint-layout-sql-check-create-table-segment-forward ()
+  "Go to next segment."
+  ;;  Split until next colon(,) but this dowsnot necessarily work
+  ;;  right. Examples:
+  ;;
+  ;;      col DECIMAL(2, 3),
+  ;;      PRIMARY KEY (col1, col2),
+  ;;
+  (when (re-search-forward
+         ;; <col>  <type>(3,2),
+         "[ \t]*\\([^,]+\\(?:,[ \t\r\n]*[0-9]+[ \t\r\n]*)\\)?\\)"
+         nil t)
+    (let ((beg (match-beginning 0))
+          (end (match-end 0))
+          (str (match-string 0))
+          (m1b (match-beginning 1))
+          (m1e (match-end 1))
+          (str1 (match-string 1)))
+      (when (and (looking-at ",")
+                 (string-match "\\<primary[ \t\r\n]+key\\>" str)
+                 (my-lint-layout-sql-check-create-table-segment-primitive))
+        ;;  Add a little more
+        (let ((add (match-string 1)))
+          (setq m1e (point)
+                str1 (concat str1 add))))
+      (list
+       beg end str m1b m1e str1))))
+
 (defun my-lint-layout-sql-check-create-table-multiple-col-defs
   (&optional prefix line)
   "Check multiple columen definitions at the same line."
-  (let (match
+  (let (info
+        match
 	curline)
-    (while (re-search-forward
-	    ;; <col>  <type>(3,2),
-	    "[ \t]*\\([^,]+\\(?:,[ \t]*[0-9]+\\)?\\)" nil t)
-      (setq match   (match-string 1)
-	    curline (if line
-			(+ line (1- (my-lint-layout-current-line-number)))
-		      (my-lint-layout-current-line-number)))
-      (my-lint-layout-debug-message
-       "debug layout: multiple-col-defs %d '%s'" curline match)
-      ;; Multiple, definitions, in line
-      ;; FIXME: Does not handle comments
-      (when (looking-at ",.*[,;]")
-	(my-lint-layout-message
-	 "[sql] In CREATE TABLE, possibly multiple columns(,) definitions"
-	 curline
-	 prefix))
-      (my-lint-layout-sql-check-create-table-col-part
-       match prefix curline))))
+    (while (setq info
+                 (my-lint-layout-sql-check-create-table-segment-forward))
+      (multiple-value-bind (beg end str m1b m1e match) info
+        (setq curline (if line
+                          (+ line (1- (my-lint-layout-current-line-number)))
+                        (my-lint-layout-current-line-number)))
+        (my-lint-layout-debug-message
+         "debug layout: multiple-col-defs %d '%s'" curline match)
+        ;; Multiple, definitions, in line
+        ;; FIXME: Does not handle comments
+        (when (looking-at ",.*[,;]")
+          (my-lint-layout-message
+           "[sql] In CREATE TABLE, possibly multiple columns(,) definitions"
+           curline
+           prefix))
+        (my-lint-layout-sql-check-create-table-col-part
+         match prefix curline)))))
 
 (defun my-lint-layout-sql-check-statement-create-table-part
   (beg end &optional prefix line)
