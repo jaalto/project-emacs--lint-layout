@@ -477,6 +477,7 @@ without brace requirement.")
 (defvar my-lint-layout-check-css-functions
   '(my-lint-layout-check-comment-javadoc-invalid
     my-lint-layout-css-check-generic
+    my-lint-layout-css-comment-multiline-buffer
     my-lint-layout-css-check-regexp-occur-main)
   "*List of functions for CSS.")
 
@@ -874,6 +875,72 @@ See `my-lint-layout-buffer-name'."
 The leading indent is in submatch 1 and text start indent in 2."
   (if (looking-at "^\\([ \t]*\\)[*]\\([ \t]*\\)")
       (match-end 1)))
+
+(defsubst my-lint-layout-generic-comment-multiline-p ()
+  "Check '*' character to the left. Point must be at the beginning of line."
+  (looking-at "^[ \t]+\\*"))
+
+(defun my-lint-layout-generic-comment-multiline-forward ()
+  "Search multiline comment. Return comment region points '(beg end).
+/*
+
+ */"
+  (when (re-search-forward "^[ \t]*/\\*" nil t)
+    (let ((beg (match-beginning 0)))
+      (when (re-search-forward "^[ \t]*\\*/" nil t)
+        (list beg (match-end 0))))))
+
+(defun my-lint-layout-generic-comment-multiline-stars ()
+  "Check if multiline comment contains stars or not.
+/*
+ * Stars to the left
+ *
+ */
+
+Return:
+
+  '(BEG END POINT)
+
+  If there are problems return comment region BEG END and
+  POINT of problematic line."
+  (multiple-value-bind (beg end)
+      (my-lint-layout-generic-comment-multiline-forward)
+    (when beg
+      (save-excursion
+        (goto-char beg)
+        (forward-line 1)
+        (while (and (< (point) end)
+                    (my-lint-layout-generic-comment-multiline-p)
+                    (forward-line 1)))
+        (if (< (point) end)
+            (list beg end (point)))))))
+
+(defun my-lint-layout-generic-check-comment-multiline-stars
+  (beg end &optional prefix)
+  "Check multiline comment in region BEG END."
+  (let (col col-found)
+    (save-excursion
+      (goto-char beg)
+      (search-forward "*")
+      (setq col (1- (current-column)))
+      (forward-line 1)
+      (while (and (< (point) end))
+        (cond
+         ((not (my-lint-layout-generic-comment-multiline-p))
+          (my-lint-layout-message
+           "[comment] missing star(*) to the left"
+           (my-lint-layout-current-line-number)
+           prefix))
+         (t
+          (goto-char (1- (match-end 0)))
+          (setq col-found (current-column))
+          (unless (eq col col-found)
+            (my-lint-layout-message
+             (format "[comment] star(*) at col %d not lined up with start col %d"
+                     col-found col)
+             (my-lint-layout-current-line-number)
+             prefix))))
+        (forward-line 1)))))
 
 (defun my-lint-layout-generic-run-list (list &optional prefix point)
   "Run LIST of functions from current point forward.
@@ -3745,6 +3812,19 @@ The submatches are as follows: The point is at '!':
        prefix)
       (my-lint-layout-css-indent-level prefix)
       (my-lint-layout-css-body prefix))))
+
+(defun my-lint-layout-css-comment-multiline-forward (&optional prefix)
+  "Check multiline comments from point forward."
+  (let (list)
+    (while (setq list (my-lint-layout-generic-comment-multiline-stars))
+      (multiple-value-bind (beg end point) list
+        (my-lint-layout-generic-check-comment-multiline-stars
+         beg end prefix)))))
+
+(defun my-lint-layout-css-comment-multiline-buffer (&optional prefix)
+  "Check from `point-min' with `my-lint-layout-css-comment-multiline-forward'."
+  (my-lint-layout-with-point-min
+    (my-lint-layout-css-comment-multiline-forward prefix)))
 
 (defun my-lint-layout-check-comment-javadoc-invalid (&optional prefix)
   "Check invalid Javadoc-style /** and @tag in comments."
