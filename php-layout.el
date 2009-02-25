@@ -3906,7 +3906,7 @@ The submatches are as follows: The point is at '!':
       (setq col (- (current-column) 2))
       (unless (my-lint-layout-php-test-line-up-p col)
 	(my-lint-layout-message
-	 (format "[assignment] assignment(=) at col %d possibly not lined-up"
+	 (format "[code] assignment(=) at col %d possibly not lined-up"
 		 col)
 	 (my-lint-layout-current-line-number)
 	 prefix))
