@@ -476,7 +476,8 @@ without brace requirement.")
 
 (defvar my-lint-layout-check-css-functions
   '(my-lint-layout-check-comment-javadoc-invalid
-    my-lint-layout-css-check-generic)
+    my-lint-layout-css-check-generic
+    my-lint-layout-css-check-regexp-occur-main)
   "*List of functions for CSS.")
 
 ;;; ....................................................... &utilities ...
@@ -517,9 +518,9 @@ without brace requirement.")
     (goto-char (point-min))
     ,@body))
 
-(put 'my-lint-layout-save-point 'lisp-indent-function 0)
-(put 'my-lint-layout-save-point 'edebug-form-spec '(body))
-(defmacro my-lint-layout-save-point (&rest body)
+(put 'my-lint-layout-with-save-point 'lisp-indent-function 0)
+(put 'my-lint-layout-with-save-point 'edebug-form-spec '(body))
+(defmacro my-lint-layout-with-save-point (&rest body)
   "Run body and restore point. Lighter than `save-excursion'."
   (let ((point (gensym "point-")))
     `(let ((,point (point)))
@@ -794,7 +795,7 @@ without brace requirement.")
 ;; FIXME: use string-match
 (defsubst my-lint-layout-looking-at-comment-point-p ()
   "If `looking-at' at comment."
-  (my-lint-layout-save-point
+  (my-lint-layout-with-save-point
     (goto-char (line-beginning-position))
     (looking-at "^[ \t]*\\(/?[*]\\|//\\|[*]/\\)")))
 
@@ -805,13 +806,13 @@ without brace requirement.")
 
 (defsubst my-lint-layout-looking-at-statement-p ()
   "If `looking-at' at semicolon at the end of line."
-  (my-lint-layout-save-point
+  (my-lint-layout-with-save-point
     (goto-char (line-end-position))
     (search-backward ";" (line-beginning-position) t)))
 
 (defsubst my-lint-layout-looking-at-variable-at-line-p ()
   "If `looking-at' at variable at line"
-  (my-lint-layout-save-point
+  (my-lint-layout-with-save-point
     (goto-char (line-beginning-position))
     (re-search-forward "[$]_*[a-z0.9]+" (line-end-position) t)))
 
@@ -867,18 +868,19 @@ See `my-lint-layout-buffer-name'."
 /*
  *  This test starts indent which is 2 towards the star.
  */
+>>>
+122
 
-^ ^^
 The leading indent is in submatch 1 and text start indent in 2."
   (if (looking-at "^\\([ \t]*\\)[*]\\([ \t]*\\)")
       (match-end 1)))
 
-(defun my-lint-layout-run-list (list &optional prefix point)
+(defun my-lint-layout-generic-run-list (list &optional prefix point)
   "Run LIST of functions from current point forward.
 Point is preserved after each function. Result buffer is not
 displayed."
   (dolist (function list)
-    (my-lint-layout-save-point
+    (my-lint-layout-with-save-point
       (if point
 	  (goto-char point))
       (my-lint-layout-debug-message
@@ -887,17 +889,17 @@ displayed."
 
 ;;; ........................................................... &occur ...
 
-(defconst my-lint-layout-php-check-regexp-occur-modern-style-list
+(defconst my-lint-layout-generic-check-regexp-occur-line-up-style-list
   (list
    '("[a-z].*{[ \t\r\n]*$"
-     "possibly K&R brace style, expected line-up")
+     "possibly K&R brace style, expect line-up")
 
    '("[a-z].*}[ \t\r\n]*$"
-     "possibly K&R brace style, expected line-up")
+     "possibly K&R brace style, expect line-up"))
+  "*K&R Brace placement checks.")
 
-   '("^[ \t]*function[ \t]+[a-z0-9_]+("
-     "in funcdef, no space before starting paren")
-
+(defconst my-lint-layout-generic-check-regexp-occur-camelcase-style-list
+  (list
    '("^[ \t]*[$][a-z0-9]+_[a-z0-9]+[ \t\r\n]*="
      "variable name not CamelCase"
      nil
@@ -906,6 +908,43 @@ displayed."
 	 (my-lint-layout-with-case
 	   ;; Global variable
 	   (not (string-match "[$][A-Z][A-Z][A-Z]" str))))))
+   )
+  "*CamelCase varibale checks.")
+
+(defun my-lint-layout-generic-run-occur-list (list &optional prefix)
+  "Check LIST of regexps."
+  (let (line)
+    (dolist (elt list)
+      (multiple-value-bind (re msg not-re func) elt
+	(save-excursion
+	  (while (re-search-forward re nil t)
+	    (setq line (my-lint-layout-current-line-string))
+	    (when (and (not (my-lint-layout-string-comment-p line))
+		       (or (null not-re)
+			   (save-match-data
+			     (not (string-match not-re line))))
+		       (or (null func)
+			   (funcall func)))
+	      (my-lint-layout-message
+	       (format "[code] %s: %s"
+		       msg
+		       (my-lint-layout-current-line-string))
+	       (my-lint-layout-current-line-number)
+	       prefix))))))))
+
+(defun my-lint-layout-generic-run-occur-variable-list (list &optional prefix)
+  "Check LIST of varibales that contain regexps."
+  (dolist (var list)
+    (save-excursion
+      (my-lint-layout-generic-run-occur-list
+       (symbol-value var) prefix))))
+
+;;; ....................................................... &occur-php ...
+
+(defconst my-lint-layout-php-check-regexp-occur-modern-style-list
+  (list
+   '("^[ \t]*function[ \t]+[a-z0-9_]+("
+     "in funcdef, no space before starting paren")
 
    '("^[ \t]*function[ \t][a-z0-9]+_[^ \t]*[ \t]*("
      "in funcdef, name not CamelCase"))
@@ -932,7 +971,8 @@ displayed."
    (list
     (concat
      "^[ \t]*"
-     "\\<\\(function\\|if\\|else\\(?:[ \t\r\n]*if\\)?\\|while\\|class\\|abstract\\|interface\\|foreach\\)"
+     "\\<\\(function\\|if\\|else\\(?:[ \t\r\n]*if\\)?"
+           "\\|while\\|class\\|abstract\\|interface\\|foreach\\)"
      "[ \t]*("
      "\\>")
     "Possibly misspelled keyword, expect lowercase"
@@ -1083,38 +1123,20 @@ displayed."
      "possibly mispelled __(de|con)struct"))
   "Search ((REGEXP MESSAGE [NOT-REGEXP] [FUNC]) ..).")
 
-(defun my-lint-layout-php-check-regexp-occur (&optional prefix list)
-  "Check regepx in LIST or `my-lint-layout-php-check-regexp-occur-list'."
-  (let (line)
-    (dolist (elt (or list
-		     my-lint-layout-php-check-regexp-occur-list))
-      (multiple-value-bind (re msg not-re func) elt
-	(save-excursion
-	  (while (re-search-forward re nil t)
-	    (setq line (my-lint-layout-current-line-string))
-	    (when (and (not (my-lint-layout-string-comment-p line))
-		       (or (null not-re)
-			   (save-match-data
-			     (not (string-match not-re line))))
-		       (or (null func)
-			   (funcall func)))
-	      (my-lint-layout-message
-	       (format "[code] %s: %s"
-		       msg
-		       (my-lint-layout-current-line-string))
-	       (my-lint-layout-current-line-number)
-	       prefix))))))))
+(defvar my-lint-layout-php-check-regexp-occur-variable
+  '(my-lint-layout-php-check-regexp-occur-modern-style-list
+    my-lint-layout-php-check-regexp-occur-list
+    my-lint-layout-generic-check-regexp-occur-camelcase-style-list
+    my-lint-layout-generic-check-regexp-occur-line-up-style-list)
+  "*List of occur variable names.")
 
 (defun my-lint-layout-php-check-regexp-occur-main (&optional prefix)
   "Run all occur checks."
-  (my-lint-layout-flet-run-at-point
-    (run 'my-lint-layout-php-check-regexp-occur prefix)
-    (run 'my-lint-layout-php-check-regexp-occur
-	 prefix
-	 my-lint-layout-php-check-regexp-occur-modern-style-list)))
+  (my-lint-layout-generic-run-occur-variable-list
+   my-lint-layout-php-check-regexp-occur-variable))
 
 (defun my-lint-layout-php-check-regexp-occur-buffer (&optional prefix)
-  "Check from `point-min' with `my-lint-layout-php-check-regexp-occur'."
+  "Check from `point-min' with `my-lint-layout-php-check-regexp-occur-main'."
   (my-lint-layout-with-point-min
     (my-lint-layout-php-check-regexp-occur-main prefix)))
 
@@ -1711,7 +1733,7 @@ if ( check );
 	    kwd-point (match-beginning 2) ;; keyword start
 	    keyword   (match-string 2)    ;; Keyword
 	    fullstr   (match-string 0)
-	    indent    (my-lint-layout-save-point
+	    indent    (my-lint-layout-with-save-point
 			;; At brace line
 			(goto-char (line-beginning-position))
 			(if (looking-at "[ \t]+")
@@ -3605,7 +3627,7 @@ The submatches are as follows: The point is at '!':
 
 (defun my-lint-layout-sql-check-batch-all (&optional prefix)
   "Check SQL"
-  (my-lint-layout-run-list
+  (my-lint-layout-generic-run-list
    my-lint-layout-check-sql-functions prefix))
 
 (defun my-lint-layout-sql-buffer (&optional prefix)
@@ -3719,7 +3741,7 @@ The submatches are as follows: The point is at '!':
 	 line prefix))
       ;;   background-color: #F8F8F8; border: 1px;
       (my-lint-layout-php-check-multiple-statements
-       "[css] Multiple attribute definitions (only one expected)"
+       "[css] Multiple(;) attribute definitions, only one expected"
        prefix)
       (my-lint-layout-css-indent-level prefix)
       (my-lint-layout-css-body prefix))))
@@ -3732,14 +3754,23 @@ The submatches are as follows: The point is at '!':
       (save-excursion
 	(while (re-search-forward re nil t)
 	  (my-lint-layout-message
-	   (format "[css] probably misplaced PHP-style doc-block: %s"
+	   (format "[css] possibly misplaced doc-block: %s"
 		   (my-lint-layout-current-line-string))
 	   (my-lint-layout-current-line-number)
 	   prefix))))))
 
+(defvar my-lint-layout-css-check-regexp-occur-variable
+  '(my-lint-layout-generic-check-regexp-occur-line-up-style-list)
+  "*List of occur variable names.")
+
+(defun my-lint-layout-css-check-regexp-occur-main (&optional prefix)
+  "Run all occur checks."
+  (my-lint-layout-generic-run-occur-variable-list
+   my-lint-layout-php-check-regexp-occur-variable))
+
 (defun my-lint-layout-css-check-batch-all (&optional prefix)
   "Check Css"
-  (my-lint-layout-run-list
+  (my-lint-layout-generic-run-list
    my-lint-layout-check-css-functions prefix))
 
 (defun my-lint-layout-css-check-buffer (&optional prefix)
@@ -3804,7 +3835,7 @@ The submatches are as follows: The point is at '!':
   (str line &optional prefix data type)
   "docstring is in STR, at LINE number. PREFIX for messages.
 The DATA is function content string."
-  (let ((class-p (my-lint-layout-save-point
+  (let ((class-p (my-lint-layout-with-save-point
 		  (my-lint-layout-search-backward-class-p)))
 	(need-return-p
 	 (and data
@@ -4078,7 +4109,7 @@ DATA is the full function content."
 Write error at LINE with PREFIX."
   (let (point)
     (when (setq point (my-lint-layout-doc-line-indent-p))
-      (my-lint-layout-save-point
+      (my-lint-layout-with-save-point
 	(goto-char point)
 	(unless (eq (current-column) col)
 	  (my-lint-layout-php-doc-examine-content-other--indent-col-error
@@ -4141,7 +4172,7 @@ Write error at LINE with PREFIX."
   "Examine docstring."
   (save-excursion
     (goto-char (point-min))
-    (my-lint-layout-save-point
+    (my-lint-layout-with-save-point
       (my-lint-layout-php-doc-examine-content-other--all-lines
        line type prefix))
     (forward-line 1)
@@ -4235,7 +4266,7 @@ Point must be at function start line."
 
 (defun my-lint-layout-php-check-doc--test-empty-line-above (&optional message)
   "Check empty line before doc-block."
-  (my-lint-layout-save-point
+  (my-lint-layout-with-save-point
     (forward-line -1)
     (unless (looking-at "^[ \t]*[{<]\\|^[ \t\r]*$")
       ;; private $var;
@@ -4271,7 +4302,7 @@ Point must be at function start line."
     (while (my-lint-layout-search-forward-doc-beginning)
       (setq point       (point)
 	    beg         (line-beginning-position)
-	    top-level-p (my-lint-layout-save-point
+	    top-level-p (my-lint-layout-with-save-point
 			  (my-lint-layout-top-level-p)))
       (my-lint-layout-php-check-doc--test-empty-line-above)
       (when (save-excursion
@@ -4426,11 +4457,11 @@ Runs `my-lint-output-mode-hook'."
 
 (defun my-lint-layout-php-check-all-tests (&optional prefix)
   "Run `my-lint-layout-check-php-generic-functions'."
-  (my-lint-layout-run-list
+  (my-lint-layout-generic-run-list
    my-lint-layout-check-php-generic-functions prefix))
 
 (defun my-lint-layout-php-check-code-run (&optional point prefix)
-  (my-lint-layout-run-list
+  (my-lint-layout-generic-run-list
    (append
     my-lint-layout-check-php-code-functions
     my-lint-layout-check-generic-functions)
@@ -4447,7 +4478,7 @@ This includes:
     (my-lint-layout-php-check-code-run) point prefix))
 
 (defun my-lint-layout-php-check-phpdoc-run (&optional point prefix)
-  (my-lint-layout-run-list
+  (my-lint-layout-generic-run-list
    my-lint-layout-check-php-doc-functions
    prefix
    point))
@@ -4540,7 +4571,7 @@ See `my-lint-layout-check-generic-buffer'"
       (let (find-file-hooks)
 	(with-temp-buffer
 	  (insert-file-contents file)
-	  (my-lint-layout-run-list
+	  (my-lint-layout-generic-run-list
 	   function-list
 	   file
 	   (point-min)))))))
