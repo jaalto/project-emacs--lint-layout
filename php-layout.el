@@ -904,7 +904,7 @@ The leading indent is in submatch 1 and text start indent in 2."
 
 (defsubst my-lint-layout-generic-comment-multiline-p ()
   "Check '*' character to the left. Point must be at the beginning of line."
-  (looking-at "^[ \t]+\\*"))
+  (looking-at "^[ \t]*\\*"))
 
 (defun my-lint-layout-generic-comment-multiline-forward ()
   "Search multiline comment. Return comment region points '(beg end).
@@ -944,7 +944,8 @@ Return:
 (defun my-lint-layout-generic-check-comment-multiline-stars
   (beg end &optional prefix)
   "Check multiline comment in region BEG END."
-  (let (col col-found)
+  (let (col
+        col-found)
     (save-excursion
       (goto-char beg)
       (search-forward "*")
