@@ -481,6 +481,31 @@ without brace requirement.")
     my-lint-layout-css-check-regexp-occur-main)
   "*List of functions for CSS.")
 
+(defconst my-lint-layout-css-web-safe-font-list
+  '("monospace"
+    ;;  Courier is not defined in all Windows OSes by default
+    "courier new"
+    "arial"
+    "georgia"
+    ;; "times" not reliable anough
+    "times new roman"
+    "verdana")
+  "*Web safe fonts compitible for all browsers and OSes.
+http://en.wikipedia.org/wiki/Web-safe_fonts
+
+Tools: Reliability of web-safe fonts
+... summarise cross-platform reliability for fonts that are
+... commonly held to be safe for use in web-design
+http://www.webspaceworks.com/resources/fonts-web-typography/41/")
+
+(defconst my-lint-layout-css-web-safe-font-regexp
+  (concat
+   "\\<\\(?:"
+   (regexp-opt
+    my-lint-layout-css-web-safe-font-list)
+   "\\)\\>")
+  "*Regexp of `my-lint-layout-css-web-safe-font-list'.")
+
 ;;; ....................................................... &utilities ...
 
 (put 'my-lint-layout-debug-message 'my-lint-layout-debug-message 0)
@@ -603,11 +628,12 @@ without brace requirement.")
   ;;  - always use line beginning as reference
   ;;  - The count-lines returns 0 for 1st line, therefore 1+
   (let ((beg (line-beginning-position))
-	(i 1))
-    (save-excursion
-      (goto-char (point-min))
-      (while (search-forward "\n" beg t)
-	(incf i)))
+	(i 1)
+	(point (point)))
+    (goto-char (point-min))
+    (while (search-forward "\n" beg t)
+      (incf i))
+    (goto-char point)
     i))
 
 (defsubst my-lint-layout-buffer-data-p ()
@@ -3674,11 +3700,16 @@ CREATE TABLE table
     col   VARCHAR(80),
           |
           line up"
-  (let (orig-col
+  (let ((re (concat
+             "[ \t\r\n]\\("
+             my-lint-layout-sql-keywords-sql-types
+             "\\)[ ,(\t\r\n]"
+             ))
+        orig-col
         match
         curline
         col)
-  (while (re-search-forward my-lint-layout-sql-keywords-sql-types nil t)
+  (while (re-search-forward re nil t)
     (save-excursion
       (goto-char (match-beginning 0))
       (setq col (current-column)))
@@ -3686,7 +3717,7 @@ CREATE TABLE table
      ((not orig-col)
       (setq orig-col col))
      ((not (eq col orig-col))
-      (setq match (match-string 0))
+      (setq match (match-string 1))
       (setq curline (if line
                         (+ line (1- (my-lint-layout-current-line-number)))
                       (my-lint-layout-current-line-number)))
@@ -3890,17 +3921,104 @@ The submatches are as follows: The point is at '!':
        (my-lint-layout-current-line-number)
        prefix))))
 
+(defun my-lint-layout-css-attribute-body-region (beg end &optional prefix)
+  "Check in region BEG END that attributes values line up.
+
+  color:        navy;
+  background:   #FFFF;
+  margin-left:  1px;"
+  (let ((re   `,(concat
+                 ;; margin-left: 8px;
+                 "^[ \t]*"
+                 "\\("                      ;1
+                     "\\([^ ;\t\r\n]+\\)"   ;2
+                     "\\([ \t]*\\)"         ;3
+                     ":"
+                     "\\([ \t]*\\)"         ;4
+                     "\\([^ ;\t\r\n]+\\)"   ;5
+                  "\\)"
+                 "[^;]+"))
+        orig-col
+        str
+        match
+        attribute
+        space1
+        space2
+        value
+        val-beg
+        match
+        line
+        point
+        col)
+    (save-excursion
+      (goto-char beg)
+      (while (re-search-forward re end t)
+        (setq str       (match-string 0)
+              match     (match-string 1)
+              attribute (match-string 2)
+              space1    (match-string 3)
+              space2    (match-string 4)
+              value     (match-string 5)
+              val-beg   (match-beginning 5)
+              point     (point))
+        (goto-char val-beg)
+        (setq col (current-column))
+        (goto-char point)
+        (cond
+         ((not orig-col)
+          (setq orig-col col))
+         ((not (eq col orig-col))
+          (my-lint-layout-message
+           "[css] attribute's value not lined-up with previous"
+           (my-lint-layout-current-line-number)
+           prefix)))
+        (when (string-match "font-size.*[0-9]\\(?:pt\\|px\\)" match)
+          (my-lint-layout-message
+           (format
+            "[css] possibly portability issue, em recommended: '%s'"
+            match)
+           (my-lint-layout-current-line-number)
+           prefix))
+        (when (string-match "font-family" str)
+          (unless (string-match
+                   ",[ \t\r\n]*\\(?:\\(sans-\\)?serif\\|monospace\\|cursive\\)"
+                   str)
+            (my-lint-layout-message
+             (format
+              "[css] no last resort font sans-serif or serif listed: %s"
+              str)
+             (my-lint-layout-current-line-number)
+             prefix))
+          (unless (string-match my-lint-layout-css-web-safe-font-regexp str)
+            (my-lint-layout-message
+             (format
+              "[css] no web safe font (e.g. Times New Roman, Georgia) listed: %s"
+              str)
+             (my-lint-layout-current-line-number)prefix)))
+        (when (> (length space1) 0)
+          (my-lint-layout-message
+           (format
+            "[css] extra space after attribute name '%s', but bfore colon"
+            attribute)
+           (my-lint-layout-current-line-number)
+           prefix))
+;;         (my-lint-layout-css-indent-level prefix)
+;;         (my-lint-layout-css-attribute prefix)
+;;         (my-lint-layout-css-color prefix)
+;;         (my-lint-layout-php-check-multiple-statements
+;;          "[css] multiple attribute definitions (only one expected)")
+         ))))
+
+(defsubst my-lint-layout-css-body-end ()
+  "Search body end poistion."
+  (re-search-forward "\\}[ \t]*$" nil t))
+
 (defun my-lint-layout-css-body (&optional prefix)
-  "Check body."
-  (while (and (not (eobp))
-	      (not (looking-at ".*[ \t][{}]")))
-    (my-lint-layout-css-indent-level prefix)
-    (my-lint-layout-css-attribute prefix)
-    (my-lint-layout-css-color prefix)
-    (my-lint-layout-php-check-multiple-statements
-     "[css] multiple attribute definitions (only one expected)"
-     prefix)
-    (forward-line 1)))
+  "Check body, which starts at `current-point'."
+  (let ((beg (point))
+        (end (my-lint-layout-css-body-end)))
+    (when (and beg end)
+      (my-lint-layout-css-attribute-body-region beg end prefix))))
 
 (defun my-lint-layout-css-skip-comment ()
   "Skip over comment if any."
@@ -3912,28 +4030,29 @@ The submatches are as follows: The point is at '!':
   (let (str
 	col
 	len
-	line
 	statement-p)
     (while (re-search-forward "{\\([ \t\r\n]*\\)" nil t)
       (setq col      (current-column)
 	    str      (match-string 1)
-	    line     (my-lint-layout-current-line-number)
 	    lines    (my-lint-layout-count-lines-in-string str))
       (my-lint-layout-css-skip-comment)
       (cond
        ((eq lines 0)
 	(my-lint-layout-message
 	 "[css] no newline after token '{'"
-	 line prefix))
+	 (my-lint-layout-current-line-number)
+         prefix))
       ((> lines 1)
 	(my-lint-layout-message
 	 (format "[css] extra %d empty lines after token '{'" (1- lines))
-	 line prefix)))
+	 (my-lint-layout-current-line-number)
+         prefix)))
       (my-lint-layout-current-line-string)
       (when (looking-at ".*}")
 	(my-lint-layout-message
 	 "[css] inline {} body, expect line-up"
-	 line prefix))
+	 (my-lint-layout-current-line-number)
+         prefix))
       (when (looking-at ".*;\\([^ \t\r\n]\\)")
 	(my-lint-layout-message
 	 (format "[css] non-whitespace character after semicolon: %s" (match-string 1))
@@ -3942,7 +4061,8 @@ The submatches are as follows: The point is at '!':
 	(my-lint-layout-message
 	 (format "[css] not indented (by %d)"
 		 my-lint-layout-generic-indent-step)
-	 line prefix))
+	 (my-lint-layout-current-line-number)
+         prefix))
       ;;   background-color: #F8F8F8; border: 1px;
       (my-lint-layout-php-check-multiple-statements
        "[css] Multiple(;) attribute definitions, only one expected"
