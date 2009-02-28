@@ -482,21 +482,27 @@ without brace requirement.")
   "*List of functions for CSS.")
 
 (defconst my-lint-layout-css-web-safe-font-list
-  '("monospace"
-    ;;  Courier is not defined in all Windows OSes by default
+  '(;;  Courier is not defined in all Windows OSes by default
     "courier new"
     "arial"
     "georgia"
+    ;; "Century Gothic" parhaps
+    ;; "Trebuchet MS" perhaps
     ;; "times" not reliable anough
     "times new roman"
     "verdana")
-  "*Web safe fonts compitible for all browsers and OSes.
+  "*Web safe fonts compatible with all browsers and OSes.
 http://en.wikipedia.org/wiki/Web-safe_fonts
 
-Tools: Reliability of web-safe fonts
-... summarise cross-platform reliability for fonts that are
-... commonly held to be safe for use in web-design
-http://www.webspaceworks.com/resources/fonts-web-typography/41/")
+Related articles:
+
+    Tools: Reliability of web-safe fonts
+    ... summarise cross-platform reliability for fonts that are
+    ... commonly held to be safe for use in web-design
+    http://www.webspaceworks.com/resources/fonts-web-typography/41/
+
+    Fonts on the web and a list of web safe fonts
+    http://dustinbrewer.com/fonts-on-the-web-and-a-list-of-web-safe-fonts")
 
 (defconst my-lint-layout-css-web-safe-font-regexp
   (concat
@@ -985,9 +991,11 @@ displayed."
 
 (defconst my-lint-layout-generic-check-regexp-occur-line-up-style-list
   (list
+   ;; Starting brace
    '("[a-z].*{[ \t\r\n]*$"
      "possibly K&R brace style, expect line-up")
 
+   ;; Ending brace
    '("[a-z].*}[ \t\r\n]*$"
      "possibly K&R brace style, expect line-up"))
   "*K&R Brace placement checks.")
@@ -3991,11 +3999,17 @@ The submatches are as follows: The point is at '!':
              (my-lint-layout-current-line-number)
              prefix))
           (unless (string-match my-lint-layout-css-web-safe-font-regexp str)
-            (my-lint-layout-message
-             (format
-              "[css] no web safe font (e.g. Times New Roman, Georgia) listed: %s"
-              str)
-             (my-lint-layout-current-line-number)prefix)))
+            (let ((fonts (mapconcat
+                          '(lambda (x)
+                             (capitalize x))
+                          my-lint-layout-css-web-safe-font-list
+                          ",")))
+              (my-lint-layout-message
+               (format
+                "[css] no web safe font (e.g. %s) listed: %s"
+                fonts str)
+               (my-lint-layout-current-line-number)
+               prefix))))
         (when (> (length space1) 0)
           (my-lint-layout-message
            (format
@@ -4104,7 +4118,9 @@ The submatches are as follows: The point is at '!':
 (defun my-lint-layout-css-check-regexp-occur-main (&optional prefix)
   "Run all occur checks."
   (my-lint-layout-generic-run-occur-variable-list
-   my-lint-layout-php-check-regexp-occur-variable prefix))
+   my-lint-layout-css-check-regexp-occur-variable prefix))
+
+;; my-lint-layout-php-check-regexp-occur-variable prefix))
 
 (defun my-lint-layout-css-check-batch-all (&optional prefix)
   "Check Css"
