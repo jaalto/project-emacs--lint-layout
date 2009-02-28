@@ -2924,7 +2924,7 @@ The submatches are:
      (+ (or line 0) (my-lint-layout-current-line-number))
      prefix))))
 
-(defun my-lint-layout-sql-check-element-indentation (&optional prefix line)
+(defun my-lint-layout-sql-check-element-indentation (&optional prefix line table)
   "Check left margin indentation of every line from current point.
 LINE is added to current line number."
   (let ((step  my-lint-layout-generic-indent-step)
@@ -3492,7 +3492,8 @@ wrong position. Match first non-LF up till last LF"
             (my-lint-layout-sql-create-table-adjust-line-number str line))))
   line)
 
-(defun my-lint-layout-sql-check-create-table-primary-key (col str line prefix)
+(defun my-lint-layout-sql-check-create-table-primary-key
+  (col str line prefix)
   "Check PRIMARY KEY line."
   ;;  error_id   INT   NOT NULL PRIMARY KEY AUTO_INCREMENT
   ;;  => the "error_" is probably redundant, simple 'id' will do.
@@ -3505,8 +3506,25 @@ wrong position. Match first non-LF up till last LF"
      (my-lint-layout-current-line-number)
      prefix))))
 
+(defun my-lint-layout-sql-check-create-table-table-prefix
+  (colname table line prefix)
+  "Check PRIMARY KEY line."
+  ;;  CREATE TABLE abc
+  ;;  (
+  ;;       abc_column
+  ;;       ...
+  (when (and table
+             (string-match
+              (format "^%s_" (regexp-quote table))
+              colname))
+    (my-lint-layout-message
+     (format
+      "[sql] in CREATE TABLE, unnecessary table colname '%s' prefix in column: %s"
+      (match-string 0 colname) colname)
+     line prefix)))
+
 (defun my-lint-layout-sql-check-create-table-col-part
-  (string &optional prefix line)
+  (string &optional prefix line table)
   "Examine column defintion in STRING."
   (let ((re `,(concat
                ;; PRIMARY KEY(user_id),
@@ -3534,6 +3552,8 @@ wrong position. Match first non-LF up till last LF"
            match)
           (my-lint-layout-sql-check-create-table-non-column-name
            match (match-string 0 match) line prefix)))
+        (my-lint-layout-sql-check-create-table-table-prefix
+         name table line prefix)
         (my-lint-layout-debug-message
          "debug layout: CREATE A col part %d <<%s>>" line string)
         (setq line
@@ -3554,8 +3574,9 @@ wrong position. Match first non-LF up till last LF"
            (format "[sql] in CREATE TABLE, non-alphadigit characters: %s"
                    match)
            prefix line)
-          (my-lint-layout-sql-check-create-table-col-part-lower
-           fulltype prefix line)
+          (when fulltype
+            (my-lint-layout-sql-check-create-table-col-part-lower
+             fulltype prefix line))
           (unless (string-match
                    my-lint-layout-sql-keywords-sql-types
                    type)
@@ -3571,7 +3592,7 @@ wrong position. Match first non-LF up till last LF"
 	)))) ;; let
 
 (defun my-lint-layout-sql-check-statement-create-tables-no-semicolon
-  (&optional prefix line)
+  (&optional prefix line table)
   "Check cases, where semicolon is possibly missing.
 An example:
     CREATE TABLE
@@ -3618,7 +3639,7 @@ An example:
        beg end str m1b m1e str1))))
 
 (defun my-lint-layout-sql-check-create-table-multiple-col-defs
-  (&optional prefix line)
+  (&optional prefix line table)
   "Check multiple columen definitions at the same line."
   (let (info
         match
@@ -3639,10 +3660,10 @@ An example:
            curline
            prefix))
         (my-lint-layout-sql-check-create-table-col-part
-         match prefix curline)))))
+         match prefix curline table)))))
 
 (defun my-lint-layout-sql-check-statement-create-table-part
-  (beg end &optional prefix line)
+  (beg end &optional prefix line table)
   "Check CREATE TABLE content."
   (let ((string (buffer-substring beg end)))
     (with-temp-buffer
@@ -3656,7 +3677,7 @@ An example:
 	(goto-char (point-min))
         (my-lint-layout-debug-message
          "debug layout: %s prefix %s line %s" function prefix (or line 0))
-	(funcall function prefix line)))))
+	(funcall function prefix line table)))))
 
 (defsubst my-lint-layout-create-table-forward ()
   "Search CREATE TABLE forward.
@@ -3726,7 +3747,7 @@ The submatches are as follows: The point is at '!':
 	 "[sql] in CREATE TABLE, misplaced starting paren (expecting line-up)"
 	 line prefix))
       (my-lint-layout-sql-check-statement-create-table-part
-       beg end prefix line))))
+       beg end prefix line table))))
 
 (defsubst my-lint-layout-sql-error-non-standard-comment (&optional line prefix str)
   "Signal error: non-standard SQL comment."
