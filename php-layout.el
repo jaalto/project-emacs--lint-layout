@@ -3617,10 +3617,12 @@ An example:
   ;;
   ;;      col DECIMAL(2, 3),
   ;;      PRIMARY KEY (col1, col2),
+  ;;      id INT(11) NOT NULL auto_increment PRIMARY KEY,
+  ;;      size DECIMAL(11,2) NOT NULL,
   ;;
   (when (re-search-forward
          ;; <col>  <type>(3,2),
-         "[ \t]*\\([^,]+\\(?:,[ \t\r\n]*[0-9]+[ \t\r\n]*)\\)?\\)"
+         "[ \t]*\\([^,]+\\(?:,[ \t\r\n]*[0-9]+[ \t\r\n]*)[^,]*\\)?\\)"
          nil t)
     (let ((beg (match-beginning 0))
           (end (match-end 0))
@@ -3628,7 +3630,7 @@ An example:
           (m1b (match-beginning 1))
           (m1e (match-end 1))
           (str1 (match-string 1)))
-      (when (and (looking-at ",")
+      (when (and (not (looking-at ","))
                  (string-match "\\<primary[ \t\r\n]+key\\>" str)
                  (my-lint-layout-sql-check-create-table-segment-primitive))
         ;;  Add a little more
