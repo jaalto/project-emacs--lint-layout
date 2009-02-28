@@ -3519,7 +3519,7 @@ wrong position. Match first non-LF up till last LF"
               colname))
     (my-lint-layout-message
      (format
-      "[sql] in CREATE TABLE, unnecessary table colname '%s' prefix in column: %s"
+      "[sql] in CREATE TABLE, unnecessary table name '%s' prefix in column: %s"
       (match-string 0 colname) colname)
      line prefix)))
 
@@ -3664,6 +3664,38 @@ An example:
         (my-lint-layout-sql-check-create-table-col-part
          match prefix curline table)))))
 
+(defun my-lint-layout-sql-check-statement-data-type-line-up
+  (&optional prefix line table)
+  "Check data type clumn for line up.
+
+CREATE TABLE table
+\(
+    col   INT(11),
+    col   VARCHAR(80),
+          |
+          line up"
+  (let (orig-col
+        match
+        curline
+        col)
+  (while (re-search-forward my-lint-layout-sql-keywords-sql-types nil t)
+    (save-excursion
+      (goto-char (match-beginning 0))
+      (setq col (current-column)))
+    (cond
+     ((not orig-col)
+      (setq orig-col col))
+     ((not (eq col orig-col))
+      (setq match (match-string 0))
+      (setq curline (if line
+                        (+ line (1- (my-lint-layout-current-line-number)))
+                      (my-lint-layout-current-line-number)))
+      (my-lint-layout-message
+       (format
+        "[sql] In CREATE TABLE, data type not lined-up with previous: %s"
+        match)
+       curline prefix))))))
+
 (defun my-lint-layout-sql-check-statement-create-table-part
   (beg end &optional prefix line table)
   "Check CREATE TABLE content."
@@ -3674,6 +3706,7 @@ An example:
       (my-lint-layout-sql-clean-comments-buffer)
       (dolist (function
 	       '(my-lint-layout-sql-check-element-indentation
+                 my-lint-layout-sql-check-statement-data-type-line-up
 		 my-lint-layout-sql-check-statement-create-tables-no-semicolon
 		 my-lint-layout-sql-check-create-table-multiple-col-defs))
 	(goto-char (point-min))
