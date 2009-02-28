@@ -4024,9 +4024,7 @@ The submatches are as follows: The point is at '!':
                prefix))))
         (when (> (length space1) 0)
           (my-lint-layout-message
-           (format
-            "[css] extra space after attribute name '%s', but bfore colon"
-            attribute)
+           (format "[css] extra space before colon: %s" match)
            (my-lint-layout-current-line-number)
            prefix))
         (my-lint-layout-css-indent-level prefix)
