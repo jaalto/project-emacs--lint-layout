@@ -3946,7 +3946,7 @@ The submatches are as follows: The point is at '!':
                      "\\([ \t]*\\)"         ;4
                      "\\([^ ;\t\r\n]+\\)"   ;5
                   "\\)"
-                 "[^;]+"))
+                 ";"))
         orig-col
         str
         match
@@ -3973,6 +3973,8 @@ The submatches are as follows: The point is at '!':
         (goto-char val-beg)
         (setq col (current-column))
         (goto-char point)
+	(my-lint-layout-debug-message
+	 "%s" match)
         (cond
          ((not orig-col)
           (setq orig-col col))
@@ -3981,20 +3983,30 @@ The submatches are as follows: The point is at '!':
            "[css] attribute's value not lined-up with previous"
            (my-lint-layout-current-line-number)
            prefix)))
-        (when (string-match "font-size.*[0-9]\\(?:pt\\|px\\)" match)
-          (my-lint-layout-message
-           (format
-            "[css] possibly portability issue, em recommended: '%s'"
-            match)
-           (my-lint-layout-current-line-number)
-           prefix))
+        (when (string-match "font-size" match)
+          ;; font-size: .8em;
+          (when (string-match "[^0-9]\\(\\.[0-9]+\\)" match)
+            (my-lint-layout-message
+             (format
+              "[css] missing leading zero: %s"
+              match)
+             (my-lint-layout-current-line-number)
+             prefix))
+          (when (string-match "[0-9]\\(pt\\|px\\)" match)
+            (my-lint-layout-message
+             (format
+              "[css] possibly portability issue with '%s', em recommended: '%s'"
+              (match-string 1 match)
+              match)
+             (my-lint-layout-current-line-number)
+             prefix)))
         (when (string-match "font-family" str)
           (unless (string-match
                    ",[ \t\r\n]*\\(?:\\(sans-\\)?serif\\|monospace\\|cursive\\)"
                    str)
             (my-lint-layout-message
              (format
-              "[css] no last resort font sans-serif or serif listed: %s"
+              "[css] portability; no last resort font sans-serif or serif listed: %s"
               str)
              (my-lint-layout-current-line-number)
              prefix))
@@ -4006,7 +4018,7 @@ The submatches are as follows: The point is at '!':
                           ",")))
               (my-lint-layout-message
                (format
-                "[css] no web safe font (e.g. %s) listed: %s"
+                "[css] portability; no web safe font (e.g. %s) listed: %s"
                 fonts str)
                (my-lint-layout-current-line-number)
                prefix))))
@@ -4017,22 +4029,25 @@ The submatches are as follows: The point is at '!':
             attribute)
            (my-lint-layout-current-line-number)
            prefix))
-;;         (my-lint-layout-css-indent-level prefix)
-;;         (my-lint-layout-css-attribute prefix)
-;;         (my-lint-layout-css-color prefix)
-;;         (my-lint-layout-php-check-multiple-statements
-;;          "[css] multiple attribute definitions (only one expected)")
+        (my-lint-layout-css-indent-level prefix)
+        (my-lint-layout-css-attribute prefix)
+        (my-lint-layout-css-color prefix)
+        (my-lint-layout-php-check-multiple-statements
+         "[css] multiple attribute definitions (only one expected)")
          ))))
 
 (defsubst my-lint-layout-css-body-end ()
   "Search body end poistion."
   (re-search-forward "\\}[ \t]*$" nil t))
 
-(defun my-lint-layout-css-body (&optional prefix)
+(defun my-lint-layout-css-body (&optional beg prefix)
   "Check body, which starts at `current-point'."
-  (let ((beg (point))
-        (end (my-lint-layout-css-body-end)))
+  (or beg
+      (setq beg (point)))
+  (let ((end (my-lint-layout-css-body-end)))
     (when (and beg end)
+      (my-lint-layout-debug-message
+       "my-lint-layout-css-body: check region %d %d" beg end)
       (my-lint-layout-css-attribute-body-region beg end prefix))))
 
 (defun my-lint-layout-css-skip-comment ()
@@ -4045,9 +4060,12 @@ The submatches are as follows: The point is at '!':
   (let (str
 	col
 	len
-	statement-p)
+	statement-p
+        lines
+        beg)
     (while (re-search-forward "{\\([ \t\r\n]*\\)" nil t)
-      (setq col      (current-column)
+      (setq beg      (match-beginning 0)
+            col      (current-column)
 	    str      (match-string 1)
 	    lines    (my-lint-layout-count-lines-in-string str))
       (my-lint-layout-css-skip-comment)
@@ -4083,7 +4101,7 @@ The submatches are as follows: The point is at '!':
        "[css] Multiple(;) attribute definitions, only one expected"
        prefix)
       (my-lint-layout-css-indent-level prefix)
-      (my-lint-layout-css-body prefix))))
+      (my-lint-layout-css-body beg prefix))))
 
 (defun my-lint-layout-css-comment-multiline-forward (&optional prefix)
   "Check multiline comments from point forward."
