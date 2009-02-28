@@ -955,7 +955,7 @@ Return:
         (cond
          ((not (my-lint-layout-generic-comment-multiline-p))
           (my-lint-layout-message
-           "[comment] missing star(*) to the left"
+           "[comment] multiline comment is missing a star(*) to the left"
            (my-lint-layout-current-line-number)
            prefix))
          (t
