@@ -988,8 +988,10 @@ displayed."
 	    (setq line (my-lint-layout-current-line-string))
 	    (when (and (not (my-lint-layout-string-comment-p line))
 		       (or (null not-re)
-			   (save-match-data
-			     (not (string-match not-re line))))
+                           (not (or (save-match-data (string-match not-re line))
+                                    (save-excursion
+                                      (goto-char (line-beginning-position))
+                                      (looking-at not-re)))))
 		       (or (null func)
 			   (funcall func)))
 	      (my-lint-layout-message
@@ -1052,10 +1054,14 @@ displayed."
    '("[|][|]\\|&&"
      "Readable 'and|or' arternative suggested for relational op")
 
-   ;;  #button { border: ... }
    '("^[ \t]*#"
      "Unknown commenting style"
-     "[{]")
+     ;;  Skip CSS tags inside PHP:
+     ;;
+     ;;  print <<<CSS
+     ;;  #id { ...
+     ;;  CSS
+     ".*[ \t\r\n]*{")
 
    '("^[ \t]*var[ \t]*[a-z]"
      "old vardef. Migrate to syntax public|protected: ")
@@ -1188,7 +1194,9 @@ displayed."
 
    '("\\<function[ \t]+\\(de\\|con\\)struct"
      "possibly mispelled __(de|con)struct"))
-  "Search ((REGEXP MESSAGE [NOT-REGEXP] [FUNC]) ..).")
+  "Search ((REGEXP MESSAGE [NOT-REGEXP] [FUNC]) ..).
+
+See `my-lint-layout-generic-run-occur-list'.")
 
 (defvar my-lint-layout-php-check-regexp-occur-variable
   '(my-lint-layout-php-check-regexp-occur-modern-style-list
@@ -2617,7 +2625,7 @@ One ORing regexp.")
     "else"
     "end"
     "escape"
-    "except"
+    "except\\(?:[ \t\r\n]+distinct\\)?"
     "exists"
     "false"
     "for"
@@ -2641,13 +2649,15 @@ One ORing regexp.")
 ;;;    "second"
     "parent"
     "parent_of"
+    ;; SQL:1999 regular expressions
+    "similar[ \t\r\n]+to"
     "some"
     "time zone"
     "timezone_hour"
     "timezone_minute"
     "true"
     "unique"
-    "union"
+    "union\\(?:[ \t\r\n]+\\(?:all|distinct\\)\\)?"
     "unknwown"
     "using"
     "when"
@@ -2715,8 +2725,12 @@ One ORing regexp.")
    (regexp-opt
     '("array"
       "boolean"
+      "binary large object"
       "blob"
       "clob"
+      "character large object"
+      "lob"
+      "large object"
       "list"
 ;;;      "money" FIXME check?
       "ref" ;; OID
