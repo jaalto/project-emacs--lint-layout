@@ -449,7 +449,7 @@ without brace requirement.")
     my-lint-layout-php-check-regexp-occur-main
     my-lint-layout-php-class-check-variables
     my-lint-layout-php-check-input-form-main
-    my-lint-layout-php-check-sql-kwd-uppercase
+    my-lint-layout-php-check-sql-kwd-statements
     my-lint-layout-php-check-multiline-print
     my-lint-layout-php-check-multiline-sql
     my-lint-layout-php-check-words
@@ -1591,10 +1591,13 @@ Return variable content string."
       (insert string)
       (goto-char (point-min))
       (while (my-lint-layout-xml-element-beginning "textarea")
+        ;; "How to limit the number of characters entered in a textarea
+        ;;  in an HTML form and other notes on textarea elements"
+        ;; http://www.cs.tut.fi/~jkorpela/forms/textarea.html
         (my-lint-layout-message
            (concat
             "[code] FORM security, textarea is unlimited by W3C standard. "
-            "Input must be checked manually")
+            "Injection attacks must be checked manually")
            prefix
            (+ line (1- (my-lint-layout-current-line-number))))))))
 
@@ -1611,7 +1614,7 @@ Return variable content string."
       (my-lint-layout-php-check-input-form-string
        (buffer-substring beg end) line prefix)))))
 
-(defun my-lint-layout-php-check-sql-kwd-uppercase (&optional prefix)
+(defun my-lint-layout-php-check-sql-kwd-statements (&optional prefix)
   "Check SQL statements and keywords in uppercase."
   (let ((re `,(concat
                "\\<\\(insert[ \t\r\n]+into"
