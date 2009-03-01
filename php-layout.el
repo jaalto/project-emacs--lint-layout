@@ -448,7 +448,8 @@ without brace requirement.")
     my-lint-layout-php-check-brace-extra-newline
     my-lint-layout-php-check-regexp-occur-main
     my-lint-layout-php-class-check-variables
-    my-lint-layout-php-class-check-sql-kwd-uppercase
+    my-lint-layout-php-check-input-form-main
+    my-lint-layout-php-check-sql-kwd-uppercase
     my-lint-layout-php-check-multiline-print
     my-lint-layout-php-check-multiline-sql
     my-lint-layout-php-check-words
@@ -1567,7 +1568,50 @@ Return variable content string."
    my-lint-layout-php-doc-location-regexp
    nil t))
 
-(defun my-lint-layout-php-class-check-sql-kwd-uppercase (&optional prefix)
+(defsubst my-lint-layout-xml-element-beginning (tag &optional end)
+  "Search start of XML element TAG."
+  (re-search-forward
+   ;; <form ... atrribute="" ...>
+   (concat "<[ \t\r\n]*" tag "\\([ \t\r\n]*\\|[ \t\r\n][a-z].*\\)?>")
+   end t))
+
+(defsubst my-lint-layout-xml-element-end (tag &optional end)
+  "Search end of XML element TAG."
+  (re-search-forward
+   (concat "<[ \t\r\n]*/[ \t\r\n]*" tag "[ \t\r\n]*>")
+   end t))
+
+(defun my-lint-layout-php-check-input-form-string
+  (string &optional line prefix)
+  "Check for STRING."
+  (let (str
+        beg
+        end)
+    (with-temp-buffer
+      (insert string)
+      (goto-char (point-min))
+      (while (my-lint-layout-xml-element-beginning "textarea")
+        (my-lint-layout-message
+           (concat
+            "[code] FORM security, textarea is unlimited by W3C standard. "
+            "Input must be checked manually")
+           prefix
+           (+ line (1- (my-lint-layout-current-line-number))))))))
+
+(defun my-lint-layout-php-check-input-form-main (&optional prefix)
+  "Check input form."
+  (let (line
+        beg
+        end)
+  (while (my-lint-layout-xml-element-beginning "form")
+    (setq beg (match-beginning 0))
+    (when (my-lint-layout-xml-element-end "form")
+      (setq end (match-end 0))
+      (setq line (my-lint-layout-current-line-number))
+      (my-lint-layout-php-check-input-form-string
+       (buffer-substring beg end) line prefix)))))
+
+(defun my-lint-layout-php-check-sql-kwd-uppercase (&optional prefix)
   "Check SQL statements and keywords in uppercase."
   (let ((re `,(concat
                "\\<\\(insert[ \t\r\n]+into"
