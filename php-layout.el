@@ -1556,6 +1556,7 @@ Return variable content string."
                      "\\|delete[ \t\r\n]+from"
                "\\)\\>"))
         match
+        point
         beg
         end)
   (while (re-search-forward re nil t)
@@ -1571,7 +1572,8 @@ Return variable content string."
      ((string-match "insert" match)
       (goto-char beg)
       (when (re-search-forward "\\<values\\>" end t)
-        (setq match (match-string 0))
+        (setq match (match-string 0)
+              point (point))
         (unless (my-lint-layout-string-uppercase-p match)
           (my-lint-layout-message
            (format
@@ -1580,9 +1582,12 @@ Return variable content string."
         (unless (re-search-backward ")" beg t)
           (my-lint-layout-message
            (concat
-            "[code] SQL portability; In INSERT, "
+            "[code] SQL portability; in INSERT, "
             "missing column definitions in parens before VALUES")
-           prefix))))))))
+           prefix
+           (save-excursion
+             (goto-char point)
+             (my-lint-layout-current-line-number))))))))))
 
 (defun my-lint-layout-php-class-check-variables (&optional prefix)
   "Check class variables."
