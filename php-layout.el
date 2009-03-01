@@ -336,17 +336,11 @@ without brace requirement.")
       "strftime"
       "header"
       "preg_[a-z]+"
-      "\\(?:require\\|include\\)\\(?:_one\\)?"
       "is_[a-z]+"
       "mysql_[a-z_]+")
     "\\|")
-   "\\)[^a-zA-Z0-9$_-]")
+   "\\)\\>")
   "Typical PHP functions.")
-
-(defconst my-lint-layout-php-function-call-keywords-list
-  (list my-lint-layout-php-function-call-keywords-no-paren
-	my-lint-layout-php-function-call-keywords-generic)
-  "PHP keyword list")
 
 (defconst my-lint-layout-php-function-regexp
   (concat
@@ -2057,54 +2051,62 @@ if ( check );
   (str &optional prefix)
   "Error: <keyword><space>(); Leading <space>."
   (my-lint-layout-message
-   (format "[misc] in funcall, `%s' and extra space before opening paren"
+   (format "[misc] in funcall, extra space before opening paren: %s"
 	   str)
    prefix))
 
 (defun my-lint-layout-php-check-keywords-error-opening-paren-trailing
   (str &optional prefix)
-  "Error: <keyword>(<space>...; trailing <space>."
+  "Error: <keyword>(<space>..."
   (my-lint-layout-message
-   (format "[misc] in funcall, `%s' and extra space after opening paren"
+   (format "[misc] in funcall, extra space after opening paren: %s"
 	   str)
    prefix))
 
 (defun my-lint-layout-php-check-keywords-error-closing-paren-leading
   (str &optional prefix)
-  "Error: <keyword>(...<space>); trailing <space>."
+  "Error: <keyword>(...<space>)"
   (my-lint-layout-message
    (format "[misc] in funcall, extra space before closing paren: %s"
 	   str)
    prefix))
 
-(defun my-lint-layout-php-check-keywords-main (&optional prefix keyword-re)
+(defun my-lint-layout-php-check-keywords-main (&optional prefix)
   "Check correct lowercase spelling.
-KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
-  (let (class-p
-	function-p
-	str
-	re
-	indent
-	line)
+KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-generic'
+and `my-lint-layout-php-function-call-keywords-no-paren'."
+  (let* ((re-paren
+          (concat my-lint-layout-php-function-call-keywords-generic
+                  "\\([ \t]*\\)("))
+         (re-noparen
+          (concat my-lint-layout-php-function-call-keywords-no-paren
+                  "\\([ \t]*\\)[('\"$]"))
+         (re (concat re-paren "\\|" re-noparen))
+         keyword
+         class-p
+         function-p
+         str
+         indent
+         line)
     (save-excursion
+      (goto-char (point-min))
       (setq class-p (my-lint-layout-search-forward-class-p)))
-    (or keyword-re
-	(setq keyword-re my-lint-layout-php-function-call-keywords-generic))
-    (save-excursion
-      (while (re-search-forward keyword-re nil t)
-	(setq str (match-string 0))
-	(when (looking-at "\\([ \t]*\\)[('\"$]")
-	  (setq indent (match-string 1))
-	  (my-lint-layout-php-check-keyword-spelling-lowercase str prefix)
-	  (when (> (length indent) 0)
-	    (my-lint-layout-php-check-keywords-error-opening-paren-leading
-	     str prefix))
-	  (when (looking-at "[ \t]*([ \t]")
-	    (my-lint-layout-php-check-keywords-error-opening-paren-trailing
-	     str prefix))
-	  (when (looking-at "[ \t]*([^)\r\n]+[ \t])")
-	    (my-lint-layout-php-check-keywords-error-closing-paren-leading
-	     str prefix)))))))
+    (while (re-search-forward re nil t)
+      (setq str (match-string 0))
+      (when (string-match "^\\(.*\\([ \t]*\\)\\)[('\"$]" str)
+        (setq keyword (match-string 1 str)
+              indent  (match-string 2 str))
+        (my-lint-layout-php-check-keyword-spelling-lowercase keyword prefix)
+        (when (> (length indent) 0)
+          (my-lint-layout-php-check-keywords-error-opening-paren-leading
+           str prefix))
+        (when (eq (char-before (point)) ?\()
+          (when (looking-at "[ \t]")
+            (my-lint-layout-php-check-keywords-error-opening-paren-trailing
+             str prefix))
+          (when (looking-at "[^)\r\n]+[ \t])")
+            (my-lint-layout-php-check-keywords-error-closing-paren-leading
+             str prefix)))))))
 
 ;;; ........................................................ &spelling ...
 
