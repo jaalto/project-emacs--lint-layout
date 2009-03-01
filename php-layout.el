@@ -336,6 +336,7 @@ without brace requirement.")
       "strftime"
       "header"
       "preg_[a-z]+"
+      "\\(?:require\\|include\\)\\(?:_one\\)?"
       "is_[a-z]+"
       "mysql_[a-z_]+")
     "\\|")
@@ -1996,8 +1997,7 @@ if ( check );
   (unless (string= (downcase str)
 		   str)
     (my-lint-layout-message
-     (format "[misc] lowercase keyword expected for `%s'"
-	     str)
+     (format "[misc] lowercase keyword expected for: %s" str)
      prefix)))
 
 (defun my-lint-layout-php-check-keywords-error-opening-paren-leading
@@ -2040,7 +2040,7 @@ KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-list'."
     (save-excursion
       (while (re-search-forward keyword-re nil t)
 	(setq str (match-string 0))
-	(when (looking-at "\\([ \t]*\\)(")
+	(when (looking-at "\\([ \t]*\\)[('\"$]")
 	  (setq indent (match-string 1))
 	  (my-lint-layout-php-check-keyword-spelling-lowercase str prefix)
 	  (when (> (length indent) 0)
