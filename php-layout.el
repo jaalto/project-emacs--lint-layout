@@ -322,7 +322,7 @@ without brace requirement.")
 
 (defconst my-lint-layout-php-function-call-keywords-generic
   (concat
-   "[^a-zA-Z0-9_]\\("
+   "[^a-zA-Z0-9$_-]\\("
    (mapconcat
     'concat
     '("ereg"
@@ -340,7 +340,7 @@ without brace requirement.")
       "is_[a-z]+"
       "mysql_[a-z_]+")
     "\\|")
-   "\\)[^a-zA-Z0-9_]")
+   "\\)[^a-zA-Z0-9$_-]")
   "Typical PHP functions.")
 
 (defconst my-lint-layout-php-function-call-keywords-list
@@ -1103,7 +1103,8 @@ displayed."
 ;;
 ;;  $this->conn = @mysql_connect(DBHOST, DBUSER, DBPASS);
 ;;  if ( ! $this->conn )
-
+;;
+;;  See  `my-lint-layout-generic-run-occur-list'
 (defconst my-lint-layout-php-check-regexp-occur-list
   (list
 
@@ -1132,6 +1133,11 @@ displayed."
 
    '("[|][|]\\|&&"
      "Readable 'and|or' arternative suggested for relational op")
+
+   '("$_[a-z]+"
+     "leading underscore in variable name"
+     ;; http://fi2.php.net/manual/en/language.variables.superglobals.php
+     "GLOBALS\\|SERVER\\|GET\\|POST\\|SESSION\\|FILES\\|REQUEST\\|COOKIE\\|ENV")
 
    '("^[ \t]*#"
      "Unknown commenting style"
