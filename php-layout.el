@@ -1351,7 +1351,7 @@ See `my-lint-layout-generic-run-occur-list'.")
   "Find print or echo command."
   (re-search-forward
    ;; text/html; charset=utf-8
-   "^[ \t]*\\(print\\|echo\\)[ \t]*[(\"][^;]+;" nil t))
+   "^[ \t]*\\(print\\|echo\\)[ \t]*[(\"'][^;]+;" nil t))
 
 (defsubst my-lint-layout-php-print-command-forward ()
   "Search print or echo command. Return beginning point of match."
