@@ -447,7 +447,7 @@ without brace requirement.")
     my-lint-layout-php-check-brace-extra-newline
     my-lint-layout-php-check-regexp-occur-main
     my-lint-layout-php-class-check-variables
-;;;    my-lint-layout-php-class-check-sql-kwd-uppercase
+    my-lint-layout-php-class-check-sql-kwd-uppercase
     my-lint-layout-php-check-multiline-print
     my-lint-layout-php-check-multiline-sql
     my-lint-layout-php-check-words
@@ -922,11 +922,13 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 (defun my-lint-layout-message (msg &optional prefix line)
   "Write MSG with LINE numnber using PREFIX.
 See `my-lint-layout-buffer-name'."
+  (or line
+      (setq line (my-lint-layout-current-line-number)))
   (my-lint-layout-with-result-buffer
     (goto-char (point-max))
     (insert (format "%s%04d: %s\n"
 		    (my-lint-layout-prefix prefix)
-		    (or line (my-lint-layout-current-line-number))
+		    line
 		    msg))))
 
 (defsubst my-lint-layout-doc-line-startp-p ()
@@ -1564,6 +1566,7 @@ Return variable content string."
                "\\<\\(insert[ \t\r\n]+into"
                      "\\|delete[ \t\r\n]+from"
                "\\)\\>"))
+        str
         match
         point
         beg
@@ -1590,6 +1593,14 @@ Return variable content string."
              t)
         (setq match (match-string 0)
               point (point))
+        ;; Where is the approximate ")" paren that terminates the INSERT
+        (when (re-search-forward ")" (max (+ beg 500) (point-max)) t)
+          (setq str (buffer-substring beg (point)))
+          (when (and (not (string-match "<<<" str))
+                     (> (my-lint-layout-count-char-in-string ?\n str) 3))
+            (my-lint-layout-message
+             "possible SQL maintenance problem, HERE doc suggested (<<<)"
+             prefix)))
         (unless (my-lint-layout-string-uppercase-p match)
           (my-lint-layout-message
            (format
