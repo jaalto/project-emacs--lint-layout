@@ -432,7 +432,7 @@ without brace requirement.")
     my-lint-layout-check-line-length)
   "*List of generic lint functions.")
 
-(defvar my-lint-layout-check-php-code-functions
+(defconst my-lint-layout-check-php-code-functions
   '(my-lint-layout-generic-class-count
     my-lint-layout-generic-xml-tags-check-main
     my-lint-layout-php-check-xml-tags-lazy
@@ -447,7 +447,7 @@ without brace requirement.")
     my-lint-layout-php-check-brace-extra-newline
     my-lint-layout-php-check-regexp-occur-main
     my-lint-layout-php-class-check-variables
-    my-lint-layout-php-class-check-sql-kwd-uppercase
+;;;    my-lint-layout-php-class-check-sql-kwd-uppercase
     my-lint-layout-php-check-multiline-print
     my-lint-layout-php-check-multiline-sql
     my-lint-layout-php-check-words
@@ -1339,13 +1339,21 @@ See `my-lint-layout-generic-run-occur-list'.")
 
 (defun my-lint-layout-php-check-multiple-print (&optional prefix)
   "Check multiple print statements."
-  (save-excursion
-    (while (re-search-forward
-	    ;;  3 x threshold
-	    "^[ \t]*print(.*\n[ \t]*print(.*\n[ \t]*print(" nil t)
-      (my-lint-layout-message
-       "multiple print*() calls. Alternative HERE syntax recommended."
-       prefix))))
+  (while (re-search-forward
+          ;;  3 x threshold
+          `,(concat
+             "^[ \t]*"
+             "\\(?:print\\|echo\\)[ \t]*(?[ \t][\"'($]"
+             ".*\n"
+             ".*\\<"
+              "\\(?:print\\|echo\\)[ \t]*(?[ \t][\"'($]"
+             ".*\n"
+             ".*\\<"
+              "\\(?:print\\|echo\\)[ \t]*(?[ \t][\"'($]")
+          nil t)
+    (my-lint-layout-message
+     "multiple output calls, HERE syntax recommended"
+     prefix)))
 
 (defsubst my-lint-layout-php-print-command-forward-1 ()
   "Find print or echo command."
@@ -1562,8 +1570,8 @@ Return variable content string."
         end)
   (while (re-search-forward re nil t)
     (setq beg   (match-beginning 0)
-          match (match-string 1)
-          end   (my-lint-layout-search-forward-ending-semicolon))
+          match (match-string 1))
+          ;; end   (my-lint-layout-search-forward-ending-semicolon))
     (unless (my-lint-layout-string-uppercase-p match)
       (my-lint-layout-message
        (format
@@ -1572,7 +1580,14 @@ Return variable content string."
     (cond
      ((string-match "insert" match)
       (goto-char beg)
-      (when (re-search-forward "\\<values\\>" end t)
+      (when (re-search-forward
+             "\\<values\\>"
+             ;;  Check continued statement
+             ;;  $sql  =
+             ;;  $sql .=
+             ;;  ...
+             (max (+ beg 500) (point-max))
+             t)
         (setq match (match-string 0)
               point (point))
         (unless (my-lint-layout-string-uppercase-p match)
@@ -1588,7 +1603,9 @@ Return variable content string."
            prefix
            (save-excursion
              (goto-char point)
-             (my-lint-layout-current-line-number))))))))))
+             (my-lint-layout-current-line-number)))))))
+    (when end
+      (goto-char end)))))
 
 (defun my-lint-layout-php-class-check-variables (&optional prefix)
   "Check class variables."
