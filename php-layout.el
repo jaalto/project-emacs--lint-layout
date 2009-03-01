@@ -2020,7 +2020,7 @@ if ( check );
   (str &optional prefix)
   "Error: <keyword>(...<space>); trailing <space>."
   (my-lint-layout-message
-   (format "[misc] in funcall, `%s' and extra space before closing paren"
+   (format "[misc] in funcall, extra space before closing paren: %s"
 	   str)
    prefix))
 
