@@ -328,6 +328,7 @@ without brace requirement.")
     '("ereg"
       "array"
       "array_[a-z_]+"
+      "die"
       "isset"
       "empty"
       "array"
