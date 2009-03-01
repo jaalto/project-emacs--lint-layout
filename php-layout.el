@@ -1375,11 +1375,11 @@ print 'this' .
 	lines)
     (while (setq beg (my-lint-layout-php-print-command-forward))
       (setq str (buffer-substring beg (point)))
-      (unless (string-match "[$]\\|<<<" str) ;No variables used
+      (unless (string-match "<<<" str)
 	(setq lines (my-lint-layout-count-lines-in-string str))
 	(when (> lines 3)
 	  (my-lint-layout-message
-	   "possible maintenance problem, HERE doc syntax suggested (<<<)"
+	   "possible maintenance problem, HERE doc suggested (<<<)"
 	   prefix
 	   (- (my-lint-layout-current-line-number) lines)))))))
 
@@ -1510,7 +1510,7 @@ Return variable content string."
   (when (looking-at "[^ \t\r\n]")
     (my-lint-layout-message
      "[comment] no space between comment marker and text"
-     nil prefix))
+     prefix))
   ;; Peek previous line
   (save-excursion
     (forward-line -1)
@@ -1662,10 +1662,11 @@ Return variable content string."
 
 (defsubst my-lint-layout-php-indent-level (str)
   "Count indent."
-  (and str
-       (setq str (replace-regexp-in-string "\t" "        " str))
-       (string-match "^[ \t]*" str)
-       (length (match-string 0 str))))
+  (when str
+    (if (string-match "\t" str)
+        (setq str (replace-regexp-in-string "\t" "        " str)))
+    (string-match "^ *" str)
+    (length (match-string 0 str))))
 
 (defsubst my-lint-layout-php-statement-brace-forward (&optional brace)
   "Find statement block BRACE, which is '{' by default."
