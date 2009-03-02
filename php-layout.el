@@ -337,6 +337,7 @@ without brace requirement.")
       "header"
       "preg_[a-z]+"
       "is_[a-z]+"
+      "md5"
       "mysql_[a-z_]+")
     "\\|")
    "\\)\\>")
@@ -1099,7 +1100,7 @@ displayed."
 ;;  $this->conn = @mysql_connect(DBHOST, DBUSER, DBPASS);
 ;;  if ( ! $this->conn )
 ;;
-;;  See  `my-lint-layout-generic-run-occur-list'
+;;  (my-lint-layout-generic-run-occur-list my-lint-layout-php-check-regexp-occur-list)
 (defconst my-lint-layout-php-check-regexp-occur-list
   (list
 
@@ -1168,6 +1169,9 @@ displayed."
    '("\\<\\(if\\|else\\|elseif\\)[ \t]*(.*[$a-z][ \t]*=[ \t]*[$a-z]"
      "assignment inside statement"
      "mysql")
+
+   '("\\$[a-z].*=.*\n.*<<<"
+     "in assignment, HERE doc start not right of (=)")
 
    '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)("
      "in statement, no space between keyword like 'if' and starting paren")
@@ -2106,7 +2110,7 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
              str prefix))
           (when (looking-at "[^)\r\n]+[ \t])")
             (my-lint-layout-php-check-keywords-error-closing-paren-leading
-             str prefix)))))))
+             (match-string 0) prefix)))))))
 
 ;;; ........................................................ &spelling ...
 
@@ -5015,8 +5019,5 @@ The `my-lint-layout-buffer-name' is not emptied nor displayed."
     (dolist (file command-line-args-left)
       (my-lint-layout-check-generic-file file))
     (my-lint-layout-princ-results)))
-
-;;      (message
-;;       (replace-regexp-in-string "%" "%%" (buffer-string)))))))
 
 ;; End of file
