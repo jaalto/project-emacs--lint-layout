@@ -1361,7 +1361,7 @@ See `my-lint-layout-generic-run-occur-list'.")
               "\\(?:print\\|echo\\)[ \t]*(?[ \t][\"'($]")
           nil t)
     (my-lint-layout-message
-     "multiple output calls, HERE syntax recommended"
+     "possible maintenance problem, multiple output calls, HERE doc recommended"
      prefix)))
 
 (defsubst my-lint-layout-php-print-command-forward-1 ()
@@ -1396,7 +1396,7 @@ print 'this' .
 	(setq lines (my-lint-layout-count-lines-in-string str))
 	(when (> lines 3)
 	  (my-lint-layout-message
-	   "possible maintenance problem, HERE doc suggested (<<<)"
+	   "possible maintenance problem, continued print, HERE doc recommended"
 	   prefix
 	   (- (my-lint-layout-current-line-number) lines)))))))
 
@@ -1652,7 +1652,7 @@ Return variable content string."
           (when (and (not (string-match "<<<" str))
                      (> (my-lint-layout-count-char-in-string ?\n str) 3))
             (my-lint-layout-message
-             "possible SQL maintenance problem, HERE doc suggested (<<<)"
+             "possible SQL maintenance problem, HERE doc recommended"
              prefix)))
         (unless (my-lint-layout-string-uppercase-p match)
           (my-lint-layout-message
