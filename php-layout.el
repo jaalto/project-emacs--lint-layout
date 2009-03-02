@@ -325,20 +325,21 @@ without brace requirement.")
    "[^a-zA-Z0-9$_-]\\("
    (mapconcat
     'concat
-    '("ereg"
-      "array"
-      "array_[a-z_]+"
-      "die"
-      "isset"
-      "empty"
-      "array"
+    '(
+      "array\\(?:_[a-z_]+\\)?"
       "date"
-      "strftime"
+      "die"
+      "empty"
+      "ereg"
       "header"
-      "preg_[a-z]+"
       "is_[a-z]+"
+      "isset"
       "md5"
-      "mysql_[a-z_]+")
+      "mysql_[a-z_]+"
+      "preg_[a-z]+"
+      "strftime"
+      "trim"
+      )
     "\\|")
    "\\)\\>")
   "Typical PHP functions.")
@@ -1170,7 +1171,7 @@ displayed."
      "assignment inside statement"
      "mysql")
 
-   '("\\$[a-z].*=.*\n.*<<<"
+   '("\\$[a-z].*=.*\n[^$\r\n]*<<<"
      "in assignment, HERE doc start not right of (=)")
 
    '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)("
