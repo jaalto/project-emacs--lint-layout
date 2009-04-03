@@ -1129,7 +1129,7 @@ displayed."
 	 (not (string= str lower)))))
 
    '("[|][|]\\|&&"
-     "Readable 'and|or' arternative suggested for relational op")
+     "Readable 'and|or' alternative suggested for relational op")
 
    '("$_[a-z]+"
      "leading underscore in variable name"
@@ -1146,7 +1146,7 @@ displayed."
      ".*[ \t\r\n]*{")
 
    '("^[ \t]*var[ \t]*[a-z]"
-     "old vardef. Migrate to syntax public|protected: ")
+     "old vardef, migrate to syntax public|protected: ")
 
    ;; "$var" . "string"
    '("\"[$]_*[a-zA-Z0-9]+\""
@@ -1361,7 +1361,7 @@ See `my-lint-layout-generic-run-occur-list'.")
               "\\(?:print\\|echo\\)[ \t]*(?[ \t][\"'($]")
           nil t)
     (my-lint-layout-message
-     "possible maintenance problem, multiple output calls, HERE doc recommended"
+     "[code] possible maintenance problem, multiple output calls, HERE doc recommended"
      prefix)))
 
 (defsubst my-lint-layout-php-print-command-forward-1 ()
@@ -2373,7 +2373,9 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
        ;; <p>Copyright &copy; 2009 - Restaurant Le Crotte</p>
        ((and (not (string-match "&copy" string))
              (not (string-match "<..?>" string))
-             (not (string-match "@" string)))
+             (not (string-match "@" string))
+	     ;; content="..."
+             (not (string-match "[a-z][ \t]*=" string)))
 	(my-lint-layout-message
 	 (format "[copyright] possibly missing email address: %s" string)
          prefix))))
