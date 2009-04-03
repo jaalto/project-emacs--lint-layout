@@ -2350,6 +2350,23 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
     (and moved
 	 (my-lint-layout-copyright-line-p))))
 
+(defsubst my-lint-layout-copyright-email-string-p ()
+  "Check email address."
+  (and (string-match "@" string)
+       (string-match "<.+@.+>" string)))
+
+(defsubst my-lint-layout-copyright-email-re-search-forward-p ()
+  "Check email address."
+  (save-excursion
+    ;; In different lines
+    ;; Copyright (C) 2009 Foo Bar
+    ;;                    <foo@example.com>
+    (re-search-forward
+     "<.*@.*>"
+     (min (+ (point) 160)
+	  (point-max))
+     t)))
+
 (defun my-lint-layout-copyright-line-syntax (&optional prefix)
   "Check Copyright line syntax."
   (let ((string (my-lint-layout-current-line-string)))
@@ -2365,11 +2382,10 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
     ;;  Tag "@copyright ....."
     (when (not (string-match "@copyright" string))
       (cond
-       ((and (string-match "@" string)
-	     (not (string-match "<.+@.+>" string)))
-	(my-lint-layout-message
-	 (format "[copyright] missing <> around email address: %s" string)
-         prefix))
+       ((or (my-lint-layout-copyright-email-string-p)
+	    (my-lint-layout-copyright-email-re-search-forward-p))
+	;; ok
+	nil)
        ;; <p>Copyright &copy; 2009 - Restaurant Le Crotte</p>
        ((and (not (string-match "&copy" string))
              (not (string-match "<..?>" string))
@@ -2378,6 +2394,10 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
              (not (string-match "[a-z][ \t]*=" string)))
 	(my-lint-layout-message
 	 (format "[copyright] possibly missing email address: %s" string)
+         prefix))
+       (t
+	(my-lint-layout-message
+	 (format "[copyright] missing <> around email address: %s" string)
          prefix))))
     (when (and (looking-at ".*<\\(.+\\)>")
 	       (string-match
