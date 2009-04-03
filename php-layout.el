@@ -2737,11 +2737,18 @@ Optional PREFIX is used add filename to the beginning of line."
       "zerofill"
       "current_timestamp"
       "default"
-      ;; create table xxx (...) engine = innodb;
+      ) t) "\\>")
+  "MySQL column keywords.")
+
+(defconst my-lint-layout-sql-keywords-create-table-other
+  (concat
+   "\\<"
+   (regexp-opt
+    '(;; create table xxx (...) engine = innodb;
       "engine"
       "innodb"
       ) t) "\\>")
-  "MySQL column keywords.")
+  "Non-standard SQL keywords in create table.")
 
 (defconst my-lint-layout-sql-keywords-sql92-for-column-word-re
   '("not[ \t\r\n]+null"
@@ -3864,6 +3871,14 @@ The submatches are as follows: The point is at '!':
        "\\([^;]+;\\|[^;]+\n+)[ \t]*\r?\n\\)")
    nil t))
 
+(defun my-lint-layout-sql-create-table-error-unknown-keyword
+  (str &optional prefix line)
+  (my-lint-layout-message
+   (format
+    "[sql] in CREATE TABLE, unknown keyword: %s"
+    str)
+   prefix line))
+
 (defun my-lint-layout-sql-check-statement-create-table-main
   (&optional prefix)
   "Check SQL syntax."
@@ -3885,6 +3900,12 @@ The submatches are as follows: The point is at '!':
 	    line    (save-excursion
 		      (goto-char point)
 		      (my-lint-layout-current-line-number)))
+      (when (string-match
+	     my-lint-layout-sql-keywords-create-table-other
+	     match)
+	(my-lint-layout-sql-create-table-error-unknown-keyword
+	 (match-string 1 match)
+	 prefix line))
       (my-lint-layout-sql-check-all-uppercase
        keyword
        (format "[sql] in CREATE TABLE, keyword not uppercase: %s"
