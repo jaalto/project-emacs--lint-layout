@@ -2417,7 +2417,7 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
   "Check Copyright syntax.
 Optional PREFIX is used add filename to the beginning of line."
   (let (found)
-    (while (my-lint-layout-copyright-search-forward)
+    (when (my-lint-layout-copyright-search-forward)
       (setq found t)
       (my-lint-layout-copyright-line-syntax prefix))
     (unless found
@@ -2950,9 +2950,10 @@ o   INSERT .... ( ); -- last comment
   "Search INSERT INTO forward.
 The submatches are as follows. The point is at '!':
 
+    INSERT INTO table <nothing>   VALUES (<values>) ;
     INSERT INTO table (<columns>) VALUES (<values>) ;
-    |---------- |----  |--------  !
-    1           2      3          Point
+    |---------- |----  |--------         !
+    1           2      3                 Point
 
 Note, that the statement does not necessarily haave VLAUES part.
 This can be tested with `looking-at' at the position of point:
@@ -2964,10 +2965,12 @@ This can be tested with `looking-at' at the position of point:
   (re-search-forward
    `,(concat
       "^[ \t]*"
-      "\\(insert[ \t\r\n]+into\\)"	; 1
+      "\\(insert[ \t\r\n]+into\\>\\)"	    ; 1 keyword
       "[ \t\r\n]+"
-      "\\([^ \t\r\n]+\\)"		; 2
-      "\\([ \t\r\n]*([^)]+\\))[ \t\r\n]*")	; 3
+      "\\([^ \t\r\n]+\\)"		    ; 2 table name
+      "\\([ \t\r\n]*([^)]+\\))*"
+      "[ \t\r\n]*"                          ; 3 (values)
+      "\\(VALUES\\)[ \t\r\n]+")             ; 4 keyword
    nil t))
 
 (defun my-lint-layout-sql-check-indent (str &optional prefix)
