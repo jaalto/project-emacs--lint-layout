@@ -1171,7 +1171,7 @@ displayed."
      "assignment inside statement"
      "mysql")
 
-   '("\\$[a-z].*=.*\n[^$\r\n]*<<<"
+   '("\\$[a-z].*=[^;\n]*\n[^$\r\n]*<<<"
      "in assignment, HERE doc start not right of (=)")
 
    '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)("
