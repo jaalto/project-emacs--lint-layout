@@ -1236,11 +1236,16 @@ displayed."
     "in funcdef, extra space before closing paren")
 
    (list
-    (concat
-     "[$][a-z0-9_>-]+[.][$\"][^);]"
-     "\\|\"[.][$][a-z_]"
-     "\\|[)][.][\"][^);]")
-    "no surrounding spaces around concat(.)")
+    "[$][a-z0-9_>-]+[.][$\"][^);]"
+    "no surrounding spaces, case 1, around concat(.)")
+
+   (list
+    "\"[.][$][a-z_]"
+    "no surrounding spaces, case 2, around concat(.)")
+
+   (list
+    "[)][.][\"][^);]"
+    "no surrounding spaces, case 3, around concat(.)")
 
    ;; if ( $query and mysql_result == false )
    (list
@@ -1353,21 +1358,28 @@ See `my-lint-layout-generic-run-occur-list'.")
 
 (defun my-lint-layout-php-check-multiple-print (&optional prefix)
   "Check multiple print statements."
-  (while (re-search-forward
-          ;;  3 x threshold
-          `,(concat
-             "^[ \t]*"
-             "\\(?:print\\|echo\\)[ \t]*(?[ \t][\"'($]"
-             ".*\n"
-             ".*\\<"
-              "\\(?:print\\|echo\\)[ \t]*(?[ \t][\"'($]"
-             ".*\n"
-             ".*\\<"
-              "\\(?:print\\|echo\\)[ \t]*(?[ \t][\"'($]")
-          nil t)
-    (my-lint-layout-message
-     "[code] possible maintenance problem, multiple output calls, HERE doc recommended"
-     prefix)))
+  (let (str)
+    (while (re-search-forward
+	    ;;  3 x threshold
+	    `,(concat
+	       "^[ \t]*"
+	       ;;  print '
+	       ;;  print "
+	       ;;  print $variable
+	       ;;  -- Ignore
+	       ;;  print $class->method();
+	       "\\(?:print\\|echo\\)[ \t]*(?[ \t]\\([\"']\\|[$][^- <>;\t\r\n]+[ \t.;]\\)"
+	       ".*\n"
+	       ".*\\<"
+	       "\\(?:print\\|echo\\)[ \t]*(?[ \t]\\([\"']\\|[$][^- <>;\t\r\n]+[ \t.;]\\)"
+	       ".*\n"
+	       ".*\\<"
+	       "\\(?:print\\|echo\\)[ \t]*(?[ \t]\\([\"']\\|[$][^- <>;\t\r\n]+[ \t.;]\\)")
+	    nil t)
+      ;; (setq str (match-string 0))
+      (my-lint-layout-message
+       "[code] possible maintenance problem, multiple output calls, HERE doc recommended"
+       prefix))))
 
 (defsubst my-lint-layout-php-print-command-forward-1 ()
   "Find print or echo command."
@@ -2194,7 +2206,7 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
   "Check trailing whitespace."
   (while (re-search-forward "[ \t]+$" nil t)
     (my-lint-layout-message
-     "[whitespace] trailing whitepace at end of line"
+     "[whitespace] trailing whitepace at the end of line"
      prefix)))
 
 (defun my-lint-layout-whitespace-multiple-newlines (&optional prefix)
