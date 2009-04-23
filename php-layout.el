@@ -1183,13 +1183,13 @@ displayed."
    '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
      "in statement, no space after keyword and paren")
 
-   ;; FIXME: Multiline statement not handled: See >><< 
+   ;; Multiline statement not handled: See >><< 
    ;;
-   ;;    if ( empty($a>>)<<
+   ;;    if ( empty($a>>)
    ;;         and
    ;;	      $b )
-   '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^][ \t])[ \t]*$"
-     "in statement, no space before closing paren")
+   '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t\r\n])[ \t]*\r?\n.*{"
+     "in statement, possibly no space before closing paren")
 
    '("this->[^][ )\t\r\n]+[ \t]+("
      "in funcall, possibly extra space before opening paren")
@@ -1368,13 +1368,13 @@ See `my-lint-layout-generic-run-occur-list'.")
 	       ;;  print $variable
 	       ;;  -- Ignore
 	       ;;  print $class->method();
-	       "\\(?:print\\|echo\\)[ \t]*(?[ \t]\\([\"']\\|[$][^- <>;\t\r\n]+[ \t.;]\\)"
+	       "\\(?:print\\|echo\\)[ \t]*(?[ \t]\\([\"']\\|[$][^- <>;\t\r\n]+[ \t.,;]\\)"
 	       ".*\n"
 	       ".*\\<"
-	       "\\(?:print\\|echo\\)[ \t]*(?[ \t]\\([\"']\\|[$][^- <>;\t\r\n]+[ \t.;]\\)"
+	       "\\(?:print\\|echo\\)[ \t]*(?[ \t]\\([\"']\\|[$][^- <>;\t\r\n]+[ \t.,;]\\)"
 	       ".*\n"
 	       ".*\\<"
-	       "\\(?:print\\|echo\\)[ \t]*(?[ \t]\\([\"']\\|[$][^- <>;\t\r\n]+[ \t.;]\\)")
+	       "\\(?:print\\|echo\\)[ \t]*(?[ \t]\\([\"']\\|[$][^- <>;\t\r\n]+[ \t.,;]\\)")
 	    nil t)
       ;; (setq str (match-string 0))
       (my-lint-layout-message
