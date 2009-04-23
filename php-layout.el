@@ -1145,7 +1145,7 @@ displayed."
      ;;  CSS
      ".*[ \t\r\n]*{")
 
-   '("^[ \t]*var[ \t]*[a-z]"
+   '("^[ \t]*var[ \t]+[a-z].*;"
      "old vardef, migrate to syntax public|protected: ")
 
    ;; "$var" . "string"
