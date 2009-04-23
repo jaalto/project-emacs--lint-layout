@@ -1044,16 +1044,16 @@ displayed."
 
 (defconst my-lint-layout-generic-check-regexp-occur-camelcase-style-list
   (list
-   '("^[ \t]*[$][a-z0-9]+_[a-z0-9]+[ \t\r\n]*="
+   '("^[ \t]*[$][a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
      "variable name not CamelCase"
      nil
      (lambda ()
-       (let* ((str   (match-string 0)))
+       (let ((str (my-lint-layout-current-line-string)))
 	 (my-lint-layout-with-case
 	   ;; Global variable
-	   (not (string-match "[$][A-Z][A-Z][A-Z]" str))))))
+	   (not (string-match "[$][A-Z][A-Z0-9]+_" str))))))
    )
-  "*CamelCase varibale checks.")
+  "*CamelCase variable checks.")
 
 (defun my-lint-layout-generic-run-occur-list (list &optional prefix)
   "Check LIST of regexps."
