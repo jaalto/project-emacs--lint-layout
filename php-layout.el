@@ -1279,13 +1279,11 @@ displayed."
      nil
      (lambda ()
        (not
-	(or
-	 (string-match "assert"
-		       (my-lint-layout-current-line-string))
-	 (save-excursion
-	   (forward-line -1)
-	   (string-match "assert"
-			 (my-lint-layout-current-line-string)))))))
+	;;  Skip PHPUnit tests
+	(string-match "assert"
+		      (buffer-substring (max (point-min)
+					     (- (point) (* 4 80)))
+					(line-end-position))))))
 
    '("\\<function[ \t]+\\(de\\|con\\)struct"
      "possibly mispelled __(de|con)struct"))
