@@ -1183,7 +1183,12 @@ displayed."
    '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
      "in statement, no space after keyword and paren")
 
-   '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t])[ \t]*$"
+   ;; FIXME: Multiline statement not handled: See >><< 
+   ;;
+   ;;    if ( empty($a>>)<<
+   ;;         and
+   ;;	      $b )
+   '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^][ \t])[ \t]*$"
      "in statement, no space before closing paren")
 
    '("this->[^][ )\t\r\n]+[ \t]+("
