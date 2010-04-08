@@ -1012,7 +1012,7 @@ Return:
           (setq col-found (current-column))
           (unless (eq col col-found)
             (my-lint-layout-message
-             (format "[comment] star(*) at col %d not lined up with start col %d"
+             (format "[comment] star(*) at col %d possibly not lined up with start col %d"
                      col-found col)
              prefix))))
         (forward-line 1)))))
@@ -3546,7 +3546,8 @@ The submatches are as follows. The point is at '!':
            prefix
 	   (or line
 	       (my-lint-layout-current-line-number))))
-	(when (string-match "\\<int.*(" string)
+	(when (let ((case-fold-search))
+		(string-match "\\<int.*(" string))
 	  (my-lint-layout-sql-create-table-error-data-type-size
 	   string
 	   prefix
@@ -3808,11 +3809,11 @@ An example:
 
 (defun my-lint-layout-sql-check-statement-data-type-line-up
   (&optional prefix line table)
-  "Check data type clumn for line up.
+  "Check data type column for line up.
 
 CREATE TABLE table
 \(
-    col   INT(11),
+    col   INTEGER,
     col   VARCHAR(80),
           |
           line up"
@@ -3839,7 +3840,7 @@ CREATE TABLE table
                       (my-lint-layout-current-line-number)))
       (my-lint-layout-message
        (format
-        "[sql] In CREATE TABLE, data type not lined-up with previous: %s"
+        "[sql] In CREATE TABLE, data type possibly not lined-up with previous: %s"
         match)
        prefix curline))))))
 
@@ -4560,7 +4561,7 @@ DATA is the full function content."
 
 (defun my-lint-layout-php-doc-examine-content-other--indent-col-error
   (col line &optional prefix)
-  "Write error:  *-character is not lined up at COL."
+  "Write error:  *-character possibly not lined up at COL."
   (my-lint-layout-message
    (format "[phpdoc] *-character does not start at column %d" col)
    prefix line))
