@@ -56,68 +56,68 @@
 ;;      The checks include typical code conventions, most of which are
 ;;      configurable:
 ;;
-;;	o   Maximum code column 80
-;;	o   Extra whitespace at end of lines (spaces and tabs)
-;;	o   Brace placement (lined-up; no K&R support yet)
-;;	o   Indentation multiple of 4.
-;;	o   terminating semicolon checks: no loose "semicolons ;"
+;;      o   Maximum code column 80
+;;      o   Extra whitespace at end of lines (spaces and tabs)
+;;      o   Brace placement (lined-up; no K&R support yet)
+;;      o   Indentation multiple of 4.
+;;      o   terminating semicolon checks: no loose "semicolons ;"
 ;;
-;;	Some of the SQL checks include:
+;;      Some of the SQL checks include:
 ;;
-;;	o   FIXME: todo
+;;      o   FIXME: todo
 ;;
-;;	Some of the CSS checks include:
+;;      Some of the CSS checks include:
 ;;
-;;	o   FIXME: todo
+;;      o   FIXME: todo
 ;;
-;;	Some of the PHP checks include:
+;;      Some of the PHP checks include:
 ;;
-;;	o   The use and definition of function or methods:
+;;      o   The use and definition of function or methods:
 ;;
-;;	    function name () // in definition <neme> surrounding space
-;;	    {
-;;		call( $param, $param); // leading space in muti-arg calls
-;;		call(aram);	       // single arg call
-;;	    }
+;;          function name () // in definition <neme> surrounding space
+;;          {
+;;              call( $param, $param); // leading space in muti-arg calls
+;;              call(aram);            // single arg call
+;;          }
 ;;
-;;	o   Readable keywords `and' and `or' preferred over
-;;	    traditional && and ||.
-;;	o   Literal keywords in lowercase: false, true, null
-;;	o   Multiline concat dot-operator(.) could be written using
-;;	    <<<HERE documents.
-;;	o   Instead echo(), print() is suggested due to function to exist
-;;	    in all programming languages.
-;;	o   Instead of date(), POSIX standard strftime() preferred.
+;;      o   Readable keywords `and' and `or' preferred over
+;;          traditional && and ||.
+;;      o   Literal keywords in lowercase: false, true, null
+;;      o   Multiline concat dot-operator(.) could be written using
+;;          <<<HERE documents.
+;;      o   Instead echo(), print() is suggested due to function to exist
+;;          in all programming languages.
+;;      o   Instead of date(), POSIX standard strftime() preferred.
 ;;
 ;; User callable functions (M-x):
 ;;
 ;;      Normally functions start scanning from current point foward, unless
 ;;      "buffer" is mentioned:
 ;;
-;;	    ;; Decides correct test set for *.css, *.php, *.sql file
-;;	    my-lint-layout-check-generic-buffer
-;;	    my-lint-layout-check-generic-file
-;;	    my-lint-layout-check-generic-directory
+;;          ;; Decides correct test set for *.css, *.php, *.sql file
+;;          my-lint-layout-check-generic-buffer
+;;          my-lint-layout-check-generic-file
+;;          my-lint-layout-check-generic-directory
 ;;
-;;	    my-lint-layout-php-check-all-interactive
-;;	    my-lint-layout-php-check-phpdoc-interactive
+;;          my-lint-layout-php-check-all-interactive
+;;          my-lint-layout-php-check-phpdoc-interactive
 ;;
-;;	    my-lint-layout-check-whitespace-buffer-interactive
-;;	    my-lint-layout-check-line-length-buffer-interactive
-;;	    my-lint-layout-check-eof-marker-interactive
+;;          my-lint-layout-check-whitespace-buffer-interactive
+;;          my-lint-layout-check-line-length-buffer-interactive
+;;          my-lint-layout-check-eof-marker-interactive
 ;;
-;;	    my-lint-layout-css-check-buffer-interactive
-;;	    my-lint-layout-sql-buffer-interactive
+;;          my-lint-layout-css-check-buffer-interactive
+;;          my-lint-layout-sql-buffer-interactive
 ;;
-;;	Look at results in `my-lint-layout-changelog-check-main' buffer which
-;;	by default is `my-lint-layout-buffer-name'.
+;;      Look at results in `my-lint-layout-changelog-check-main' buffer which
+;;      by default is `my-lint-layout-buffer-name'.
 ;;
 ;; Batch command line usage
 ;;
-;;	This lisp library canbe called from command line with list of files
-;;	to check:
+;;      This lisp library canbe called from command line with list of files
+;;      to check:
 ;;
-;;	    emacs -Q -q -l lint-layout.el -f
+;;          emacs -Q -q -l lint-layout.el -f
 
 (require 'regexp-opt)
 
@@ -248,7 +248,7 @@ type modifiers to be present:
        my-lint-layout-generic-control-statement-regexp
        "\\|"
        "\\(?:" my-lint-layout-generic-access-modifier-regexp
-               "[ \t]+\\)[^(]*("
+	       "[ \t]+\\)[^(]*("
    "\\).*"
    "\\([ \t\r\n]*{\\|[ \t].*(.*)[ \t\r\n]*{\\)")
   "Left anchored statement with brace.")
@@ -367,16 +367,16 @@ without brace requirement.")
    (concat
     ;; Prefix <?php
     "^\\(?:[ \t]*"
-         "\\|[<][?][a-z]*[ \t]*\\)"
+	 "\\|[<][?][a-z]*[ \t]*\\)"
     ;; Keywords
     "\\(" ;; static public ...
-        "\\(?:"
-	        my-lint-layout-generic-other-modifier-regexp
-                my-lint-layout-generic-access-modifier-regexp
+	"\\(?:"
+		my-lint-layout-generic-other-modifier-regexp
+		my-lint-layout-generic-access-modifier-regexp
 		"\\)"
-        "\\|\\<"
-        (regexp-opt
-        '("const"
+	"\\|\\<"
+	(regexp-opt
+	'("const"
 	  "var"
 	  "function"
 	  "require"
@@ -622,10 +622,10 @@ Related articles:
 (defun my-lint-layout-count-char-in-string (c s)
   "Count character C in string S ."
   (let ((count 0)
-        (pos   0))
+	(pos   0))
     (while (< pos (length s))
       (if (char-equal (aref s pos) c)
-          (incf  count))
+	  (incf  count))
       (incf  pos))
     count))
 
@@ -964,7 +964,7 @@ The leading indent is in submatch 1 and text start indent in 2."
   (when (re-search-forward "^[ \t]*/\\*" nil t)
     (let ((beg (match-beginning 0)))
       (when (re-search-forward "^[ \t]*\\*/" nil t)
-        (list beg (match-end 0))))))
+	(list beg (match-end 0))))))
 
 (defun my-lint-layout-generic-comment-multiline-stars ()
   "Check if multiline comment contains stars or not.
@@ -983,39 +983,39 @@ Return:
       (my-lint-layout-generic-comment-multiline-forward)
     (when beg
       (save-excursion
-        (goto-char beg)
-        (forward-line 1)
-        (while (and (< (point) end)
-                    (my-lint-layout-generic-comment-multiline-p)
-                    (forward-line 1)))
-        (if (< (point) end)
-            (list beg end (point)))))))
+	(goto-char beg)
+	(forward-line 1)
+	(while (and (< (point) end)
+		    (my-lint-layout-generic-comment-multiline-p)
+		    (forward-line 1)))
+	(if (< (point) end)
+	    (list beg end (point)))))))
 
 (defun my-lint-layout-generic-check-comment-multiline-stars
   (beg end &optional prefix)
   "Check multiline comment in region BEG END."
   (let (col
-        col-found)
+	col-found)
     (save-excursion
       (goto-char beg)
       (search-forward "*")
       (setq col (1- (current-column)))
       (forward-line 1)
       (while (and (< (point) end))
-        (cond
-         ((not (my-lint-layout-generic-comment-multiline-p))
-          (my-lint-layout-message
-           "[comment] multiline comment is missing a star(*) to the left"
-           prefix))
-         (t
-          (goto-char (1- (match-end 0)))
-          (setq col-found (current-column))
-          (unless (eq col col-found)
-            (my-lint-layout-message
-             (format "[comment] star(*) at col %d possibly not lined up with start col %d"
-                     col-found col)
-             prefix))))
-        (forward-line 1)))))
+	(cond
+	 ((not (my-lint-layout-generic-comment-multiline-p))
+	  (my-lint-layout-message
+	   "[comment] multiline comment is missing a star(*) to the left"
+	   prefix))
+	 (t
+	  (goto-char (1- (match-end 0)))
+	  (setq col-found (current-column))
+	  (unless (eq col col-found)
+	    (my-lint-layout-message
+	     (format "[comment] star(*) at col %d possibly not lined up with start col %d"
+		     col-found col)
+	     prefix))))
+	(forward-line 1)))))
 
 (defun my-lint-layout-generic-run-list (list &optional prefix point)
   "Run LIST of functions from current point forward.
@@ -1065,17 +1065,17 @@ displayed."
 	    (setq line (my-lint-layout-current-line-string))
 	    (when (and (not (my-lint-layout-string-comment-p line))
 		       (or (null not-re)
-                           (not (or (save-match-data (string-match not-re line))
-                                    (save-excursion
-                                      (goto-char (line-beginning-position))
-                                      (looking-at not-re)))))
+			   (not (or (save-match-data (string-match not-re line))
+				    (save-excursion
+				      (goto-char (line-beginning-position))
+				      (looking-at not-re)))))
 		       (or (null func)
 			   (funcall func)))
 	      (my-lint-layout-message
 	       (format "[code] %s: %s"
 		       msg
 		       (my-lint-layout-current-line-string))
-               prefix))))))))
+	       prefix))))))))
 
 (defun my-lint-layout-generic-run-occur-variable-list (list &optional prefix)
   "Check LIST of varibales that contain regexps."
@@ -1118,7 +1118,7 @@ displayed."
     (concat
      "^[ \t]*"
      "\\<\\(function\\|if\\|else\\(?:[ \t\r\n]*if\\)?"
-           "\\|while\\|class\\|abstract\\|interface\\|foreach\\)"
+	   "\\|while\\|class\\|abstract\\|interface\\|foreach\\)"
      "[ \t]*("
      "\\>")
     "Possibly misspelled keyword, expect lowercase"
@@ -1183,11 +1183,11 @@ displayed."
    '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
      "in statement, no space after keyword and paren")
 
-   ;; Multiline statement not handled: See >><< 
+   ;; Multiline statement not handled: See >><<
    ;;
    ;;    if ( empty($a>>)
    ;;         and
-   ;;	      $b )
+   ;;         $b )
    '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t\r\n])[ \t]*\r?\n.*{"
      "in statement, possibly no space before closing paren")
 
@@ -1511,7 +1511,7 @@ Return variable content string."
 	 (concat
 	  "[newline] no empty line found between "
 	  "control statement and code above")
-         prefix)))))
+	 prefix)))))
 
 (defun my-lint-layout-php-check-block-end-and-code (&optional prefix)
   "Block end followed by code immediately after.
@@ -1599,27 +1599,27 @@ Return variable content string."
   (string &optional line prefix)
   "Check for STRING."
   (let (str
-        beg
-        end)
+	beg
+	end)
     (with-temp-buffer
       (insert string)
       (goto-char (point-min))
       (while (my-lint-layout-xml-element-beginning "textarea")
-        ;; "How to limit the number of characters entered in a textarea
-        ;;  in an HTML form and other notes on textarea elements"
-        ;; http://www.cs.tut.fi/~jkorpela/forms/textarea.html
-        (my-lint-layout-message
-           (concat
-            "[code] FORM security, textarea is unlimited by W3C standard. "
-            "Injection attacks must be checked manually")
-           prefix
-           (+ line (1- (my-lint-layout-current-line-number))))))))
+	;; "How to limit the number of characters entered in a textarea
+	;;  in an HTML form and other notes on textarea elements"
+	;; http://www.cs.tut.fi/~jkorpela/forms/textarea.html
+	(my-lint-layout-message
+	   (concat
+	    "[code] FORM security, textarea is unlimited by W3C standard. "
+	    "Injection attacks must be checked manually")
+	   prefix
+	   (+ line (1- (my-lint-layout-current-line-number))))))))
 
 (defun my-lint-layout-php-check-input-form-main (&optional prefix)
   "Check input form."
   (let (line
-        beg
-        end)
+	beg
+	end)
   (while (my-lint-layout-xml-element-beginning "form")
     (setq beg (match-beginning 0))
     (when (my-lint-layout-xml-element-end "form")
@@ -1631,58 +1631,58 @@ Return variable content string."
 (defun my-lint-layout-php-check-sql-kwd-statements (&optional prefix)
   "Check SQL statements and keywords in uppercase."
   (let ((re `,(concat
-               "\\<\\(insert[ \t\r\n]+into"
-                     "\\|delete[ \t\r\n]+from"
-               "\\)\\>"))
-        str
-        match
-        point
-        beg
-        end)
+	       "\\<\\(insert[ \t\r\n]+into"
+		     "\\|delete[ \t\r\n]+from"
+	       "\\)\\>"))
+	str
+	match
+	point
+	beg
+	end)
   (while (re-search-forward re nil t)
     (setq beg   (match-beginning 0)
-          match (match-string 1))
-          ;; end   (my-lint-layout-search-forward-ending-semicolon))
+	  match (match-string 1))
+	  ;; end   (my-lint-layout-search-forward-ending-semicolon))
     (unless (my-lint-layout-string-uppercase-p match)
       (my-lint-layout-message
        (format
-        "[code] SQL keyword not uppercase: %s" match)
+	"[code] SQL keyword not uppercase: %s" match)
        prefix))
     (cond
      ((string-match "insert" match)
       (goto-char beg)
       (when (re-search-forward
-             "\\<values\\>"
-             ;;  Check continued statement
-             ;;  $sql  =
-             ;;  $sql .=
-             ;;  ...
-             (max (+ beg 500) (point-max))
-             t)
-        (setq match (match-string 0)
-              point (point))
-        ;; Where is the approximate ")" paren that terminates the INSERT
-        (when (re-search-forward ")" (max (+ beg 500) (point-max)) t)
-          (setq str (buffer-substring beg (point)))
-          (when (and (not (string-match "<<<" str))
-                     (> (my-lint-layout-count-char-in-string ?\n str) 3))
-            (my-lint-layout-message
-             "possible SQL maintenance problem, HERE doc recommended"
-             prefix)))
-        (unless (my-lint-layout-string-uppercase-p match)
-          (my-lint-layout-message
-           (format
-            "[code] SQL keyword not uppercase: %s" match)
-           prefix))
-        (unless (re-search-backward ")" beg t)
-          (my-lint-layout-message
-           (concat
-            "[code] SQL portability; in INSERT, "
-            "missing column definitions in parens before VALUES")
-           prefix
-           (save-excursion
-             (goto-char point)
-             (my-lint-layout-current-line-number)))))))
+	     "\\<values\\>"
+	     ;;  Check continued statement
+	     ;;  $sql  =
+	     ;;  $sql .=
+	     ;;  ...
+	     (max (+ beg 500) (point-max))
+	     t)
+	(setq match (match-string 0)
+	      point (point))
+	;; Where is the approximate ")" paren that terminates the INSERT
+	(when (re-search-forward ")" (max (+ beg 500) (point-max)) t)
+	  (setq str (buffer-substring beg (point)))
+	  (when (and (not (string-match "<<<" str))
+		     (> (my-lint-layout-count-char-in-string ?\n str) 3))
+	    (my-lint-layout-message
+	     "possible SQL maintenance problem, HERE doc recommended"
+	     prefix)))
+	(unless (my-lint-layout-string-uppercase-p match)
+	  (my-lint-layout-message
+	   (format
+	    "[code] SQL keyword not uppercase: %s" match)
+	   prefix))
+	(unless (re-search-backward ")" beg t)
+	  (my-lint-layout-message
+	   (concat
+	    "[code] SQL portability; in INSERT, "
+	    "missing column definitions in parens before VALUES")
+	   prefix
+	   (save-excursion
+	     (goto-char point)
+	     (my-lint-layout-current-line-number)))))))
     (when end
       (goto-char end)))))
 
@@ -1710,7 +1710,7 @@ Return variable content string."
 	     (concat
 	      "[code] deprecated 'var'; expecting "
 	      "private, public etc. access modifiers")
-             prefix))
+	     prefix))
 	   ((string-match
 	     my-lint-layout-generic-access-modifier-regexp
 	     str)) ;; OK, do nothing
@@ -1734,17 +1734,25 @@ Return variable content string."
       (unless (my-lint-layout-php-doc-above-p)
 	(cond
 	 ;; if (...)
-	 ;;    require "this" . ar;
+	 ;;    require "this" . $var;
 	 ((and (my-lint-layout-conditional-above-p)
 	       (my-lint-layout-looking-at-variable-at-line-p)))
-	 ((and class-p
-	       (my-lint-layout-type-include-string-p str))
+         ((and (or (not class-p)
+                   ;;  Only check outside of class
+                   ;;
+                   ;;  require 'this';
+                   ;;
+                   ;;  class name
+                   ;;      function some ()
+                   ;;         require 'not this';
+                   (< (point) class-p))
+               (my-lint-layout-type-include-string-p str))
 	  (my-lint-layout-message
-	   "[phpdoc] require or include not documented"
+	   "[phpdoc] require or include possibly not documented"
 	   prefix))
 	 ((my-lint-layout-type-function-string-p str)
 	  (my-lint-layout-message
-	   "[phpdoc] function not documented"
+	   "[phpdoc] function possibly not documented"
 	   prefix))
 	 ;; Skip "function files" FIXME: ???
 	 ((my-lint-layout-type-include-string-p str)
@@ -1753,14 +1761,14 @@ Return variable content string."
 	   prefix))
 	 ((my-lint-layout-type-statement-string-p str)
 	  (my-lint-layout-message
-	   "[phpdoc] variable not documented"
+	   "[phpdoc] variable possibly not documented"
 	   prefix)))))))
 
 (defsubst my-lint-layout-php-indent-level (str)
   "Count indent."
   (when str
     (if (string-match "\t" str)
-        (setq str (replace-regexp-in-string "\t" "        " str)))
+	(setq str (replace-regexp-in-string "\t" "        " str)))
     (string-match "^ *" str)
     (length (match-string 0 str))))
 
@@ -1813,13 +1821,13 @@ Return variable content string."
 			 "at col %d where multiple of %d expected")
 		 i
 		 istep)
-         prefix))
+	 prefix))
        ((and base-indent
 	     (not (zerop i))
 	     (eq i base-indent))
 	(my-lint-layout-message
 	 (format "[code] possibly missing indentation at col %d" i)
-         prefix))))))
+	 prefix))))))
 
 (defun my-lint-layout-php-check-keywords-case (keyword fullstr &optional prefix)
   "If statement: check proper and, or, true, false character case."
@@ -1903,9 +1911,9 @@ else
   (when (my-lint-layout-looking-at-comment-line-p)
     (my-lint-layout-message
      (concat "possibly misplaced comment. Expected inside "
-             (if str
-                 (format "'%s' block" str)
-               "next brace block"))
+	     (if str
+		 (format "'%s' block" str)
+	       "next brace block"))
      prefix)))
 
 (defun my-lint-layout-php-check-statement-continue-detach (str &optional prefix)
@@ -1955,7 +1963,7 @@ if ( check );
 	(my-lint-layout-message
 	 (format "possibly misplaced semicolon: %s"
 		 (my-lint-layout-current-line-string))
-         prefix)))))
+	 prefix)))))
 
 (defsubst my-lint-layout-php-brace-statement-forward (&optional max)
   "Search control statement with brace forward."
@@ -2029,7 +2037,7 @@ if ( check );
 	 (format "[code] brace { not directly under keyword '%s', expect col %d"
 		 (or keyword "")
 		 statement-start-col)
-         prefix)))))
+	 prefix)))))
 
 ;;; ........................................................ &conflict ...
 
@@ -2096,37 +2104,37 @@ if ( check );
 KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-generic'
 and `my-lint-layout-php-function-call-keywords-no-paren'."
   (let* ((re-paren
-          (concat my-lint-layout-php-function-call-keywords-generic
-                  "\\([ \t]*\\)("))
-         (re-noparen
-          (concat my-lint-layout-php-function-call-keywords-no-paren
-                  "\\([ \t]*\\)[('\"$]"))
-         (re (concat re-paren "\\|" re-noparen))
-         keyword
-         class-p
-         function-p
-         str
-         indent
-         line)
+	  (concat my-lint-layout-php-function-call-keywords-generic
+		  "\\([ \t]*\\)("))
+	 (re-noparen
+	  (concat my-lint-layout-php-function-call-keywords-no-paren
+		  "\\([ \t]*\\)[('\"$]"))
+	 (re (concat re-paren "\\|" re-noparen))
+	 keyword
+	 class-p
+	 function-p
+	 str
+	 indent
+	 line)
     (save-excursion
       (goto-char (point-min))
       (setq class-p (my-lint-layout-search-forward-class-p)))
     (while (re-search-forward re nil t)
       (setq str (match-string 0))
       (when (string-match "^\\(.*\\([ \t]*\\)\\)[('\"$]" str)
-        (setq keyword (match-string 1 str)
-              indent  (match-string 2 str))
-        (my-lint-layout-php-check-keyword-spelling-lowercase keyword prefix)
-        (when (> (length indent) 0)
-          (my-lint-layout-php-check-keywords-error-opening-paren-leading
-           str prefix))
-        (when (eq (char-before (point)) ?\()
-          (when (looking-at "[ \t]")
-            (my-lint-layout-php-check-keywords-error-opening-paren-trailing
-             str prefix))
-          (when (looking-at "[^)\r\n]+[ \t])")
-            (my-lint-layout-php-check-keywords-error-closing-paren-leading
-             (match-string 0) prefix)))))))
+	(setq keyword (match-string 1 str)
+	      indent  (match-string 2 str))
+	(my-lint-layout-php-check-keyword-spelling-lowercase keyword prefix)
+	(when (> (length indent) 0)
+	  (my-lint-layout-php-check-keywords-error-opening-paren-leading
+	   str prefix))
+	(when (eq (char-before (point)) ?\()
+	  (when (looking-at "[ \t]")
+	    (my-lint-layout-php-check-keywords-error-opening-paren-trailing
+	     str prefix))
+	  (when (looking-at "[^)\r\n]+[ \t])")
+	    (my-lint-layout-php-check-keywords-error-closing-paren-leading
+	     (match-string 0) prefix)))))))
 
 ;;; ........................................................ &spelling ...
 
@@ -2180,7 +2188,7 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 	(my-lint-layout-message
 	 (format "[misc] no exact EOF marker found: '%s'"
 		 my-lint-layout-eof-regexp)
-         prefix)))))
+	 prefix)))))
 
 (defun my-lint-layout-check-eof-marker-interactive ()
   "Near the last line of file find text `my-lint-layout-eof-regexp'."
@@ -2212,8 +2220,8 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
   (while (re-search-forward "^[ \t]*\r?\n\\([ \t]*\r?\n\\)+" nil t)
     (my-lint-layout-message
      (format "[newline] extra newline(s) %d found above"
-             (1- (my-lint-layout-count-lines-in-string
-                  (match-string 0))))
+	     (1- (my-lint-layout-count-lines-in-string
+		  (match-string 0))))
      prefix)))
 
 (defun my-lint-layout-whitespace-at-eob (&optional prefix)
@@ -2403,17 +2411,17 @@ Should be called right after `my-lint-layout-copyright-search-forward'."
 	nil)
        ;; <p>Copyright &copy; 2009 - Restaurant Le Crotte</p>
        ((and (not (string-match "&copy" string))
-             (not (string-match "<..?>" string))
-             (not (string-match "@" string))
+	     (not (string-match "<..?>" string))
+	     (not (string-match "@" string))
 	     ;; content="..."
-             (not (string-match "[a-z][ \t]*=" string)))
+	     (not (string-match "[a-z][ \t]*=" string)))
 	(my-lint-layout-message
 	 (format "[copyright] possibly missing email address: %s" string)
-         prefix))
+	 prefix))
        (t
 	(my-lint-layout-message
 	 (format "[copyright] missing <> around email address: %s" string)
-         prefix))))
+	 prefix))))
     (when (and (looking-at ".*<\\(.+\\)>")
 	       (string-match
 		"foo\\|bar\\|quux\\|example"
@@ -2492,7 +2500,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	 (format
 	  "[changelog] change marker, extra spaces after '(%s):'"
 	  change)
-         prefix))
+	 prefix))
       (unless (looking-at "[ \r\n]")
 	(my-lint-layout-message
 	 (format
@@ -2520,19 +2528,19 @@ Optional PREFIX is used add filename to the beginning of line."
       (when (looking-at "?:  ")
 	(my-lint-layout-message
 	 "[changelog] at *, extra space after pathname"
-         prefix))
+	 prefix))
       (when (looking-at ":?[ \t]*([^)\r\n]+):  ")
 	(my-lint-layout-message
 	 "[changelog] at *, extra space after (marker):"
-         prefix))
+	 prefix))
       (when (looking-at ":?[ \t]*([^)\r\n]+):[^ \t\r\n]")
 	(my-lint-layout-message
 	 "[changelog] at *, no space after (marker):"
-         prefix))
+	 prefix))
       (when (and (not (looking-at ":?[ \r\n]")))
 	(my-lint-layout-message
 	 "[changelog] at *, need one space after pathname"
-         prefix))
+	 prefix))
       (when word
 	(my-lint-layout-word-tense
 	 word
@@ -2541,7 +2549,7 @@ Optional PREFIX is used add filename to the beginning of line."
 		 (not (string= " " indent)))
 	(my-lint-layout-message
 	 "[changelog] not exactly one space after character '*'"
-         prefix))
+	 prefix))
       (forward-line 1))))
 
 (defun my-lint-layout-changelog-check-main (&optional prefix)
@@ -2974,15 +2982,15 @@ Note, that the statement does not necessarily haave VLAUES part.
 This can be tested with `looking-at' at the position of point:
 
     INSERT INTO table (<values>) ;
-                                 |
-                                 Point"
+				 |
+				 Point"
   ;; FIXEME; This does not work if the data contains ")"
   (re-search-forward
    `,(concat
       "^[ \t]*"
-      "\\(insert[ \t\r\n]+into\\>\\)"	    ; 1 keyword
+      "\\(insert[ \t\r\n]+into\\>\\)"       ; 1 keyword
       "[ \t\r\n]+"
-      "\\([^ \t\r\n]+\\)"		    ; 2 table name
+      "\\([^ \t\r\n]+\\)"                   ; 2 table name
       "\\([ \t\r\n]*([^)]+\\))*"
       "[ \t\r\n]*"                          ; 3 (values)
       "\\(VALUES\\)[ \t\r\n]+")             ; 4 keyword
@@ -3003,7 +3011,7 @@ col
 	      (not (zerop (% i 4))))
 	  (my-lint-layout-message
 	   (format "[sql] possibly incorrect indentation at col %d" i)
-           prefix)))))
+	   prefix)))))
 
 (defsubst my-lint-layout-sql-check-mixed-case
   (str message &optional prefix line)
@@ -3131,11 +3139,11 @@ LINE is added to current line number."
   "Check YYYY-MM-DD in string.
 LINE is added to current line number."
   (let ((re `,(concat
-               "\\(.\\)"
-               "[0-9]\\{4,4\\}-[0-9][0-9]-[0-9][0-9]" ;; YYYY-MM-DD
-               ;; HH:MM:SS
-               "\\(?:[ \t]+[0-9][0-9]\\(?::[0-9][0-9]\\)\\{1,2\\}?\\)?"
-               "\\(.?\\)"))
+	       "\\(.\\)"
+	       "[0-9]\\{4,4\\}-[0-9][0-9]-[0-9][0-9]" ;; YYYY-MM-DD
+	       ;; HH:MM:SS
+	       "\\(?:[ \t]+[0-9][0-9]\\(?::[0-9][0-9]\\)\\{1,2\\}?\\)?"
+	       "\\(.?\\)"))
 	match
 	open
 	close)
@@ -3250,13 +3258,13 @@ The value of LINE is added to current line. PREFIX."
 			  (my-lint-layout-sql-statement-end-forward)))
 	      (my-lint-layout-message
 	       "[sql] in INSERT, cannot find statement end marker(;)"
-               prefix)
+	       prefix)
 	    (my-lint-layout-sql-check-insert-into-values-part
 	     beg end prefix line))))
        (t
 	(my-lint-layout-message
 	 "[sql] in INSERT, column names not listed"
-         prefix)
+	 prefix)
 	(my-lint-layout-sql-check-insert-into-values-part
 	 paren-beg paren-end prefix line))))))
 
@@ -3382,7 +3390,7 @@ The submatches are as follows. The point is at '!':
 	col)
     (while (re-search-forward "\\(.\\)\\(<>\\|=[<>]?\\)\\(.\\)" nil t)
       (setq match  (match-string 0)
-            before (match-string 1)
+	    before (match-string 1)
 	    sign   (match-string 2)
 	    after  (match-string 3)
 	    col    (1- (current-column))
@@ -3455,10 +3463,10 @@ The submatches are as follows. The point is at '!':
       (my-lint-layout-sql-check-statement-select-from-part-quotes)
       ;; FIXME indentation checks
 ;;       (let (match)
-;; 	(while (re-search-forward "\\([^ ,\t\r\n]+\\)" nil t)
-;; 	  (setq match (match-string 1))
-;; 	  (my-lint-layout-sql-check-statement-select-from-part-keyword-case
-;;	   match prefix line)))
+;;      (while (re-search-forward "\\([^ ,\t\r\n]+\\)" nil t)
+;;        (setq match (match-string 1))
+;;        (my-lint-layout-sql-check-statement-select-from-part-keyword-case
+;;         match prefix line)))
       )))
 
 (defun my-lint-layout-sql-check-statement-select-main (&optional prefix)
@@ -3490,7 +3498,7 @@ The submatches are as follows. The point is at '!':
 	 (format "[sql] In SELECT, keyword not uppercase: %s" from)
 	 (save-excursion
 	  (goto-char fromp)
-          prefix
+	  prefix
 	  (my-lint-layout-current-line-number))))
       (my-lint-layout-sql-check-statement-select-display-part
        beg end prefix line)
@@ -3543,7 +3551,7 @@ The submatches are as follows. The point is at '!':
 	  (my-lint-layout-sql-create-table-error-data-type-abbrev
 	   (match-string 0 string)
 	   string
-           prefix
+	   prefix
 	   (or line
 	       (my-lint-layout-current-line-number))))
 	(when (let ((case-fold-search t))
@@ -3612,7 +3620,7 @@ The submatches are as follows. The point is at '!':
   (str match &optional line prefix)
   (my-lint-layout-message
    (format "[sql] in CREATE TABLE, reserved keyword '%s' before column name: %s"
-           match str)
+	   match str)
    prefix line))
 
 (defsubst my-lint-layout-sql-create-table-adjust-line-number (str line)
@@ -3631,10 +3639,10 @@ wrong position. Match first non-LF up till last LF"
   ;;     col <TYPE>
   ;;  );
   (when (and (stringp string)
-             (string-match "[^\n][^\001]+\n\\([^\001]*\n\\)" string))
+	     (string-match "[^\n][^\001]+\n\\([^\001]*\n\\)" string))
     (let ((str (match-string 1 string)))
       (setq line
-            (my-lint-layout-sql-create-table-adjust-line-number str line))))
+	    (my-lint-layout-sql-create-table-adjust-line-number str line))))
   line)
 
 (defun my-lint-layout-sql-check-create-table-primary-key
@@ -3658,9 +3666,9 @@ wrong position. Match first non-LF up till last LF"
   ;;       abc_column
   ;;       ...
   (when (and table
-             (string-match
-              (format "^%s_" (regexp-quote table))
-              colname))
+	     (string-match
+	      (format "^%s_" (regexp-quote table))
+	      colname))
     (my-lint-layout-message
      (format
       "[sql] in CREATE TABLE, unnecessary table name '%s' prefix in column: %s"
@@ -3671,7 +3679,7 @@ wrong position. Match first non-LF up till last LF"
   (string &optional prefix line table)
   "Examine column defintion in STRING."
   (let ((re `,(concat
-               ;; PRIMARY KEY(user_id),
+	       ;; PRIMARY KEY(user_id),
 	       ;; col DECIMAL(1, 3)  PRIMARY KEY NOT NULL
 	       ;;
 	       ;; <col name> <type> <rest>
@@ -3682,56 +3690,56 @@ wrong position. Match first non-LF up till last LF"
 	       "\\(.*\\)")))         ;; 3
     (when (string-match re string)
       (let* ((match (match-string 0 string))
-             (name  (match-string 1 string))
-             (fulltype  (match-string 2 string))
-             (type  (match-string 3 string))
-             (rest  (match-string 4 string)))
-        (cond
-         ((string-match "primary[ \t\r\n]+key" string)
-          (my-lint-layout-sql-check-create-table-primary-key
-           name string line prefix))
-         ((string-match
-           (concat "^[ \t\r\n]*"
-                   my-lint-layout-sql-keywords-sql92-for-column)
-           match)
-          (my-lint-layout-sql-check-create-table-non-column-name
-           match (match-string 0 match) line prefix)))
-        (my-lint-layout-sql-check-create-table-table-prefix
-         name table line prefix)
-        (my-lint-layout-debug-message
-         "debug layout: CREATE A col part %d <<%s>>" line string)
-        (setq line
-              (my-lint-layout-sql-create-table-adjust-line-maybe
-               string line))
-        (my-lint-layout-debug-message
-         "debug layout: CREATE col part %d [[%s]]" line string)
+	     (name  (match-string 1 string))
+	     (fulltype  (match-string 2 string))
+	     (type  (match-string 3 string))
+	     (rest  (match-string 4 string)))
+	(cond
+	 ((string-match "primary[ \t\r\n]+key" string)
+	  (my-lint-layout-sql-check-create-table-primary-key
+	   name string line prefix))
+	 ((string-match
+	   (concat "^[ \t\r\n]*"
+		   my-lint-layout-sql-keywords-sql92-for-column)
+	   match)
+	  (my-lint-layout-sql-check-create-table-non-column-name
+	   match (match-string 0 match) line prefix)))
+	(my-lint-layout-sql-check-create-table-table-prefix
+	 name table line prefix)
+	(my-lint-layout-debug-message
+	 "debug layout: CREATE A col part %d <<%s>>" line string)
+	(setq line
+	      (my-lint-layout-sql-create-table-adjust-line-maybe
+	       string line))
+	(my-lint-layout-debug-message
+	 "debug layout: CREATE col part %d [[%s]]" line string)
 	(my-lint-layout-sql-check-mixed-case
 	 name
 	 (format
 	  "[sql] in CREATE TABLE, portability problem with mixed case: %s"
 	  name)
-         prefix line)
-        ;; PRIMARY KEY (a, b)
-        (unless (string-match "^[ \t\r\n]*primary[ \t\r\n]+key" string)
-          (my-lint-layout-sql-check-column-charset
-           match
-           (format "[sql] in CREATE TABLE, non-alphadigit characters: %s"
-                   match)
-           prefix line)
-          (when fulltype
-            (my-lint-layout-sql-check-create-table-col-part-lower
-             fulltype prefix line))
-          (unless (string-match
-                   my-lint-layout-sql-keywords-sql-types
-                   type)
-            (my-lint-layout-message
-             (format
-              "[sql] in CREATE TABLE, non-standard or unknown data type: %s"
-              type)
-             prefix line))
-          (unless (string= "" rest)
-            (my-lint-layout-sql-check-create-table-col-part-rest
-             rest prefix line)))
+	 prefix line)
+	;; PRIMARY KEY (a, b)
+	(unless (string-match "^[ \t\r\n]*primary[ \t\r\n]+key" string)
+	  (my-lint-layout-sql-check-column-charset
+	   match
+	   (format "[sql] in CREATE TABLE, non-alphadigit characters: %s"
+		   match)
+	   prefix line)
+	  (when fulltype
+	    (my-lint-layout-sql-check-create-table-col-part-lower
+	     fulltype prefix line))
+	  (unless (string-match
+		   my-lint-layout-sql-keywords-sql-types
+		   type)
+	    (my-lint-layout-message
+	     (format
+	      "[sql] in CREATE TABLE, non-standard or unknown data type: %s"
+	      type)
+	     prefix line))
+	  (unless (string= "" rest)
+	    (my-lint-layout-sql-check-create-table-col-part-rest
+	     rest prefix line)))
 	)))) ;; let
 
 (defun my-lint-layout-sql-check-statement-create-tables-no-semicolon
@@ -3764,22 +3772,22 @@ An example:
   ;;      size DECIMAL(11,2) NOT NULL,
   ;;
   (when (re-search-forward
-         ;; <col>  <type>(3,2),
-         "[ \t]*\\([^,]+\\(?:,[ \t\r\n]*[0-9]+[ \t\r\n]*)[^,]*\\)?\\)"
-         nil t)
+	 ;; <col>  <type>(3,2),
+	 "[ \t]*\\([^,]+\\(?:,[ \t\r\n]*[0-9]+[ \t\r\n]*)[^,]*\\)?\\)"
+	 nil t)
     (let ((beg (match-beginning 0))
-          (end (match-end 0))
-          (str (match-string 0))
-          (m1b (match-beginning 1))
-          (m1e (match-end 1))
-          (str1 (match-string 1)))
+	  (end (match-end 0))
+	  (str (match-string 0))
+	  (m1b (match-beginning 1))
+	  (m1e (match-end 1))
+	  (str1 (match-string 1)))
       (when (and (not (looking-at ","))
-                 (string-match "\\<primary[ \t\r\n]+key\\>" str)
-                 (my-lint-layout-sql-check-create-table-segment-primitive))
-        ;;  Add a little more
-        (let ((add (match-string 1)))
-          (setq m1e (point)
-                str1 (concat str1 add))))
+		 (string-match "\\<primary[ \t\r\n]+key\\>" str)
+		 (my-lint-layout-sql-check-create-table-segment-primitive))
+	;;  Add a little more
+	(let ((add (match-string 1)))
+	  (setq m1e (point)
+		str1 (concat str1 add))))
       (list
        beg end str m1b m1e str1))))
 
@@ -3787,25 +3795,25 @@ An example:
   (&optional prefix line table)
   "Check multiple columen definitions at the same line."
   (let (info
-        match
+	match
 	curline)
     (while (setq info
-                 (my-lint-layout-sql-check-create-table-segment-forward))
+		 (my-lint-layout-sql-check-create-table-segment-forward))
       (multiple-value-bind (beg end str m1b m1e match) info
-        (setq curline (if line
-                          (+ line (1- (my-lint-layout-current-line-number)))
-                        (my-lint-layout-current-line-number)))
-        (my-lint-layout-debug-message
-         "debug layout: multiple-col-defs %d '%s'" curline match)
-        ;; Multiple, definitions, in line
-        ;; FIXME: Does not handle comments
-        (when (looking-at ",.*[,;]")
-          (my-lint-layout-message
-           "[sql] in CREATE TABLE, possibly multiple columns(,) definitions"
-           prefix
-           curline))
-        (my-lint-layout-sql-check-create-table-col-part
-         match prefix curline table)))))
+	(setq curline (if line
+			  (+ line (1- (my-lint-layout-current-line-number)))
+			(my-lint-layout-current-line-number)))
+	(my-lint-layout-debug-message
+	 "debug layout: multiple-col-defs %d '%s'" curline match)
+	;; Multiple, definitions, in line
+	;; FIXME: Does not handle comments
+	(when (looking-at ",.*[,;]")
+	  (my-lint-layout-message
+	   "[sql] in CREATE TABLE, possibly multiple columns(,) definitions"
+	   prefix
+	   curline))
+	(my-lint-layout-sql-check-create-table-col-part
+	 match prefix curline table)))))
 
 (defun my-lint-layout-sql-check-statement-data-type-line-up
   (&optional prefix line table)
@@ -3815,17 +3823,17 @@ CREATE TABLE table
 \(
     col   INTEGER,
     col   VARCHAR(80),
-          |
-          line up"
+	  |
+	  line up"
   (let ((re (concat
-             "[ \t\r\n]\\("
-             my-lint-layout-sql-keywords-sql-types
-             "\\)[ ,(\t\r\n]"
-             ))
-        orig-col
-        match
-        curline
-        col)
+	     "[ \t\r\n]\\("
+	     my-lint-layout-sql-keywords-sql-types
+	     "\\)[ ,(\t\r\n]"
+	     ))
+	orig-col
+	match
+	curline
+	col)
   (while (re-search-forward re nil t)
     (save-excursion
       (goto-char (match-beginning 0))
@@ -3836,12 +3844,12 @@ CREATE TABLE table
      ((not (eq col orig-col))
       (setq match (match-string 1))
       (setq curline (if line
-                        (+ line (1- (my-lint-layout-current-line-number)))
-                      (my-lint-layout-current-line-number)))
+			(+ line (1- (my-lint-layout-current-line-number)))
+		      (my-lint-layout-current-line-number)))
       (my-lint-layout-message
        (format
-        "[sql] In CREATE TABLE, data type possibly not lined-up with previous: %s"
-        match)
+	"[sql] In CREATE TABLE, data type possibly not lined-up with previous: %s"
+	match)
        prefix curline))))))
 
 (defun my-lint-layout-sql-check-statement-create-table-part
@@ -3854,12 +3862,12 @@ CREATE TABLE table
       (my-lint-layout-sql-clean-comments-buffer)
       (dolist (function
 	       '(my-lint-layout-sql-check-element-indentation
-                 my-lint-layout-sql-check-statement-data-type-line-up
+		 my-lint-layout-sql-check-statement-data-type-line-up
 		 my-lint-layout-sql-check-statement-create-tables-no-semicolon
 		 my-lint-layout-sql-check-create-table-multiple-col-defs))
 	(goto-char (point-min))
-        (my-lint-layout-debug-message
-         "debug layout: %s prefix %s line %s" function prefix (or line 0))
+	(my-lint-layout-debug-message
+	 "debug layout: %s prefix %s line %s" function prefix (or line 0))
 	(funcall function prefix line table)))))
 
 (defsubst my-lint-layout-create-table-forward ()
@@ -3911,8 +3919,8 @@ The submatches are as follows: The point is at '!':
 	end)
     (while (my-lint-layout-create-table-forward)
       (setq point   (match-beginning 0)
-            match   (match-string 0)
-            keyword (match-string 1)
+	    match   (match-string 0)
+	    keyword (match-string 1)
 	    table   (match-string 2)
 	    beg     (match-beginning 3)
 	    end     (point)
@@ -3950,17 +3958,17 @@ The submatches are as follows: The point is at '!':
   "Signal error: non-standard SQL comment."
     (my-lint-layout-message
      (format "[sql] non-standard comment syntax%s"
-             (if str
-                 (format ": %s" str)
-               ""))
+	     (if str
+		 (format ": %s" str)
+	       ""))
      prefix
      (or line (my-lint-layout-current-line-number))))
 
 (defsubst my-lint-layout-sql-check-comment-leading (&optional prefix)
   "Check SQL comments."
   (while (re-search-forward
-          "^[ \t]*\\(#\\|/[*]\\|//\\)"
-          nil t)
+	  "^[ \t]*\\(#\\|/[*]\\|//\\)"
+	  nil t)
     (my-lint-layout-sql-error-non-standard-comment
      nil prefix (match-string 1))))
 
@@ -3968,12 +3976,12 @@ The submatches are as follows: The point is at '!':
   "Check SQL comments."
   (let (str)
     (while (re-search-forward
-            "\\(#+[^#\r\n]*\\|/[*].*[*]/\\)[ \t]*\r?\n"
-            nil t)
+	    "\\(#+[^#\r\n]*\\|/[*].*[*]/\\)[ \t]*\r?\n"
+	    nil t)
       (setq str (match-string 1))
       (save-excursion
-        (goto-char (match-beginning 1))
-        (my-lint-layout-sql-error-non-standard-comment nil prefix str)))))
+	(goto-char (match-beginning 1))
+	(my-lint-layout-sql-error-non-standard-comment nil prefix str)))))
 
 (defun my-lint-layout-sql-check-comments (&optional prefix)
   "Check SQL comments from `current-point'. Save point."
@@ -4048,96 +4056,96 @@ The submatches are as follows: The point is at '!':
   background:   #FFFF;
   margin-left:  1px;"
   (let ((re   `,(concat
-                 ;; margin-left: 8px;
-                 "^[ \t]*"
-                 "\\("                      ;1
-                     "\\([^ ;\t\r\n]+\\)"   ;2
-                     "\\([ \t]*\\)"         ;3
-                     ":"
-                     "\\([ \t]*\\)"         ;4
-                     "\\([^ ;\t\r\n]+\\)"   ;5
-                  "\\)"
-                 ";"))
-        orig-col
-        str
-        match
-        attribute
-        space1
-        space2
-        value
-        val-beg
-        match
-        line
-        point
-        col)
+		 ;; margin-left: 8px;
+		 "^[ \t]*"
+		 "\\("                      ;1
+		     "\\([^ ;\t\r\n]+\\)"   ;2
+		     "\\([ \t]*\\)"         ;3
+		     ":"
+		     "\\([ \t]*\\)"         ;4
+		     "\\([^ ;\t\r\n]+\\)"   ;5
+		  "\\)"
+		 ";"))
+	orig-col
+	str
+	match
+	attribute
+	space1
+	space2
+	value
+	val-beg
+	match
+	line
+	point
+	col)
     (save-excursion
       (goto-char beg)
       (while (re-search-forward re end t)
-        (setq str       (match-string 0)
-              match     (match-string 1)
-              attribute (match-string 2)
-              space1    (match-string 3)
-              space2    (match-string 4)
-              value     (match-string 5)
-              val-beg   (match-beginning 5)
-              point     (point))
-        (goto-char val-beg)
-        (setq col (current-column))
-        (goto-char point)
+	(setq str       (match-string 0)
+	      match     (match-string 1)
+	      attribute (match-string 2)
+	      space1    (match-string 3)
+	      space2    (match-string 4)
+	      value     (match-string 5)
+	      val-beg   (match-beginning 5)
+	      point     (point))
+	(goto-char val-beg)
+	(setq col (current-column))
+	(goto-char point)
 	(my-lint-layout-debug-message
 	 "%s" match)
-        (cond
-         ((not orig-col)
-          (setq orig-col col))
-         ((not (eq col orig-col))
-          (my-lint-layout-message
-           "[css] attribute's value not lined-up with previous"
-           prefix
-           (my-lint-layout-current-line-number))))
-        (when (string-match "font-size" match)
-          ;; font-size: .8em;
-          (when (string-match "[^0-9]\\(\\.[0-9]+\\)" match)
-            (my-lint-layout-message
-             (format
-              "[css] missing leading zero: %s"
-              match)
-             prefix))
-          (when (string-match "[0-9]\\(pt\\|px\\)" match)
-            (my-lint-layout-message
-             (format
-              "[css] possibly portability issue with '%s', em recommended: '%s'"
-              (match-string 1 match)
-              match)
-             prefix)))
-        (when (string-match "font-family" str)
-          (unless (string-match
-                   ",[ \t\r\n]*\\(?:\\(sans-\\)?serif\\|monospace\\|cursive\\)"
-                   str)
-            (my-lint-layout-message
-             (format
-              "[css] portability; no last resort font sans-serif or serif listed: %s"
-              str)
-             prefix))
-          (unless (string-match my-lint-layout-css-web-safe-font-regexp str)
-            (let ((fonts (mapconcat
-                          '(lambda (x)
-                             (capitalize x))
-                          my-lint-layout-css-web-safe-font-list
-                          ",")))
-              (my-lint-layout-message
-               (format
-                "[css] portability; no web safe font (e.g. %s) listed: %s"
-                fonts str)
-               prefix))))
-        (when (> (length space1) 0)
-          (my-lint-layout-message
-           (format "[css] extra space before colon: %s" match)
-           prefix))
-        (my-lint-layout-css-indent-level prefix)
-        (my-lint-layout-css-attribute prefix)
-        (my-lint-layout-css-color prefix)
-        (my-lint-layout-php-check-multiple-statements
-         "[css] multiple attribute definitions (only one expected)")))))
+	(cond
+	 ((not orig-col)
+	  (setq orig-col col))
+	 ((not (eq col orig-col))
+	  (my-lint-layout-message
+	   "[css] attribute's value not lined-up with previous"
+	   prefix
+	   (my-lint-layout-current-line-number))))
+	(when (string-match "font-size" match)
+	  ;; font-size: .8em;
+	  (when (string-match "[^0-9]\\(\\.[0-9]+\\)" match)
+	    (my-lint-layout-message
+	     (format
+	      "[css] missing leading zero: %s"
+	      match)
+	     prefix))
+	  (when (string-match "[0-9]\\(pt\\|px\\)" match)
+	    (my-lint-layout-message
+	     (format
+	      "[css] possibly portability issue with '%s', em recommended: '%s'"
+	      (match-string 1 match)
+	      match)
+	     prefix)))
+	(when (string-match "font-family" str)
+	  (unless (string-match
+		   ",[ \t\r\n]*\\(?:\\(sans-\\)?serif\\|monospace\\|cursive\\)"
+		   str)
+	    (my-lint-layout-message
+	     (format
+	      "[css] portability; no last resort font sans-serif or serif listed: %s"
+	      str)
+	     prefix))
+	  (unless (string-match my-lint-layout-css-web-safe-font-regexp str)
+	    (let ((fonts (mapconcat
+			  '(lambda (x)
+			     (capitalize x))
+			  my-lint-layout-css-web-safe-font-list
+			  ",")))
+	      (my-lint-layout-message
+	       (format
+		"[css] portability; no web safe font (e.g. %s) listed: %s"
+		fonts str)
+	       prefix))))
+	(when (> (length space1) 0)
+	  (my-lint-layout-message
+	   (format "[css] extra space before colon: %s" match)
+	   prefix))
+	(my-lint-layout-css-indent-level prefix)
+	(my-lint-layout-css-attribute prefix)
+	(my-lint-layout-css-color prefix)
+	(my-lint-layout-php-check-multiple-statements
+	 "[css] multiple attribute definitions (only one expected)")))))
 
 (defsubst my-lint-layout-css-body-end ()
   "Search body end poistion."
@@ -4164,11 +4172,11 @@ The submatches are as follows: The point is at '!':
 	col
 	len
 	statement-p
-        lines
-        beg)
+	lines
+	beg)
     (while (re-search-forward "{\\([ \t\r\n]*\\)" nil t)
       (setq beg      (match-beginning 0)
-            col      (current-column)
+	    col      (current-column)
 	    str      (match-string 1)
 	    lines    (my-lint-layout-count-lines-in-string str))
       (my-lint-layout-css-skip-comment)
@@ -4176,16 +4184,16 @@ The submatches are as follows: The point is at '!':
        ((eq lines 0)
 	(my-lint-layout-message
 	 "[css] no newline after token '{'"
-         prefix))
+	 prefix))
       ((> lines 1)
 	(my-lint-layout-message
 	 (format "[css] extra %d empty lines after token '{'" (1- lines))
-         prefix)))
+	 prefix)))
       (my-lint-layout-current-line-string)
       (when (looking-at ".*}")
 	(my-lint-layout-message
 	 "[css] inline {} body, expect line-up"
-         prefix))
+	 prefix))
       (when (looking-at ".*;\\([^ \t\r\n]\\)")
 	(my-lint-layout-message
 	 (format "[css] non-whitespace character after semicolon: %s" (match-string 1))
@@ -4194,7 +4202,7 @@ The submatches are as follows: The point is at '!':
 	(my-lint-layout-message
 	 (format "[css] not indented (by %d)"
 		 my-lint-layout-generic-indent-step)
-         prefix))
+	 prefix))
       ;;   background-color: #F8F8F8; border: 1px;
       (my-lint-layout-php-check-multiple-statements
        "[css] Multiple(;) attribute definitions, only one expected"
@@ -4207,8 +4215,8 @@ The submatches are as follows: The point is at '!':
   (let (list)
     (while (setq list (my-lint-layout-generic-comment-multiline-stars))
       (multiple-value-bind (beg end point) list
-        (my-lint-layout-generic-check-comment-multiline-stars
-         beg end prefix)))))
+	(my-lint-layout-generic-check-comment-multiline-stars
+	 beg end prefix)))))
 
 (defun my-lint-layout-css-comment-multiline-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-css-comment-multiline-forward'."
@@ -4225,7 +4233,7 @@ The submatches are as follows: The point is at '!':
 	  (my-lint-layout-message
 	   (format "[css] possibly misplaced doc-block: %s"
 		   (my-lint-layout-current-line-string))
-           prefix))))))
+	   prefix))))))
 
 (defvar my-lint-layout-css-check-regexp-occur-variable
   '(my-lint-layout-generic-check-regexp-occur-line-up-style-list)
@@ -4259,7 +4267,7 @@ The submatches are as follows: The point is at '!':
 (defun my-lint-layout-php-test-line-up-p (&optional col)
   "Check current `current-column' or COL for '=' and next line."
   (let ((treshold my-lint-layout-generic-assignment-line-up-treshold)
-        (ret t)
+	(ret t)
 	next)
     (or col
 	(setq col (current-column)))
@@ -4290,7 +4298,7 @@ The submatches are as follows: The point is at '!':
 	(my-lint-layout-message
 	 (format "[code] assignment(=) at col %d possibly not lined-up"
 		 col)
-         prefix))
+	 prefix))
       (forward-line 1))))
 
 ;;; ............................................................. &doc ...
@@ -4557,7 +4565,7 @@ DATA is the full function content."
 	(my-lint-layout-message
 	 "[phpdoc] text indentation mismatch: lined-upnot same as above."
 	 prefix
-         (my-lint-layout-php-doc-string-narrowed-current-line-number))))))
+	 (my-lint-layout-php-doc-string-narrowed-current-line-number))))))
 
 (defun my-lint-layout-php-doc-examine-content-other--indent-col-error
   (col line &optional prefix)
@@ -4804,7 +4812,7 @@ Point must be at function start line."
 	       beg
 	       end
 	       type
-               (my-lint-layout-current-line-number)
+	       (my-lint-layout-current-line-number)
 	       prefix)))))))))
 
 ;;; ............................................................ &mode ...
@@ -4871,12 +4879,12 @@ Point must be at function start line."
 (defun my-lint-output-mode-goto-line-mouse (event)
   (interactive "e")
   (let* ((epoint (event-start event))
-         (win    (or (and epoint
-                          (nth 0 epoint))
-                     (get-buffer-window (current-buffer))))
-         (point  (or (and epoint
-                          (nth 1 epoint))
-                     (point))))
+	 (win    (or (and epoint
+			  (nth 0 epoint))
+		     (get-buffer-window (current-buffer))))
+	 (point  (or (and epoint
+			  (nth 1 epoint))
+		     (point))))
     (select-window win)
     (goto-char point)
     (my-lint-output-mode-goto-line-key)))
@@ -4907,7 +4915,7 @@ Runs `my-lint-output-mode-hook'."
   (setq buffer-read-only t)
   (my-lint-output-mode-map-define)
   (setq font-lock-defaults
-        my-lint-output-mode-font-lock-keywords)
+	my-lint-output-mode-font-lock-keywords)
   (if (or font-lock-mode
 	  global-font-lock-mode)
       (font-lock-fontify-buffer)))
