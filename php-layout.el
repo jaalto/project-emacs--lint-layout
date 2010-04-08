@@ -3546,7 +3546,7 @@ The submatches are as follows. The point is at '!':
            prefix
 	   (or line
 	       (my-lint-layout-current-line-number))))
-	(when (let ((case-fold-search))
+	(when (let ((case-fold-search t))
 		(string-match "\\<int.*(" string))
 	  (my-lint-layout-sql-create-table-error-data-type-size
 	   string
