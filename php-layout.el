@@ -101,6 +101,7 @@
 ;;
 ;;          my-lint-layout-php-check-all-interactive
 ;;          my-lint-layout-php-check-phpdoc-interactive
+;;          my-lint-layout-php-check-regexp-occur-buffer-interactive
 ;;
 ;;          my-lint-layout-check-whitespace-buffer-interactive
 ;;          my-lint-layout-check-line-length-buffer-interactive
@@ -1042,40 +1043,52 @@ displayed."
      "possibly K&R brace style, expect line-up"))
   "*K&R Brace placement checks.")
 
+(defconst my-lint-layout-generic-check-regexp-occur-global-uppercase
+  (list
+   '("^[ \t]*global[ \t]+\\([$].*[a-z].*\\);"
+     "global variable name not all uppercase"
+     nil
+     t))
+  "*CamelCase variable checks.")
+
 (defconst my-lint-layout-generic-check-regexp-occur-camelcase-style-list
   (list
    '("^[ \t]*[$][a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
      "variable name not CamelCase"
      nil
+     nil
      (lambda ()
        (let ((str (my-lint-layout-current-line-string)))
 	 (my-lint-layout-with-case
 	   ;; Global variable
-	   (not (string-match "[$][A-Z][A-Z0-9]+_" str))))))
-   )
+	   (not (string-match "[$][A-Z][A-Z0-9]+_" str)))))))
   "*CamelCase variable checks.")
 
 (defun my-lint-layout-generic-run-occur-list (list &optional prefix)
   "Check LIST of regexps."
   (let (line)
     (dolist (elt list)
-      (multiple-value-bind (re msg not-re func) elt
+      (multiple-value-bind (re msg not-re case func) elt
 	(save-excursion
-	  (while (re-search-forward re nil t)
-	    (setq line (my-lint-layout-current-line-string))
-	    (when (and (not (my-lint-layout-string-comment-p line))
-		       (or (null not-re)
-			   (not (or (save-match-data (string-match not-re line))
-				    (save-excursion
-				      (goto-char (line-beginning-position))
-				      (looking-at not-re)))))
-		       (or (null func)
-			   (funcall func)))
-	      (my-lint-layout-message
-	       (format "[code] %s: %s"
-		       msg
-		       (my-lint-layout-current-line-string))
-	       prefix))))))))
+	  (let ((case-fold-search (if case
+				      nil
+				    t)))
+	    (while (re-search-forward re nil t)
+	      (setq line (my-lint-layout-current-line-string))
+	      (when (and (not (my-lint-layout-string-comment-p line))
+			 (or (null not-re)
+			     (not (or (save-match-data
+					(string-match not-re line))
+				      (save-excursion
+					(goto-char (line-beginning-position))
+					(looking-at not-re)))))
+			 (or (null func)
+			     (funcall func)))
+		(my-lint-layout-message
+		 (format "[code] %s: %s"
+			 msg
+			 (my-lint-layout-current-line-string))
+		 prefix)))))))))
 
 (defun my-lint-layout-generic-run-occur-variable-list (list &optional prefix)
   "Check LIST of varibales that contain regexps."
@@ -1122,6 +1135,7 @@ displayed."
      "[ \t]*("
      "\\>")
     "Possibly misspelled keyword, expect lowercase"
+    nil
     nil
     '(lambda ()
        (let* ((str   (match-string 0))
@@ -1277,6 +1291,7 @@ displayed."
    '("[!=]=[ \t]*\\(null\\|true\\|false\\)"
      "possibly unnecessary test against literal"
      nil
+     nil
      (lambda ()
        (not
 	;;  Skip PHPUnit tests
@@ -1287,7 +1302,7 @@ displayed."
 
    '("\\<function[ \t]+\\(de\\|con\\)struct"
      "possibly mispelled __(de|con)struct"))
-  "Search ((REGEXP MESSAGE [NOT-REGEXP] [FUNC]) ..).
+  "Search ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
 
 See `my-lint-layout-generic-run-occur-list'.")
 
@@ -1295,6 +1310,7 @@ See `my-lint-layout-generic-run-occur-list'.")
   '(my-lint-layout-php-check-regexp-occur-modern-style-list
     my-lint-layout-php-check-regexp-occur-list
     my-lint-layout-generic-check-regexp-occur-camelcase-style-list
+    my-lint-layout-generic-check-regexp-occur-global-uppercase
     my-lint-layout-generic-check-regexp-occur-line-up-style-list)
   "*List of occur variable names.")
 
