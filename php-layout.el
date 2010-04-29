@@ -1475,7 +1475,7 @@ Return variable content string."
 		    3))
 	(setq lines (my-lint-layout-count-lines-in-string str))
 	(my-lint-layout-message
-	 "SQL maintenance problem, better use HERE doc syntax (<<<)"
+	 "possible SQL maintenance problem, HERE doc syntax recommended."
 	 prefix
 	 (- (my-lint-layout-current-line-number) lines))))))
 
@@ -1645,6 +1645,21 @@ Return variable content string."
       (my-lint-layout-php-check-input-form-string
        (buffer-substring beg end) line prefix)))))
 
+(defun my-lint-layout-php-here-doc-nearby-p (&optional point)
+  "Return location if HERE doc is around `point'."
+  (or point
+      (setq point (point)))
+  (let* ((range 400) ; 400 = approx 5 x 80 line range
+         (min (max (- point range) (point-min)))
+         (found
+          (string-match
+           "<<<"
+          (buffer-substring-no-properties
+           min
+           (min (+ point range) (point-max))))))
+    (if found
+        (+ min found))))
+
 (defun my-lint-layout-php-check-sql-kwd-statements (&optional prefix)
   "Check SQL statements and keywords in uppercase."
   (let ((re `,(concat
@@ -1657,7 +1672,7 @@ Return variable content string."
 	beg
 	end)
   (while (re-search-forward re nil t)
-    (setq beg   (match-beginning 0)
+    (setq beg  (match-beginning 0)
 	  match (match-string 1))
 	  ;; end   (my-lint-layout-search-forward-ending-semicolon))
     (unless (my-lint-layout-string-uppercase-p match)
@@ -1674,15 +1689,15 @@ Return variable content string."
 	     ;;  $sql  =
 	     ;;  $sql .=
 	     ;;  ...
-	     (max (+ beg 500) (point-max))
+	     (max (+ beg 1500) (point-max))
 	     t)
-	(setq match (match-string 0)
+	(setq match (match-string-no-properties 0)
 	      point (point))
 	;; Where is the approximate ")" paren that terminates the INSERT
-	(when (re-search-forward ")" (max (+ beg 500) (point-max)) t)
-	  (setq str (buffer-substring beg (point)))
-	  (when (and (not (string-match "<<<" str))
-		     (> (my-lint-layout-count-char-in-string ?\n str) 3))
+	(when (re-search-forward ")" (max (+ beg 1500) (point-max)) t)
+	  (setq str (buffer-substring-no-properties beg (point)))
+	  (when (and (> (my-lint-layout-count-char-in-string ?\n str) 3)
+                     (not (my-lint-layout-php-here-doc-nearby-p point)))
 	    (my-lint-layout-message
 	     "possible SQL maintenance problem, HERE doc recommended"
 	     prefix)))
@@ -4718,24 +4733,24 @@ Input:
 Return:
   point"
   (let (indent-string
-        point)
+	point)
     (or column
-        (setq column (current-column)))
+	(setq column (current-column)))
     ;; FIXME: convert `indent' from tabs to spaces.
     (setq indent-string (make-string column ?\ ))
     (or
      ;; Rely on same indentation to close the function
      (and indent
-          (re-search-forward (concat "^" indent "}") nil t)
-          (setq point (point)))
+	  (re-search-forward (concat "^" indent "}") nil t)
+	  (setq point (point)))
      (and column
-          ;; 2. or, Same column
-          (let (done)
-            (while (and (not point)
-                        (re-search-forward "}")
-                        (not (eobp)))
-              (if (= (1- (current-column)) column)
-                  (setq point (point)))))))
+	  ;; 2. or, Same column
+	  (let (done)
+	    (while (and (not point)
+			(re-search-forward "}")
+			(not (eobp)))
+	      (if (= (1- (current-column)) column)
+		  (setq point (point)))))))
     point))
 
 (defun my-lint-layout-php-function-region-at-point ()
@@ -4754,7 +4769,7 @@ Point must be at function start line."
       (goto-char (match-beginning 1))
       (setq col (current-column))
       (when (setq end (my-lint-layout-php-function-end col indent))
-        (list beg (point)))))))
+	(list beg (point)))))))
 
 (defun my-lint-layout-php-function-string-at-point ()
   "Return function string if any at point."
