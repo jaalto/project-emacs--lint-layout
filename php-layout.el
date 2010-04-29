@@ -58,6 +58,7 @@
 ;;
 ;;      o   Maximum code column 80
 ;;      o   Extra whitespace at end of lines (spaces and tabs)
+;;      o   Mixed SPACE+TAB indentation
 ;;      o   Brace placement (lined-up; no K&R support yet)
 ;;      o   Indentation multiple of 4.
 ;;      o   terminating semicolon checks: no loose "semicolons ;"
@@ -2224,6 +2225,15 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 	       (or msg ""))
        prefix line))))
 
+(defun my-lint-layout-whitespace-indent (&optional prefix)
+  "Check indentation whitespace problems "
+  (while (re-search-forward "^ +\t" nil t)
+    (my-lint-layout-message
+     `,(concat
+	"[whitespace] space+tab, but expect tab+space. "
+	"Possibly an artefact from editor.")
+     prefix)))
+
 (defun my-lint-layout-whitespace-trailing (&optional prefix)
   "Check trailing whitespace."
   (while (re-search-forward "[ \t]+$" nil t)
@@ -2260,6 +2270,7 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
   (save-excursion
     (save-excursion
       (my-lint-layout-whitespace-multiple-newlines prefix))
+    (my-lint-layout-whitespace-indent prefix)
     (my-lint-layout-whitespace-trailing prefix)
     (my-lint-layout-whitespace-at-eob prefix)))
 
