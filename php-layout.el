@@ -1754,16 +1754,16 @@ Return variable content string."
 	 ;;    require "this" . $var;
 	 ((and (my-lint-layout-conditional-above-p)
 	       (my-lint-layout-looking-at-variable-at-line-p)))
-         ((and (or (not class-p)
-                   ;;  Only check outside of class
-                   ;;
-                   ;;  require 'this';
-                   ;;
-                   ;;  class name
-                   ;;      function some ()
-                   ;;         require 'not this';
-                   (< (point) class-p))
-               (my-lint-layout-type-include-string-p str))
+	 ((and (or (not class-p)
+		   ;;  Only check outside of class
+		   ;;
+		   ;;  require 'this';
+		   ;;
+		   ;;  class name
+		   ;;      function some ()
+		   ;;         require 'not this';
+		   (< (point) class-p))
+	       (my-lint-layout-type-include-string-p str))
 	  (my-lint-layout-message
 	   "[phpdoc] require or include possibly not documented"
 	   prefix))
@@ -4707,6 +4707,37 @@ Write error at LINE with PREFIX."
 	(push 'var-global type))
     type))
 
+(defun my-lint-layout-php-function-end (&optional column indent)
+  "Return end of function, ased on optional COLUMN and INDENT string.
+Search for closing brace located at same COLUMN.
+
+Input:
+  COLUMN  optional number, defaults to `current-column'.
+  INDENT  optional string, the indent level as string.
+
+Return:
+  point"
+  (let (indent-string
+        point)
+    (or column
+        (setq column (current-column)))
+    ;; FIXME: convert `indent' from tabs to spaces.
+    (setq indent-string (make-string column ?\ ))
+    (or
+     ;; Rely on same indentation to close the function
+     (and indent
+          (re-search-forward (concat "^" indent "}") nil t)
+          (setq point (point)))
+     (and column
+          ;; 2. or, Same column
+          (let (done)
+            (while (and (not point)
+                        (re-search-forward "}")
+                        (not (eobp)))
+              (if (= (1- (current-column)) column)
+                  (setq point (point)))))))
+    point))
+
 (defun my-lint-layout-php-function-region-at-point ()
   "Return function '(beg end) points with indentation.
 Point must be at function start line."
@@ -4714,15 +4745,16 @@ Point must be at function start line."
     (goto-char (line-beginning-position))
     (let (indent
 	  col
-	  beg)
+	  beg
+	  end)
     (when (looking-at my-lint-layout-php-function-regexp)
       (setq beg (point))
+      ;; This can be spaces+tabs, so canonicalize
       (setq indent (match-string 1))
       (goto-char (match-beginning 1))
       (setq col (current-column))
-      ;; FIXME: We rely on indentation to close the function
-      (when (re-search-forward (concat "^" indent "}") nil t)
-	(list beg (point)))))))
+      (when (setq end (my-lint-layout-php-function-end col indent))
+        (list beg (point)))))))
 
 (defun my-lint-layout-php-function-string-at-point ()
   "Return function string if any at point."
