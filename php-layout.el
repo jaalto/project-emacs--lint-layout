@@ -2840,12 +2840,16 @@ One ORing regexp.")
 (defconst my-lint-layout-sql-keywords-from-statement
   (list
    (concat
-    "\\(?:\\<natural[ \t\r\n]+\\?)"
-    "(?:(?:left\\|right\\|full[ \t\r\n]+\\)?"
-    "\\<outer[ \t\r\n]+\\)join")
+    "\\(?:\\<natural[ \t\r\n]+\\)?"	;optional "natural"
+	  "\\(?:"
+	      "\\(?:\\(?:left\\|right\\|full\\)[ \t\r\n]+\\)?" ;optional words
+	      "\\<outer[ \t\r\n]+"      ;required "outer"
+	    "\\)"
+     "join")
     (concat
-     "\\(?:\\<natural[ \t\r\n]+\\?)"
-     "(?:\\<inner[ \t\r\n]+)?\\<join")
+     "\\(?:\\<natural[ \t\r\n]+\\)?"	;optional "natural"
+       "\\(?:\\<inner[ \t\r\n]+\\)?"	;optional "inner"
+       "join")				;required "join"
     "ancestor"
     "ancestor_of"
     "child"
@@ -2891,7 +2895,7 @@ One ORing regexp.")
     ;; SQL:1999 regular expressions
     "similar[ \t\r\n]+to"
     "some"
-    "time zone"
+    "time[ \t\r\n]+zone"
     "timezone_hour"
     "timezone_minute"
     "true"
