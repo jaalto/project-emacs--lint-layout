@@ -250,8 +250,9 @@ type modifiers to be present:
        my-lint-layout-generic-control-statement-regexp
        "\\|"
        "\\(?:" my-lint-layout-generic-access-modifier-regexp
-	       "[ \t]+\\)[^(]*("
-   "\\).*"
+	       "[ \t]+\\)[^(;]*("
+   "\\)"
+   ".*"
    "\\([ \t\r\n]*{\\|[ \t].*(.*)[ \t\r\n]*{\\)")
   "Left anchored statement with brace.")
 
@@ -1998,7 +1999,7 @@ if ( check );
 	 prefix)))))
 
 (defsubst my-lint-layout-php-brace-statement-forward (&optional max)
-  "Search control statement with brace forward."
+  "Search statement with brace forward."
   (re-search-forward
    my-lint-layout-generic-statement-regexp-brace
    max
