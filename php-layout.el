@@ -1673,7 +1673,8 @@ Return variable content string."
 	beg
 	end)
   (while (re-search-forward re nil t)
-    (setq beg  (match-beginning 0)
+    (setq beg   (match-beginning 0)
+	  end   (match-end 0)
 	  match (match-string 1))
 	  ;; end   (my-lint-layout-search-forward-ending-semicolon))
     (unless (my-lint-layout-string-uppercase-p match)
