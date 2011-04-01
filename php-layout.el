@@ -1251,12 +1251,14 @@ displayed."
      ".*([^)\r\n]*[ \t])")
     "in funcdef, extra space before closing paren")
 
-   (list
-    "[$][a-z0-9_>-]+[.][$\"][^);]"
-    "no surrounding spaces, case 1, around concat(.)")
+   ;; FIXME $str = "string: $class.$method";
+   ;;
+   ;; (list
+   ;;  "[$][a-z0-9_>-]+[.][$\"'][^);]"
+   ;;  "no surrounding spaces, case 1, around concat(.)")
 
    (list
-    "\"[.][$][a-z_]"
+    "[\"'][.][$][a-z_]"
     "no surrounding spaces, case 2, around concat(.)")
 
    (list
@@ -1673,8 +1675,7 @@ Return variable content string."
 	beg
 	end)
   (while (re-search-forward re nil t)
-    (setq beg   (match-beginning 0)
-	  end   (match-end 0)
+    (setq beg  (match-beginning 0)
 	  match (match-string 1))
 	  ;; end   (my-lint-layout-search-forward-ending-semicolon))
     (unless (my-lint-layout-string-uppercase-p match)
