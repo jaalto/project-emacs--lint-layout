@@ -3027,7 +3027,7 @@ The submatches are as follows. The point is at '!':
     |---------- |----  |--------         !
     1           2      3                 Point
 
-Note, that the statement does not necessarily haave VLAUES part.
+Note, that the statement does not necessarily have VLAUES part.
 This can be tested with `looking-at' at the position of point:
 
     INSERT INTO table (<values>) ;
@@ -3118,7 +3118,10 @@ col
   (indent &optional prefix line)
   "Check numeric INDENT."
   (cond
-   ((eq 0 indent)
+   ((and (eq 0 indent)
+	 ;;  INSERT INTO
+	 ;;  (  ...
+	 (not (looking-at "(")))
     (my-lint-layout-message
      (format
       "[sql] possibly missing indentation at col %d"
@@ -3273,9 +3276,10 @@ The value of LINE is added to current line. PREFIX."
 	paren-end
 	line)
     (while (my-lint-layout-sql-insert-into-forward)
-      (setq keyword   (match-string 1)
-	    table     (match-string 2)
-	    paren     (match-string 3)
+      (setq keyword   (match-string-no-properties 1)
+	    table     (match-string-no-properties 2)
+	    paren     (match-string-no-properties 3)
+	    keyword-values (match-string-no-properties 4)
 	    paren-beg (match-beginning 3)
 	    paren-end (match-end 3)
 	    line      (save-excursion
@@ -3293,12 +3297,11 @@ The value of LINE is added to current line. PREFIX."
        prefix line)
       (cond
        ;;  FIXME: RE-search
-       ((looking-at "values")
-	(let ((keyword (match-string 0))
-	      (beg     (match-end 0))
+       ((string-match "values" keyword-values)
+	(let ((beg (point))
 	      end)
 	  (my-lint-layout-sql-check-all-uppercase
-	   keyword
+	   keyword-values
 	   (format "[sql] In INSERT, keyword not uppercase: %s" keyword)
 	   prefix line)
 	  (my-lint-layout-sql-check-insert-into-column-part
