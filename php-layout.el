@@ -2259,6 +2259,13 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
      "[whitespace] trailing whitepace at the end of line"
      prefix)))
 
+(defun my-lint-layout-whitespace-trailing-cr (&optional prefix)
+  "Check trailing CR (^M) whitespace."
+  (while (re-search-forward "C-m$" nil t)
+    (my-lint-layout-message
+     "[whitespace] trailing whitepace (\\r i.e. ^M) at the end of line"
+     prefix)))
+
 (defun my-lint-layout-whitespace-multiple-newlines (&optional prefix)
   "Check multiple newlines."
   (while (re-search-forward "^[ \t]*\r?\n\\([ \t]*\r?\n\\)+" nil t)
@@ -2286,10 +2293,14 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 (defun my-lint-layout-check-whitespace (&optional prefix)
   "Check whitespace problems: eol, bob, eob from current point."
   (save-excursion
-    (save-excursion
-      (my-lint-layout-whitespace-multiple-newlines prefix))
-    (my-lint-layout-whitespace-indent prefix)
-    (my-lint-layout-whitespace-trailing prefix)
+    (my-lint-layout-whitespace-multiple-newlines prefix))
+  (save-excursion
+    (my-lint-layout-whitespace-indent prefix))
+  (save-excursion
+    (my-lint-layout-whitespace-trailing prefix))
+  (save-excursion
+    (my-lint-layout-whitespace-trailing-cr prefix))
+  (save-excursion
     (my-lint-layout-whitespace-at-eob prefix)))
 
 (defun my-lint-layout-check-whitespace-buffer (&optional prefix)
