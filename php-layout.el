@@ -653,15 +653,29 @@ Related articles:
      (with-current-buffer buffer
        ,@body)))
 
+(defsubst my-lint-layout-code-java-search ()
+  "Position point at first detected Java code line."
+  (goto-char (point-min))
+  (re-search-forward
+   "^[ \t]*import[ \t]+[a-z]+\\..*;\\|public.*static.*main.*(" nil t))
+
 (defsubst my-lint-layout-code-java-p ()
   "Return t if buffer is Java code."
   (or (memq major-mode '(java-mode))
-      (string-match (buffer-name) "\\.java")))
+      (string-match (buffer-name) "\\.java"))
+      (save-excursion (my-lint-layout-code-java-search)))
+
+(defsubst my-lint-layout-code-php-search ()
+  "Position point at first detected PHP code line."
+  (goto-char (point-min))
+  ;; $variable
+  (re-search-forward "^[ \t]*[$][a-zA-Z]" nil t))
 
 (defsubst my-lint-layout-code-php-p ()
   "Return t if buffer is PHP code."
   (or (memq major-mode '(php-mode))
-      (string-match (buffer-name) "\\.php")))
+      (string-match (buffer-name) "\\.php")
+      (save-excursion (my-lint-layout-code-php-search))))
 
 (defsubst my-lint-layout-code-css-p ()
   "Return t if buffer is PHP code."
@@ -5644,7 +5658,11 @@ The `my-lint-layout-buffer-name' is not emptied nor displayed."
 
 ;; Selectively run test for list of files
 (defun my-lint-layout-check-batch-command-line (&optional function)
-  "Run FUNCTION (or list of) over files on command line."
+  "Run FUNCTION (or list of) over files on command line.
+See:
+  my-lint-layout-check-whitespace
+  my-lint-layout-php-check-all-tests
+  my-lint-layout-java-check-all-tests"
   (my-lint-layout-check-batch-file-list
    command-line-args-left function)
   (my-lint-layout-princ-results))
