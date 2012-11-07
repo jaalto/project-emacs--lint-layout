@@ -5340,7 +5340,7 @@ Point must be at the beginning of function definition line."
 	    (my-lint-layout-java-doc-examine-main
 	     beg
 	     end
-	     (if top-level
+	     (if top-level-p
 		 '(class)
 	       type)
 	     (my-lint-layout-current-line-number)
