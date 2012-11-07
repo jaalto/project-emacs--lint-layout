@@ -1893,20 +1893,20 @@ Return variable content string."
 		   (< (point) class-p))
 	       (my-lint-layout-type-include-string-p str))
 	  (my-lint-layout-message
-	   "[phpdoc] require or include possibly not documented"
+	   "[doc] require or include possibly not documented"
 	   prefix))
 	 ((my-lint-layout-type-function-string-p str)
 	  (my-lint-layout-message
-	   "[phpdoc] function possibly not documented"
+	   "[doc] function possibly not documented"
 	   prefix))
 	 ;; Skip "function files" FIXME: ???
 	 ((my-lint-layout-type-include-string-p str)
 	  (my-lint-layout-message
-	   "[phpdoc] require or include not documented (non-class context)"
+	   "[doc] require or include not documented (non-class context)"
 	   prefix))
 	 ((my-lint-layout-type-statement-string-p str)
 	  (my-lint-layout-message
-	   "[phpdoc] variable possibly not documented"
+	   "[doc] variable possibly not documented"
 	   prefix)))))))
 
 (defsubst my-lint-layout-php-indent-level (str)
@@ -4502,42 +4502,42 @@ The DATA is function content string."
 	return)
     (when (string-match "this[ \t]+\\(function\\|method\\)" str)
       (my-lint-layout-message
-       (format "[phpdoc] unnecessary wording: %s" (match-string 0 str))
+       (format "[doc] unnecessary wording: %s" (match-string 0 str))
        prefix line))
     (when (and class-p
 	       (not access))
       (my-lint-layout-message
-       "[phpdoc] @access token not found"
+       "[doc] @access token not found"
        prefix line))
     (when (and need-param-p
 	       (not param))
       (my-lint-layout-message
-       "[phpdoc] @param token not found"
+       "[doc] @param token not found"
        prefix line))
     (when (and param
 	       (not need-param-p))
       (my-lint-layout-message
-       "[phpdoc] @param token is unnecessary"
+       "[doc] @param token is unnecessary"
        prefix line))
     (when (and return
 	       (not need-return-p))
       (my-lint-layout-message
-       "[phpdoc] @return token is unnecessary"
+       "[doc] @return token is unnecessary"
        prefix line))
     (when (and need-return-p
 	       (not (setq return (string-match "@return" str))))
       (my-lint-layout-message
-       "[phpdoc] @return token not found"
+       "[doc] @return token not found"
        prefix line))
     (if (and (and access param)
 	     (> access param))
 	(my-lint-layout-message
-	 "[phpdoc] incorrect order. Should be @access..@param"
+	 "[doc] incorrect order. Should be @access..@param"
 	 prefix line))
     (if (and (and access return)
 	     (> access return))
 	(my-lint-layout-message
-	 "[phpdoc] incorrect order. Should be @access..@return"
+	 "[doc] incorrect order. Should be @access..@return"
 	 prefix line))))
 
 (defun my-lint-layout-php-doc-examine-content-function
@@ -4603,31 +4603,31 @@ DATA is the full function content."
 	(var-p    (string-match "@var" str)))
     (unless access-p
       (my-lint-layout-message
-       "[phpdoc] @access token not found"
+       "[doc] @access token not found"
        prefix line))
     (unless var-p
       (my-lint-layout-message
-       "[phpdoc] @var token not found"
+       "[doc] @var token not found"
        prefix line))
     (when (and access-p
 	       var-p
 	       (> access-p var-p))
       (my-lint-layout-message
-       "[phpdoc] incorrect order. Should be @access..@var"
+       "[doc] incorrect order. Should be @access..@var"
        prefix line))))
 
 (defun my-lint-layout-php-doc-string-test-var-global (str line &optional prefix)
   "Examine dostring: variable."
   (when (string-match "[*][ \t]*\\(@[a-z][a-z][a-z].*\\)" str)
     (my-lint-layout-message
-     (format "[phpdoc] Possibly misplaced token: %s" (match-string 1))
+     (format "[doc] Possibly misplaced token: %s" (match-string 1))
      prefix line)))
 
 (defun my-lint-layout-php-doc-string-test-class (str line &optional prefix)
   "Examine dostring: class."
   (unless (string-match "@package" str)
     (my-lint-layout-message
-     "[phpdoc] @package token not found"
+     "[doc] @package token not found"
      prefix line)))
 
 (defun my-lint-layout-php-doc-examine-content-other--test-doc-comment
@@ -4635,7 +4635,7 @@ DATA is the full function content."
   "Check doc-comment."
     (unless (looking-at "^[ \t]+[*]")
       (my-lint-layout-message
-       "[phpdoc] not a valid documentation comment"
+       "[doc] not a valid documentation comment"
        prefix
        (1+ line))))
 
@@ -4646,7 +4646,7 @@ DATA is the full function content."
     (unless (looking-at "^[ \t]+[*].*\\.")
       (my-lint-layout-message
        (format
-	"[phpdoc] line is not a complete sentence ending to period(.)%s"
+	"[doc] line is not a complete sentence ending to period(.)%s"
 	(if (memq 'include type)
 	    " (interpreted as require or include comment)"
 	  ""))
@@ -4665,7 +4665,7 @@ DATA is the full function content."
     ;; Search at least two words. ignore toplevel comment
     (when (not (memq 'file type))
       (my-lint-layout-message
-       (format "[phpdoc] line does not explain code that follows%s"
+       (format "[doc] line does not explain code that follows%s"
 	       (if (memq 'include type)
 		   " (interpreted as require or include comment)"
 		 ""))
@@ -4678,7 +4678,7 @@ DATA is the full function content."
   (my-lint-layout-with-case
     (unless (looking-at "^[ \t]+[*][ \t]*[A-Z]")
       (my-lint-layout-message
-       (format "[phpdoc] sentence does not start with capital letter%s"
+       (format "[doc] sentence does not start with capital letter%s"
 	       (if (memq 'include type)
 		   " (interpreted as require include comment)"
 		 ""))
@@ -4698,7 +4698,7 @@ DATA is the full function content."
 		 (not (looking-at "^[ \t]+[*][*/\r\n]"))
 		 (looking-at "^[ \t]+[*][^ \t]"))
 	(my-lint-layout-message
-	 "[phpdoc] near *-character; text is not indented with spaces"
+	 "[doc] near *-character; text is not indented with spaces"
 	 prefix
 	 (1+ line)))))
 
@@ -4713,7 +4713,7 @@ DATA is the full function content."
   (my-lint-layout-with-case
     (unless (looking-at "^[ \t]*[*][ \t]*$")
       (my-lint-layout-message
-       "[phpdoc] no empty line after first line short description"
+       "[doc] no empty line after first line short description"
        prefix
        (+ 2 line))))
   (goto-char (point-min)))
@@ -4725,7 +4725,7 @@ DATA is the full function content."
     (forward-line -1)
     (unless (looking-at "^[ \t]*[*][ \t]*$")
       (my-lint-layout-message
-       "[phpdoc] no empty line before starting @-token"
+       "[doc] no empty line before starting @-token"
        prefix
        (+ line (my-lint-layout-current-line-number))))))
 
@@ -4736,7 +4736,7 @@ DATA is the full function content."
     (let ((text (match-string 2)))
       (unless (string= text text-indent)
 	(my-lint-layout-message
-	 "[phpdoc] text indentation mismatch: lined-upnot same as above."
+	 "[doc] text indentation mismatch: lined-upnot same as above."
 	 prefix
 	 (my-lint-layout-php-doc-string-narrowed-current-line-number))))))
 
@@ -4744,7 +4744,7 @@ DATA is the full function content."
   (col line &optional prefix)
   "Write error:  *-character possibly not lined up at COL."
   (my-lint-layout-message
-   (format "[phpdoc] *-character does not start at column %d" col)
+   (format "[doc] *-character does not start at column %d" col)
    prefix line))
 
 (defun my-lint-layout-php-doc-examine-content-other--indent-col
@@ -4765,7 +4765,7 @@ Write error at LINE with PREFIX."
   (line &optional prefix string)
   "Write error: doc-block start contains extra characters."
   (my-lint-layout-message
-   (format "[phpdoc] /** contains extra characters%s" (or string ""))
+   (format "[doc] /** contains extra characters%s" (or string ""))
    prefix line))
 
 (defun my-lint-layout-php-doc-examine-content-other--doc-block-start
@@ -5022,7 +5022,7 @@ Point must be at function start line."
 	(setq str  (buffer-substring beg end))
 	(unless next-line-valid-p
 	  (my-lint-layout-message
-	   "[phpdoc] format layout error"
+	   "[doc] format layout error"
 	   prefix))
 	(cond
 	 ;; (my-lint-layout-doc-package-string-p str)) ;Skip
@@ -5030,7 +5030,7 @@ Point must be at function start line."
 	 ((not valid-p)
 	  (my-lint-layout-message
 	   (concat
-	    "[phpdoc] possibly misplaced. "
+	    "[doc] possibly misplaced. "
 	    "Expected class, function, variable, require or include")
 	   prefix))
 	 (t
