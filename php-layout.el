@@ -2983,8 +2983,16 @@ Optional PREFIX is used add filename to the beginning of line."
   ;; {
   ;;
   ;;    if ()
-  (and (re-search-forward "[{][ \t]*\n[ \t]*\\(\r?\n[ \t\r\n]+\\)[^{}]" nil t)
-       (list (point) 'beg)))
+  (and (re-search-forward
+	"[{][ \t]*\n[ \t]*\\(?:\r?\n[ \t\r\n]+\\)[^{]" nil t)
+       (let ((point (point)))
+	 (forward-char -1)
+	 (not (looking-at 
+	       `,(concat
+		  "[/"			; comment start
+		  "\\|"
+		  my-lint-layout-generic-control-statement-regexp)))
+	 (list point 'beg))))
 
 (defsubst my-lint-layout-php-brace-forward-2 ()
   "Move to end brace }"
