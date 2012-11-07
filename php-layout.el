@@ -817,7 +817,7 @@ Related articles:
   (not (my-lint-layout-searc-backward-brace-open)))
 
 (defsubst my-lint-layout-doc-package-string-p (str)
-  "Check @package phpdoc"
+  "Check top level @tokens"
   (string-match "@package\\|@copyright\\|@author\\|@version" str))
 
 (defsubst my-lint-layout-doc-var-string-p (str)
@@ -4870,15 +4870,15 @@ DATA is the full function content."
 
 (defun my-lint-layout-java-doc-string-test-class (str line &optional prefix)
   "Examine dostring: class."
-  (unless (string-match "@author" str)
+  (unless (string-match "\\* @author" str)
     (my-lint-layout-message
      "[doc] @author token not found"
      prefix line))
-  (unless (string-match "@version" str)
+  (unless (string-match "\\* @version" str)
     (my-lint-layout-message
      "[doc] @version token not found"
      prefix line))
-  (unless (string-match "@since" str)
+  (unless (string-match "\\* @since" str)
     (my-lint-layout-message
      "[doc] @since token not found"
      prefix line)))
