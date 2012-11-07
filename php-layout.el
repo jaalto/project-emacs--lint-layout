@@ -161,6 +161,22 @@ tokens could be lined up.")
    "\\>")
   "Access modifiers.")
 
+(defconst my-lint-layout-generic-vartype-modifier-regexp
+  (concat
+   "\\<"
+   (regexp-opt
+    '("byte"
+      "short"
+      "int"
+      "long"
+      "float"
+      "double"
+      "char"
+      "String")
+    t)
+   "\\>")
+  "Variale type modifiers.")
+
 (defconst my-lint-layout-generic-other-modifier-list
   '("abstract"
     "static"
@@ -385,6 +401,31 @@ without brace requirement.")
    "[ \t\r\n]+[^(]+(")
  "Method regexp. Submatch 1: Indent")
 
+(defconst my-lint-layout-php-variable-regexp
+  (concat
+   "^[ \t]*"
+   "\\(?:"
+       my-lint-layout-generic-access-modifier-regexp
+       "[ \t]+"
+       "\\|\\<var\\>[ \t]+"
+       "\\)?"
+   "\\$_*[a-zA-Z][ \t]*[;=]")
+  "Class variable regexp.")
+
+(defconst my-lint-layout-java-variable-regexp
+  (concat
+   "^[ \t]+"  ;; Every variable in Java is intended
+   "\\("
+       my-lint-layout-generic-access-modifier-regexp
+       "[ \t]+"
+       "\\)"
+   "\\("
+       my-lint-layout-generic-vartype-modifier-regexp
+       "[ \t]+"
+       "\\)"
+   "[a-zA-Z0-9_$]+[ \t]*[;=]")
+  "Class variable regexp.")
+
 (defconst my-lint-layout-php-doc-location-regexp
    (concat
     "^\\(?:[ \t]*"
@@ -467,12 +508,12 @@ without brace requirement.")
     my-lint-layout-check-line-length)
   "*List of generic lint functions.")
 
-(defconst my-lint-layout-check-java-code-functions
+(defconst my-lint-layout-check-php-code-functions
   '(my-lint-layout-generic-class-count
     my-lint-layout-generic-xml-tags-check-main
     my-lint-layout-php-check-xml-tags-lazy
     my-lint-layout-php-check-multiple-print
-    my-lint-layout-php-check-statement-end
+    my-lint-layout-generic-check-statement-end
     my-lint-layout-php-check-statement-start
     my-lint-layout-php-check-statement-start-2
     my-lint-layout-php-check-comment-statements
@@ -481,7 +522,7 @@ without brace requirement.")
     my-lint-layout-php-check-line-up-assignment
     my-lint-layout-php-check-brace-extra-newline
     my-lint-layout-php-check-regexp-occur-main
-    my-lint-layout-php-class-check-variables
+    my-lint-layout-generic-class-check-variables
     my-lint-layout-php-check-input-form-main
     my-lint-layout-php-check-sql-kwd-statements
     my-lint-layout-php-check-multiline-print
@@ -493,12 +534,9 @@ without brace requirement.")
     my-lint-layout-check-line-length)
   "*List of PHP code check functions")
 
-(defconst my-lint-layout-check-php-code-functions
+(defconst my-lint-layout-check-java-code-functions
   '(my-lint-layout-generic-class-count
-    my-lint-layout-generic-xml-tags-check-main
-    my-lint-layout-php-check-xml-tags-lazy
-    my-lint-layout-php-check-multiple-print
-    my-lint-layout-php-check-statement-end
+    my-lint-layout-generic-check-statement-end
     my-lint-layout-php-check-statement-start
     my-lint-layout-php-check-statement-start-2
     my-lint-layout-php-check-comment-statements
@@ -507,7 +545,7 @@ without brace requirement.")
     my-lint-layout-php-check-line-up-assignment
     my-lint-layout-php-check-brace-extra-newline
     my-lint-layout-php-check-regexp-occur-main
-    my-lint-layout-php-class-check-variables
+    my-lint-layout-generic-class-check-variables
     my-lint-layout-php-check-input-form-main
     my-lint-layout-php-check-sql-kwd-statements
     my-lint-layout-php-check-multiline-print
@@ -817,20 +855,14 @@ and  (match-string 1) contains possible comment start.
 The comment marker, if any, is in (match-string 2)."
   (re-search-forward ";[ \t]*\\(\\(//\\|#\\|/\\*\\).*\\)?$" nil t))
 
-(defsubst my-lint-layout-search-forward-variable-dollar-beginning
-  (&optional max)
-  "Search variable start, up till optional MAX point."
-  (and (re-search-forward
-	`,(concat
-	   "^[ \t]*"
-	   "\\(?:"
-	       my-lint-layout-generic-access-modifier-regexp
-	       "[ \t]+"
-	       "\\|\\<var\\>[ \t]+"
-	       "\\)?"
-	   "\\$_*[a-zA-Z][ \t]*[;=]")
-	   max t)
-       (match-end 0)))
+(defsubst my-lint-layout-search-forward-variable-beginning (&optional max)
+  (re-search-forward
+   (cond
+    ((my-lint-layout-code-php-p)
+     my-lint-layout-php-variable-regexp)
+    ((my-lint-layout-code-java-p)
+     my-lint-layout-java-variable-regexp))
+    max t))
 
 (defsubst my-lint-layout-type-statement-string-p (str)
   "Test if statement contains semicolon at the end."
@@ -1829,7 +1861,7 @@ Return variable content string."
     (when end
       (goto-char end)))))
 
-(defun my-lint-layout-php-class-check-variables (&optional prefix)
+(defun my-lint-layout-generic-class-check-variables (&optional prefix)
   "Check class variables."
   (let (class-p
 	max
@@ -1845,10 +1877,10 @@ Return variable content string."
 		    (point-max)))
       (when class-p
 	(goto-char point)
-	(while (my-lint-layout-search-forward-variable-dollar-beginning max)
+	(while (my-lint-layout-search-forward-variable-beginning max)
 	  (setq str (my-lint-layout-current-line-string))
 	  (cond
-	   ((string-match "\\<var\\>" str)
+	   ((string-match "\\<var\\>" str) ; PHP
 	    (my-lint-layout-message
 	     (concat
 	      "[code] deprecated 'var'; expecting "
@@ -2139,10 +2171,10 @@ if ( check );
    max
    t))
 
-(defun my-lint-layout-php-check-statement-end (&optional prefix)
+(defun my-lint-layout-generic-check-statement-end (&optional prefix)
   "Check end of line for ';' and whitespace."
   (let (str)
-    (while (my-lint-layout-search-forward-variable-dollar-beginning)
+    (while (my-lint-layout-search-forward-variable-beginning)
       (setq str (my-lint-layout-current-line-string))
       (when (string-match "[ \t];[ \t]*$" str)
 	;;  "$a = 12 ;"  vs. "$a = 12;"
@@ -2192,7 +2224,8 @@ if ( check );
 	  (my-lint-layout-php-check-statement-continue-detach keyword prefix)
 	  (goto-char point)
 	  (my-lint-layout-php-check-statement-comment-above keyword prefix)))
-      (my-lint-layout-php-check-indent-string-check indent statement-line prefix)
+      (my-lint-layout-php-check-indent-string-check
+       indent statement-line prefix)
       ;; (my-lint-layout-php-statement-brace-forward)
       ;; brace-start-line (my-lint-layout-current-line-number))
       (my-lint-layout-php-statement-brace-and-indent prefix)
@@ -4880,14 +4913,14 @@ Write error at LINE with PREFIX."
 (defun my-lint-layout-php-doc-examine-typeof (str)
   "Examine what type of docstring."
   (let (type)
-    (if (my-lint-layout-type-class-variable-dollar-string-p str)
-	(push 'var type))
     (if (my-lint-layout-type-class-string-p str)
 	(push 'class type))
     (if (my-lint-layout-type-function-string-p str)
 	(push 'function type))
     (if (my-lint-layout-type-include-string-p str)
 	(push 'include type))
+    (if (my-lint-layout-type-class-variable-dollar-string-p str)
+	(push 'var type))
     (if (my-lint-layout-type-variable-string-p str)
 	(push 'var-global type))
     type))
@@ -4895,14 +4928,15 @@ Write error at LINE with PREFIX."
 (defun my-lint-layout-php-java-examine-typeof (str)
   "Examine what type of docstring."
   (let (type)
-    ;; (if (my-lint-layout-type-class-variable-dollar-string-p str)
-    ;; 	(push 'var type))
     (if (my-lint-layout-type-class-string-p str)
 	(push 'class type))
     (if (my-lint-layout-type-function-string-p str)
 	(push 'function type))
-    ;; (if (my-lint-layout-type-include-string-p str)
-    ;; 	(push 'include type))
+    (if (my-lint-layout-type-import-string-p str)
+     	(push 'include type))
+    ;; FIXME
+    ;; (if (my-lint-layout-type-class-variable-dollar-string-p str)
+    ;; 	(push 'var type))
     (if (my-lint-layout-type-variable-string-p str)
 	(push 'var-global type))
     type))
