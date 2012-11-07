@@ -2242,11 +2242,31 @@ Return variable content string."
 	   match)))))
 
 (defun my-lint-layout-php-statement-brace-and-indent (&optional prefix)
+  ;;  Disabled. See above. Needs rewrite.
+  )
+
+(defun my-lint-layout-php-statement-brace-and-indent-todo (&optional prefix)
   "Check that code is indented according to brace column at point."
   (save-excursion
-    (let ((beg (line-end-position)))
+    (let ((beg (line-end-position))
+	  col
+	  point)
+      ;; FIXME: does not work correct because the ending brace must
+      ;; be paired. Rewrite: count pair, backtrack pairs.
       (when (setq brace-end-point
 		  (my-lint-layout-php-statement-brace-end-forward))
+	;; If lined-up style: this is the base column
+	;; If K&R: line start is the base column
+	;; (setq point (point))
+	;; (goto-char (line-beginning-position))
+	;; (cond
+	;;  ((looking-at "^[ \t]{")
+	;;   (goto-char (1- (match-end 0)))
+	;;   (setq col (current-column)))
+	;;  (t
+	;;   (skip-chars-forward " \t")
+	;;   (setq col (current-column))))
+	;; (goto-char point)
 	(my-lint-layout-php-statement-brace-block-check
 	 beg
 	 brace-end-point
