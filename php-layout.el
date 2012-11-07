@@ -2989,7 +2989,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	 (forward-char -1)
 	 (not (looking-at 
 	       `,(concat
-		  "[/"			; comment start
+		  "/"			; comment start
 		  "\\|"
 		  my-lint-layout-generic-control-statement-regexp)))
 	 (list point 'beg))))
