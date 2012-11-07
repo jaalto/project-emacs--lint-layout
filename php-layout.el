@@ -516,8 +516,7 @@ without brace requirement.")
     my-lint-layout-php-check-keywords-main
     my-lint-layout-check-whitespace
     my-lint-layout-check-eof-marker
-    ;; my-lint-layout-check-line-length
-    )
+    my-lint-layout-check-line-length)
   "*List of Java code check functions")
 
 (defvar my-lint-layout-check-php-doc-functions
@@ -4655,6 +4654,21 @@ DATA is the full function content."
      "[doc] @package token not found"
      prefix line)))
 
+(defun my-lint-layout-java-doc-string-test-class (str line &optional prefix)
+  "Examine dostring: class."
+  (unless (string-match "@author" str)
+    (my-lint-layout-message
+     "[doc] @author token not found"
+     prefix line))
+  (unless (string-match "@version" str)
+    (my-lint-layout-message
+     "[doc] @version token not found"
+     prefix line))
+  (unless (string-match "@since" str)
+    (my-lint-layout-message
+     "[doc] @since token not found"
+     prefix line)))
+
 (defun my-lint-layout-php-doc-examine-content-other--test-doc-comment
   (line &optional type prefix)
   "Check doc-comment."
@@ -5026,7 +5040,7 @@ Point must be at the beginning of function definition line."
 	   ((memq 'var-global type)
 	    (my-lint-layout-php-doc-string-test-var-global str line prefix))
 	   ((memq 'class type)
-	    (my-lint-layout-php-doc-string-test-class str line prefix))
+	    (my-lint-layout-java-doc-string-test-class str line prefix))
 	   ((memq 'function type)
 	    (my-lint-layout-generic-doc-string-test-function
 	     str line prefix data)
@@ -5108,17 +5122,14 @@ Point must be at the beginning of function definition line."
 	   prefix))
 	 (t
 	  (let ((top-level-p (my-lint-layout-doc-package-string-p str)))
-	    (cond
-	     (top-level-p
-	      ;; FIXME @author @version @since
-	      )
-	     (t
-	      (my-lint-layout-java-doc-examine-main
-	       beg
-	       end
-	       type
-	       (my-lint-layout-current-line-number)
-	       prefix))))))))))
+	    (my-lint-layout-java-doc-examine-main
+	     beg
+	     end
+	     (if top-level
+		 '(class)
+	       type)
+	     (my-lint-layout-current-line-number)
+	     prefix))))))))
 
 ;;; ............................................................ &mode ...
 
