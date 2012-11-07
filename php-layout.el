@@ -502,7 +502,7 @@ without brace requirement.")
   "^\\([ \t]*/[*][*]\\|[ \t]+[*]\\)"
   "Documentation comment line regexp.")
 
-(defconst my-lint-layout-php-brace-and-code-regexp
+(defconst my-lint-layout-generic-brace-and-code-regexp
   "[}][ \t]*\r?\n[ \t]*\\([^{} \t\r\n]+\\)"
   "Match brace end } followed by immediate code.")
 
@@ -521,9 +521,9 @@ without brace requirement.")
     my-lint-layout-generic-check-statement-start-2
     my-lint-layout-generic-check-comment-statements
     my-lint-layout-generic-check-control-statements
-    my-lint-layout-php-check-block-end-and-code
+    my-lint-layout-generic-check-block-end-and-code
     my-lint-layout-php-check-line-up-assignment
-    my-lint-layout-php-check-brace-extra-newline
+    my-lint-layout-generic-check-brace-extra-newline
     my-lint-layout-php-check-regexp-occur-main
     my-lint-layout-generic-class-check-variables
     my-lint-layout-php-check-input-form-main
@@ -543,9 +543,9 @@ without brace requirement.")
     my-lint-layout-generic-check-statement-start-brace-end
     my-lint-layout-generic-check-comment-statements
     my-lint-layout-generic-check-control-statements
-    my-lint-layout-php-check-block-end-and-code
-    my-lint-layout-php-check-line-up-assignment
-    my-lint-layout-php-check-brace-extra-newline
+    my-lint-layout-generic-check-block-end-and-code
+    ;; my-lint-layout-php-check-line-up-assignment
+    my-lint-layout-generic-check-brace-extra-newline
     my-lint-layout-php-check-regexp-occur-main
     my-lint-layout-generic-class-check-variables
     my-lint-layout-php-check-input-form-main
@@ -1663,7 +1663,7 @@ Return variable content string."
 	  "control statement and code above")
 	 prefix)))))
 
-(defun my-lint-layout-php-check-block-end-and-code (&optional prefix)
+(defun my-lint-layout-generic-check-block-end-and-code (&optional prefix)
   "Block end followed by code immediately after.
 
 	}
@@ -1671,7 +1671,8 @@ Return variable content string."
 "
   (let (line
 	str)
-    (while (re-search-forward my-lint-layout-php-brace-and-code-regexp nil t)
+    (while (re-search-forward
+	    my-lint-layout-generic-brace-and-code-regexp nil t)
       (setq str (buffer-substring (match-beginning 1) (match-end 1)))
       (when (and
 	     (not (my-lint-layout-string-comment-p str))
@@ -2861,7 +2862,7 @@ Optional PREFIX is used add filename to the beginning of line."
 (defsubst my-lint-layout-php-brace-forward-5 ()
   "Move to empty block } + immediate code."
   (and (re-search-forward
-	(concat "}" my-lint-layout-php-brace-and-code-regexp)
+	(concat "}" my-lint-layout-generic-brace-and-code-regexp) ;; FIXME?
 	nil t)
        (list (point) 'end-brace-and-code)))
 
@@ -2914,7 +2915,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	    (setq format (format format count)))
 	(my-lint-layout-message format prefix line)))))
 
-(defun my-lint-layout-php-check-brace-extra-newline (&optional prefix)
+(defun my-lint-layout-generic-check-brace-extra-newline (&optional prefix)
   "Check forward for extra newlines after '{' and before '}'"
   (let (status
 	line
