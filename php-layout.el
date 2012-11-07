@@ -4908,15 +4908,16 @@ DATA is the full function content."
 
 (defun my-lint-layout-php-doc-examine-content-other--first-sentence
   (line &optional type prefix)
-  "Check two words, that t1st line is sentence."
+  "Check two words; that first line is a sentence."
   (when (and (not
 	      (looking-at
 	       (concat ".*"
 		       my-lint-layout-generic-doc-1st-line-ignore-regexp)))
 	     (not (looking-at
 		   "^[ \t]+[*][ \t]*[^ \t\r\n]+[ \t][^ \t\r\n]+")))
-    ;; Search at least two words. ignore toplevel comment
-    (when (not (memq 'file type))
+    ;; Search at least two words. Ignore toplevel comments
+    (when (and (not (memq 'file type))
+	       (not (memq 'class type)))
       (my-lint-layout-message
        (format "[doc] line does not explain code that follows%s"
 	       (if (memq 'include type)
