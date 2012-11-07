@@ -366,6 +366,25 @@ without brace requirement.")
    "\\<function\\>[ \t\r\n]+[^(]+(")
  "Function regexp. Submatch 1: Indent")
 
+(defconst my-lint-layout-java-function-regexp
+  (concat
+   "^\\([ \t]*\\)"  ;; subatch 1
+   "\\(?:"
+	    ;; <other modifier>?<access modifier>?function ()
+	    my-lint-layout-generic-other-modifier-regexp
+	    "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)?"
+
+	    "\\|"
+
+	    ;; <access modifier>?<other modifier>?function ()
+	    "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)?"
+	    my-lint-layout-generic-other-modifier-regexp
+   "\\)?"
+   "[ \t]*"
+   ;; name ()
+   "[ \t\r\n]+[^(]+(")
+ "Method regexp. Submatch 1: Indent")
+
 (defconst my-lint-layout-php-doc-location-regexp
    (concat
     ;; Prefix <?php
@@ -432,6 +451,32 @@ without brace requirement.")
     my-lint-layout-check-line-length)
   "*List of generic lint functions.")
 
+(defconst my-lint-layout-check-java-code-functions
+  '(my-lint-layout-generic-class-count
+    my-lint-layout-generic-xml-tags-check-main
+    my-lint-layout-php-check-xml-tags-lazy
+    my-lint-layout-php-check-multiple-print
+    my-lint-layout-php-check-statement-end
+    my-lint-layout-php-check-statement-start
+    my-lint-layout-php-check-statement-start-2
+    my-lint-layout-php-check-comment-statements
+    my-lint-layout-php-check-control-statements
+    my-lint-layout-php-check-block-end-and-code
+    my-lint-layout-php-check-line-up-assignment
+    my-lint-layout-php-check-brace-extra-newline
+    my-lint-layout-php-check-regexp-occur-main
+    my-lint-layout-php-class-check-variables
+    my-lint-layout-php-check-input-form-main
+    my-lint-layout-php-check-sql-kwd-statements
+    my-lint-layout-php-check-multiline-print
+    my-lint-layout-php-check-multiline-sql
+    my-lint-layout-php-check-words
+    my-lint-layout-php-check-keywords-main
+    my-lint-layout-check-whitespace
+    my-lint-layout-check-eof-marker
+    my-lint-layout-check-line-length)
+  "*List of PHP code check functions")
+
 (defconst my-lint-layout-check-php-code-functions
   '(my-lint-layout-generic-class-count
     my-lint-layout-generic-xml-tags-check-main
@@ -457,16 +502,26 @@ without brace requirement.")
     my-lint-layout-check-eof-marker
     ;; my-lint-layout-check-line-length
     )
-  "*List of PHP code check functions")
+  "*List of Java code check functions")
 
 (defvar my-lint-layout-check-php-doc-functions
   '(my-lint-layout-php-check-doc-missing
-    my-lint-layout-php-check-doc-main)
+    my-lint-layout-generic-check-doc-main)
   "*List of functions for PHPDoc.")
 
 (defvar my-lint-layout-check-php-generic-functions
   (append my-lint-layout-check-php-doc-functions
 	  my-lint-layout-check-php-code-functions)
+  "List of all PHP check functions.")
+
+(defvar my-lint-layout-check-java-doc-functions
+  '(my-lint-layout-java-check-doc-missing
+    my-lint-layout-generic-check-doc-main)
+  "*List of functions for Javaoc.")
+
+(defvar my-lint-layout-check-java-generic-functions
+  (append my-lint-layout-check-java-doc-functions
+	  my-lint-layout-check-java-code-functions)
   "List of all PHP check functions.")
 
 (defvar my-lint-layout-check-sql-functions
@@ -531,6 +586,16 @@ Related articles:
   `(let ((buffer (get-buffer-create my-lint-layout-buffer-name)))
      (with-current-buffer buffer
        ,@body)))
+
+(defsubst my-lint-layout-code-java-p ()
+  "Return t if buffer is Java code."
+  (or (memq major-mode '(java-mode))
+      (string-match (buffer-name) "\\.java")))
+
+(defsubst my-lint-layout-code-php-p ()
+  "Return t if buffer is PHP code."
+  (or (memq major-mode '(php-mode))
+      (string-match (buffer-name) "\\.php")))
 
 (defsubst my-lint-layout-result-erase-buffer ()
   "Create and clear `my-lint-layout-buffer-name'."
@@ -685,8 +750,12 @@ Related articles:
   (and (re-search-forward "[*]/" nil t)
        (match-end 0)))
 
-(defsubst my-lint-layout-php-search-forward-function-beginning ()
-  (re-search-forward my-lint-layout-php-function-regexp nil t))
+(defsubst my-lint-layout-generic-search-forward-function-beginning ()
+  (cond
+   ((my-lint-layout-code-php-p)
+    (re-search-forward my-lint-layout-php-function-regexp nil t))
+   ((my-lint-layout-code-java-p)
+    (re-search-forward my-lint-layout-java-function-regexp nil t))))
 
 (defsubst my-lint-layout-search-forward-class-beginning (&optional max)
   "Search class forward, up till optional MAX point."
@@ -733,7 +802,8 @@ and  (match-string 1) contains possible comment start.
 The comment marker, if any, is in (match-string 2)."
   (re-search-forward ";[ \t]*\\(\\(//\\|#\\|/\\*\\).*\\)?$" nil t))
 
-(defsubst my-lint-layout-search-forward-variable-dollar-beginning (&optional max)
+(defsubst my-lint-layout-search-forward-variable-dollar-beginning
+  (&optional max)
   "Search variable start, up till optional MAX point."
   (and (re-search-forward
 	`,(concat
@@ -1588,13 +1658,11 @@ Return variable content string."
 
 (defun my-lint-layout-php-doc-above-p ()
   "Check if phpdoc is in above line."
-  (let ((type (my-lint-layout-php-doc-examine-typeof
-	       (my-lint-layout-current-line-string))))
-    (save-excursion
-      (goto-char (line-beginning-position))
-      (skip-chars-backward "  \t\r\n") ;;  At the end of "*/"
-      (goto-char (line-beginning-position))
-      (looking-at "^[ \t]*[*]/[ \t]*$"))))
+  (save-excursion
+    (goto-char (line-beginning-position))
+    (skip-chars-backward "  \t\r\n") ;;  At the end of "*/"
+    (goto-char (line-beginning-position))
+    (looking-at "^[ \t]*[*]/[ \t]*$")))
 
 (defsubst my-lint-layout-php-re-search-forward-doc-keyword ()
   "Search `my-lint-layout-php-doc-location-regexp'."
@@ -1733,7 +1801,7 @@ Return variable content string."
       (goto-char point)
       ;;  one class - One file assumption. If there are no methods, this is
       ;;  pure variable class, like struct.
-      (setq max (or (my-lint-layout-php-search-forward-function-beginning)
+      (setq max (or (my-lint-layout-generic-search-forward-function-beginning)
 		    (point-max)))
       (when class-p
 	(goto-char point)
@@ -1755,6 +1823,48 @@ Return variable content string."
 	     "[code] possibly missing access modifier "
 	     "like private, public etc.")
 	     prefix))))))))
+
+(defun my-lint-layout-java-check-doc-missing (&optional prefix)
+  "Check missing documentation."
+  (let (class-p
+	str
+	line)
+    (save-excursion
+      (setq class-p (my-lint-layout-search-forward-class-p)))
+    (while (my-lint-layout-php-re-search-forward-doc-keyword)
+      (setq str (my-lint-layout-current-line-string))
+      (unless (my-lint-layout-php-doc-above-p)
+	(cond
+	 ;; if (...)
+	 ;;    require "this" . $var;
+	 ((and (my-lint-layout-conditional-above-p)
+	       (my-lint-layout-looking-at-variable-at-line-p)))
+	 ((and (or (not class-p)
+		   ;;  Only check outside of class
+		   ;;
+		   ;;  require 'this';
+		   ;;
+		   ;;  class name
+		   ;;      function some ()
+		   ;;         require 'not this';
+		   (< (point) class-p))
+	       (my-lint-layout-type-include-string-p str))
+	  (my-lint-layout-message
+	   "[doc] require or include possibly not documented"
+	   prefix))
+	 ((my-lint-layout-type-function-string-p str)
+	  (my-lint-layout-message
+	   "[doc] function possibly not documented"
+	   prefix))
+	 ;; Skip "function files" FIXME: ???
+	 ((my-lint-layout-type-include-string-p str)
+	  (my-lint-layout-message
+	   "[doc] require or include not documented (non-class context)"
+	   prefix))
+	 ((my-lint-layout-type-statement-string-p str)
+	  (my-lint-layout-message
+	   "[doc] variable possibly not documented"
+	   prefix)))))))
 
 (defun my-lint-layout-php-check-doc-missing (&optional prefix)
   "Check missing documentation."
@@ -4743,6 +4853,29 @@ Write error at LINE with PREFIX."
 	(push 'var-global type))
     type))
 
+(defun my-lint-layout-php-java-examine-typeof (str)
+  "Examine what type of docstring."
+  (let (type)
+    ;; (if (my-lint-layout-type-class-variable-dollar-string-p str)
+    ;; 	(push 'var type))
+    (if (my-lint-layout-type-class-string-p str)
+	(push 'class type))
+    (if (my-lint-layout-type-function-string-p str)
+	(push 'function type))
+    ;; (if (my-lint-layout-type-include-string-p str)
+    ;; 	(push 'include type))
+    (if (my-lint-layout-type-variable-string-p str)
+	(push 'var-global type))
+    type))
+
+(defun my-lint-layout-generic-doc-examine-typeof (str)
+  "Examine what type of docstring."
+  (cond
+   ((my-lint-layout-code-php-p)
+    (my-lint-layout-php-doc-examine-typeof))
+   ((my-lint-layout-code-java-p)
+    (my-lint-layout-java-doc-examine-typeof))))
+
 (defun my-lint-layout-php-function-end (&optional column indent)
   "Return end of function, ased on optional COLUMN and INDENT string.
 Search for closing brace located at same COLUMN.
@@ -4842,7 +4975,7 @@ Point must be at function start line."
        "[newline] no empty line before documentation block."
        prefix))))
 
-(defun my-lint-layout-php-check-doc-main (&optional prefix)
+(defun my-lint-layout-generic-check-doc-main (&optional prefix)
   "Check doc-block.
 
 /**
@@ -4880,7 +5013,7 @@ Point must be at function start line."
 			(string-match "Copyright\\|License"
 				      (buffer-substring point end))))
 	      (setq type
-		    (my-lint-layout-php-doc-examine-typeof
+		    (my-lint-layout-generic-doc-examine-typeof
 		     (my-lint-layout-current-line-string)))
 	      (if (and (not type)
 		       valid-p)
