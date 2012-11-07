@@ -520,7 +520,7 @@ without brace requirement.")
     my-lint-layout-generic-check-statement-start
     my-lint-layout-generic-check-statement-start-2
     my-lint-layout-generic-check-comment-statements
-    my-lint-layout-php-check-control-statements
+    my-lint-layout-generic-check-control-statements
     my-lint-layout-php-check-block-end-and-code
     my-lint-layout-php-check-line-up-assignment
     my-lint-layout-php-check-brace-extra-newline
@@ -542,7 +542,7 @@ without brace requirement.")
     my-lint-layout-generic-check-statement-end
     my-lint-layout-generic-check-statement-start-brace-end
     my-lint-layout-generic-check-comment-statements
-    my-lint-layout-php-check-control-statements
+    my-lint-layout-generic-check-control-statements
     my-lint-layout-php-check-block-end-and-code
     my-lint-layout-php-check-line-up-assignment
     my-lint-layout-php-check-brace-extra-newline
@@ -1643,7 +1643,7 @@ Return variable content string."
        "multiple tag invocations one after another"
        prefix))))
 
-(defun my-lint-layout-php-check-control-statements (&optional prefix)
+(defun my-lint-layout-generic-check-control-statements (&optional prefix)
   "Keywords and preceding newlines."
   (let ()
     (while (re-search-forward
