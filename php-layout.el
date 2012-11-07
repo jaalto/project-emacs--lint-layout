@@ -659,7 +659,12 @@ Related articles:
   "Position point at first detected Java code line."
   (goto-char (point-min))
   (re-search-forward
-   "^[ \t]*import[ \t]+[a-z]+\\..*;\\|public.*static.*main.*(" nil t))
+   `,(concat
+      "^[ \t]*import[ \t]+[a-z]+\\..*;"
+      "\\|public.*static"
+      "\\|@author\\|@since\\|@version"
+      "\\|\\<\\(float\\|double\\|int\\|long\\|public\\)[ \t]+[^=;]+[=;]")
+   nil t))
 
 (defsubst my-lint-layout-code-java-p ()
   "Return t if buffer is Java code."
@@ -847,7 +852,9 @@ Related articles:
    ((my-lint-layout-code-php-p)
     (re-search-forward my-lint-layout-php-function-regexp nil t))
    ((my-lint-layout-code-java-p)
-    (re-search-forward my-lint-layout-java-function-regexp nil t))))
+    (re-search-forward my-lint-layout-java-function-regexp nil t))
+   (t
+    (error "Unkown file type for buffer %s" (buffer-name)))))
 
 (defsubst my-lint-layout-search-forward-class-beginning (&optional max)
   "Search class forward, up till optional MAX point."
@@ -900,7 +907,9 @@ The comment marker, if any, is in (match-string 2)."
     ((my-lint-layout-code-php-p)
      my-lint-layout-php-variable-regexp)
     ((my-lint-layout-code-java-p)
-     my-lint-layout-java-variable-regexp))
+     my-lint-layout-java-variable-regexp)
+    (t
+     (error "Error: Unknown file type for buffer %s" (buffer-name))))
     max t))
 
 (defsubst my-lint-layout-type-statement-string-p (str)
@@ -1196,7 +1205,7 @@ displayed."
       (if point
 	  (goto-char point))
       (my-lint-layout-debug-message
-       "debug layout: check %s %s" function prefix)
+       "debug layout: check %s %s %s" function prefix (buffer-name))
       (funcall function prefix))))
 
 ;;; ........................................................... &occur ...
@@ -5665,6 +5674,10 @@ The `my-lint-layout-buffer-name' is not emptied nor displayed."
     (my-lint-layout-check-file-list
      file
      'my-lint-layout-php-check-all-tests))
+   ((string-match "\\.java$" file)
+    (my-lint-layout-check-file-list
+     file
+     'my-lint-layout-java-check-all-tests))
    ((string-match "\\.css$" file)
     (my-lint-layout-check-file-list
      file
@@ -5674,7 +5687,7 @@ The `my-lint-layout-buffer-name' is not emptied nor displayed."
      file
      'my-lint-layout-sql-check-batch-all))
    (t
-    (message "[WARN] No checks defined for '%s'" file))))
+    (message "[WARN] No checks defined for file: %s" file))))
 
 (defun my-lint-layout-check-batch-file-list (files &optional function)
   "Check FILES with FUNCTION (or list of)."
@@ -5688,6 +5701,11 @@ The `my-lint-layout-buffer-name' is not emptied nor displayed."
     (my-lint-layout-debug-message
      "debug layout: Batch cmdline %s; files %s" function files)
     (my-lint-layout-check-file-list files function)))
+
+(when nil ;; For testing; an example
+  (my-lint-layout-check-batch-file-list
+   '("~/tmp/Example.java")
+   '(my-lint-layout-java-check-all-tests)))
 
 ;; Selectively run test for list of files
 (defun my-lint-layout-check-batch-command-line (&optional function)
