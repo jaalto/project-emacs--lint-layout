@@ -415,7 +415,8 @@ without brace requirement.")
    "\\$_*[a-zA-Z][ \t]*[;=]")
   "Class variable regexp.")
 
-(defconst my-lint-layout-java-variable-regexp
+;; public [static] int <variable>
+(defconst my-lint-layout-java-modifier-regexp
   (concat
    "^[ \t]+"  ;; Every variable in Java is intended
    "\\("
@@ -423,9 +424,18 @@ without brace requirement.")
        "[ \t]+"
        "\\)"
    "\\("
+       "\\(?:"
+	   my-lint-layout-generic-other-modifier-regexp
+	   "[ \t]+"
+       "\\)?"
        my-lint-layout-generic-vartype-modifier-regexp
        "[ \t]+"
-       "\\)"
+       "\\)")
+  "Java access modified for methods and class variables.")
+
+(defconst my-lint-layout-java-variable-regexp
+  (concat
+   my-lint-layout-java-modifier-regexp
    "[a-zA-Z0-9_$]+[ \t]*[;=]")
   "Class variable regexp.")
 
@@ -462,7 +472,8 @@ without brace requirement.")
 	"\\|\\<"
 	(regexp-opt
 	'("final"
-	  "import")
+	  ;; "import"
+	  )
 	t)
 	"\\>"
     "\\)")
@@ -549,13 +560,13 @@ without brace requirement.")
     my-lint-layout-java-check-regexp-occur-main
     my-lint-layout-generic-class-check-variables
     my-lint-layout-php-check-input-form-main
-    my-lint-layout-php-check-sql-kwd-statements
-    my-lint-layout-php-check-multiline-print
-    my-lint-layout-php-check-multiline-sql
+    ;; my-lint-layout-php-check-sql-kwd-statements
+    ;; my-lint-layout-php-check-multiline-print
+    ;; my-lint-layout-php-check-multiline-sql
     my-lint-layout-php-check-words
-    my-lint-layout-php-check-keywords-main
+    ;; my-lint-layout-php-check-keywords-main
     my-lint-layout-check-whitespace
-    my-lint-layout-check-eof-marker
+    ;; my-lint-layout-check-eof-marker
     my-lint-layout-check-line-length)
   "*List of Java code check functions")
 
@@ -651,6 +662,16 @@ Related articles:
   "Return t if buffer is PHP code."
   (or (memq major-mode '(php-mode))
       (string-match (buffer-name) "\\.php")))
+
+(defsubst my-lint-layout-code-css-p ()
+  "Return t if buffer is PHP code."
+  (or (memq major-mode '(sql-mode))
+      (string-match (buffer-name) "\\.sql")))
+
+(defsubst my-lint-layout-code-sql-p ()
+  "Return t if buffer is PHP code."
+  (or (memq major-mode '(css-mode))
+      (string-match (buffer-name) "\\.css")))
 
 (defsubst my-lint-layout-result-erase-buffer ()
   "Create and clear `my-lint-layout-buffer-name'."
@@ -1175,7 +1196,7 @@ displayed."
      "possibly K&R brace style, expect line-up"))
   "*K&R Brace placement checks.")
 
-(defconst my-lint-layout-generic-check-regexp-occur-global-uppercase
+(defconst my-lint-layout-php-check-regexp-occur-global-uppercase
   (list
    '("^[ \t]*global[ \t]+\\([$].*[a-z].*\\);"
      "global variable name not all uppercase"
@@ -1183,17 +1204,32 @@ displayed."
      t))
   "*CamelCase variable checks.")
 
-(defconst my-lint-layout-generic-check-regexp-occur-camelcase-style-list
+(defconst my-lint-layout-php-check-regexp-occur-camelcase-style-list
+  '("^[ \t]*[$]?[a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
+    "variable name not camelCase"
+    nil
+    nil
+    (lambda ()
+      (let ((str (my-lint-layout-current-line-string)))
+	(my-lint-layout-with-case
+	  ;; Global variable
+	  (not (string-match "[$]?[A-Z][A-Z0-9]+_" str))))))
+  "*CamelCase variable checks.")
+
+(defconst my-lint-layout-java-check-regexp-occur-camelcase-style-list
   (list
-   '("^[ \t]*[$]?[a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
-     "variable name not camelCase"
-     nil
-     nil
-     (lambda ()
-       (let ((str (my-lint-layout-current-line-string)))
-	 (my-lint-layout-with-case
-	   ;; Global variable
-	   (not (string-match "[$]?[A-Z][A-Z0-9]+_" str)))))))
+   (list
+    `,(concat
+       my-lint-layout-java-modifier-regexp
+       "[a-zA-Z0-9]+_[a-zA-Z0-9_]+[ \t\r\n]*[=;]")
+    "variable name not camelCase"
+    nil
+    nil
+    (lambda ()
+      (let ((str (my-lint-layout-current-line-string)))
+	(my-lint-layout-with-case
+	  ;; Global variable
+	  (not (string-match "[$]?[A-Z][A-Z0-9]+_" str)))))))
   "*CamelCase variable checks.")
 
 (defun my-lint-layout-generic-run-occur-list (list &optional prefix)
@@ -1313,7 +1349,7 @@ See `my-lint-layout-generic-run-occur-list'.")
 (defvar my-lint-layout-java-check-regexp-occur-variable
   '(my-lint-layout-java-check-regexp-occur-funcdef-style-list
     my-lint-layout-java-check-regexp-occur-list
-    my-lint-layout-generic-check-regexp-occur-camelcase-style-list)
+    my-lint-layout-java-check-regexp-occur-camelcase-style-list)
   "*List of occur variable names.")
 
 (defun my-lint-layout-java-check-regexp-occur-main (&optional prefix)
@@ -1546,8 +1582,8 @@ See `my-lint-layout-generic-run-occur-list'.")
 (defvar my-lint-layout-php-check-regexp-occur-variable
   '(my-lint-layout-php-check-regexp-occur-modern-style-list
     my-lint-layout-php-check-regexp-occur-list
-    my-lint-layout-generic-check-regexp-occur-camelcase-style-list
-    my-lint-layout-generic-check-regexp-occur-global-uppercase
+    my-lint-layout-php-check-regexp-occur-camelcase-style-list
+    my-lint-layout-php-check-regexp-occur-global-uppercase
     my-lint-layout-generic-check-regexp-occur-line-up-style-list)
   "*List of occur variable names.")
 
@@ -2347,7 +2383,7 @@ if ( check );
        ((and (eq my-lint-layout-generic-brace-style 'brace-end)
 	     (not brace-end-p))
 	(my-lint-layout-message
-	 (format "[code] brace { not at prevous line of keyword '%s'"
+	 (format "[code] brace { not at previous line of keyword '%s'"
 		 (or keyword ""))
 	 prefix))
        ((and (not (eq my-lint-layout-generic-brace-style 'brace-end))
@@ -2432,7 +2468,7 @@ if ( check );
 
 (defun my-lint-layout-php-check-keywords-main (&optional prefix)
   "Check correct lowercase spelling.
-KEYWORD-RE defaults to `my-lint-layout-php-function-call-keywords-generic'
+See `my-lint-layout-php-function-call-keywords-generic'
 and `my-lint-layout-php-function-call-keywords-no-paren'."
   (let* ((re-paren
 	  (concat my-lint-layout-php-function-call-keywords-generic
@@ -5401,6 +5437,49 @@ Runs `my-lint-output-mode-hook'."
 	  global-font-lock-mode)
       (font-lock-fontify-buffer)))
 
+;;; ................................................ &java-interactive ...
+
+(defun my-lint-layout-java-check-all-tests (&optional prefix)
+  "Run `my-lint-layout-check-java-generic-functions'."
+  (my-lint-layout-generic-run-list
+   my-lint-layout-check-java-generic-functions prefix))
+
+(defun my-lint-layout-java-check-code-run (&optional point prefix)
+  (my-lint-layout-generic-run-list
+   (append
+    my-lint-layout-check-java-code-functions
+    my-lint-layout-check-generic-functions)
+   prefix
+   point))
+
+(defun my-lint-layout-java-check-code-interactive (&optional point prefix)
+  "Run code checks from current POINT forward.
+This includes:
+  `my-lint-layout-check-java-code-functions'
+  `my-lint-layout-check-generic-functions'"
+  (interactive)
+  (my-lint-with-result-buffer 'erase 'display
+    (my-lint-layout-java-check-code-run) point prefix))
+
+(defun my-lint-layout-java-check-javadoc-run (&optional point prefix)
+  (my-lint-layout-generic-run-list
+   my-lint-layout-check-java-doc-functions
+   prefix
+   point))
+
+(defun my-lint-layout-java-check-javadoc-interactive
+  (&optional point prefix erase)
+  "Run `my-lint-layout-check-java-doc-functions' from current POINT forward."
+  (interactive)
+  (my-lint-with-result-buffer 'erase 'display
+    (my-lint-layout-java-check-javadoc-run point prefix)))
+
+(defun my-lint-layout-java-check-all-interactive (&optional point prefix)
+  "Run All JAVA checks."
+  (interactive)
+  (my-lint-with-result-buffer 'erase 'display
+    (my-lint-layout-java-check-all-tests prefix)))
+
 ;;; ................................................. &php-interactive ...
 
 (defun my-lint-layout-php-check-all-tests (&optional prefix)
@@ -5431,7 +5510,8 @@ This includes:
    prefix
    point))
 
-(defun my-lint-layout-php-check-phpdoc-interactive (&optional point prefix erase)
+(defun my-lint-layout-php-check-phpdoc-interactive
+  (&optional point prefix erase)
   "Run `my-lint-layout-check-php-doc-functions' from current POINT forward."
   (interactive)
   (my-lint-with-result-buffer 'erase 'display
@@ -5443,6 +5523,8 @@ This includes:
   (my-lint-with-result-buffer 'erase 'display
     (my-lint-layout-php-check-all-tests prefix)))
 
+;;; ............................................. &generic-interactive ...
+
 (defun my-lint-layout-check-generic-buffer
   (&optional prefix verb)
   "Run checks. PREFIX is displayed at the beginning of line. VERB.
@@ -5453,11 +5535,13 @@ According to file extension: *.php, *.css, *.php."
     (or prefix
 	(setq prefix name))
     (cond
-     ((string-match "\\.php" name)
+     ((my-lint-layout-code-java-p)
+      (my-lint-layout-java-check-all-interactive (point-min) prefix))
+     ((my-lint-layout-code-php-p)
       (my-lint-layout-php-check-all-interactive (point-min) prefix))
-     ((string-match "\\.css" name)
+     ((my-lint-layout-code-css-p)
       (my-lint-layout-css-check-buffer-interactive prefix))
-     ((string-match "\\.sql" name)
+     ((my-lint-layout-code-sql-p)
       (my-lint-layout-sql-buffer-interactive prefix))
      (t
       (if verb
