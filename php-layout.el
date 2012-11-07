@@ -5106,7 +5106,7 @@ Write error at LINE with PREFIX."
 	(push 'var-global type))
     type))
 
-(defun my-lint-layout-php-java-examine-typeof (str)
+(defun my-lint-layout-java-doc-examine-typeof (str)
   "Examine what type of docstring."
   (let (type)
     (if (my-lint-layout-type-class-string-p str)
