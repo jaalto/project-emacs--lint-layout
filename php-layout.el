@@ -229,6 +229,8 @@ type modifiers to be present:
   (regexp-opt
    '("if"
      "while"
+     "switch"
+     "do"
      "for"
      "foreach"
      "try")
@@ -1800,16 +1802,16 @@ Return variable content string."
   "Keywords and preceding newlines."
   (let ()
     (while (re-search-forward
-	    (concat
-	     "\n[ \t]*\\([^ \t\r\n{]\\).*\n[ \t]*"
-	     my-lint-layout-generic-control-statement-start-regexp
-	     "[ \t]*(.*)")
+	    `,(concat
+	       "\n[ \t]*\\([^ \t\r\n{]\\).*\n[ \t]*"
+	       my-lint-layout-generic-control-statement-start-regexp
+	       "[ \t]*(.*)")
 	    nil t)
-      ;; Ignore comments, xml-tags.
+      ;; Ignore comments, xml-tags, starting brace
       (unless (save-excursion
 		(goto-char (match-beginning 1))
-		(my-lint-layout-current-line-string)
-		(looking-at "[*/#]\\|[<>][?]"))
+		;; (my-lint-layout-current-line-string)
+		(looking-at "[*/#]\\|[<>][?]\\|.*{"))
 	(my-lint-layout-message
 	 (concat
 	  "[newline] no empty line found between "
@@ -2977,7 +2979,7 @@ Optional PREFIX is used add filename to the beginning of line."
 ;;; ........................................................... &brace ...
 
 (defsubst my-lint-layout-php-brace-forward-1 ()
-  "Move to start brace {"
+  "Move to start brace { with problems."
   ;; {
   ;;
   ;;    if ()
