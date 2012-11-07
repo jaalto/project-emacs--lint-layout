@@ -4970,14 +4970,14 @@ DATA is the full function content."
 
 (defun my-lint-layout-php-doc-examine-content-other--first-separator
   (line &optional type prefix)
-  "Check that first line is sperated by one empty line.
+  "Check that first line is seperated by one empty line.
 /**
  *  First Line. Short description.
  *  <empty line>
  *  Long description.
  */"
   (my-lint-layout-with-case
-    (unless (looking-at "^[ \t]*[*][ \t]*$")
+    (unless (looking-at "^[ \t]*[*][ \t]*$\\|^[ \t]+[*]/")
       (my-lint-layout-message
        "[doc] no empty line after first line short description"
        prefix
