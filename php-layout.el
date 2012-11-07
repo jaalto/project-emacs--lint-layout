@@ -4894,17 +4894,18 @@ DATA is the full function content."
 
 (defun my-lint-layout-php-doc-examine-content-other--test-period
   (line &optional type prefix)
-  "Check that line ends top period."
-    ;;  Complete sentence ends to period.
-    (unless (looking-at "^[ \t]+[*].*\\.")
-      (my-lint-layout-message
-       (format
-	"[doc] line is not a complete sentence ending to period(.)%s"
-	(if (memq 'include type)
-	    " (interpreted as require or include comment)"
-	  ""))
-       prefix
-       (1+ line))))
+  "Check that line ends to a period."
+  ;;  Complete sentence ends to period.
+  (when (and (not (looking-at "^[ \t]+[*][ \t]*@")) ;; Std, not token line
+	     (not (looking-at "^[ \t]+[*].*\\.")))
+    (my-lint-layout-message
+     (format
+      "[doc] line is not a complete sentence ending to period(.)%s"
+      (if (memq 'include type)
+	  " (interpreted as require or include comment)"
+	""))
+     prefix
+     (1+ line))))
 
 (defun my-lint-layout-php-doc-examine-content-other--first-sentence
   (line &optional type prefix)
