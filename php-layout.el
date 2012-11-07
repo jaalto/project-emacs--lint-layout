@@ -2692,7 +2692,9 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 	 (re (concat "^"
 		     (make-string col ?\.)
 		     "\\(.+\\)")))
-    (while (re-search-forward re nil t)
+    (while (and (re-search-forward re nil t)
+		;; Ignore URLs and long path/names/to/dir
+		(not (string-match "://\\|/.*/" (match-string 0))))
       (my-lint-layout-message
        (format "line lenght past column %d: %s" col (match-string 1))
        prefix))))
