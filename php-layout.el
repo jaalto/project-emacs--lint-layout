@@ -59,9 +59,9 @@
 ;;      o   Maximum code column 80
 ;;      o   Extra whitespace at end of lines (spaces and tabs)
 ;;      o   Mixed SPACE+TAB indentation
-;;      o   Brace placement (lined-up; no K&R support yet)
+;;      o   Brace placement (Allman lined-up; K&R)
 ;;      o   Indentation multiple of 4.
-;;      o   terminating semicolon checks: no loose "semicolons ;"
+;;      o   Terminating semicolon checks: no loose "semicolons ;"
 ;;
 ;;      Some of the SQL checks include:
 ;;
@@ -137,6 +137,9 @@
 
 (defconst my-lint-layout-generic-indent-step 4
   "*Indent step.")
+
+(defconst my-lint-layout-generic-brace-style 'brace-end
+  "*Brace style. A symbol of lined-up or brace-end.")
 
 (defconst my-lint-layout-generic-assignment-line-up-treshold 5
   "Number of characters apart, that assignments should be lined up.
@@ -514,9 +517,9 @@ without brace requirement.")
     my-lint-layout-php-check-xml-tags-lazy
     my-lint-layout-php-check-multiple-print
     my-lint-layout-generic-check-statement-end
-    my-lint-layout-php-check-statement-start
-    my-lint-layout-php-check-statement-start-2
-    my-lint-layout-php-check-comment-statements
+    my-lint-layout-generic-check-statement-start
+    my-lint-layout-generic-check-statement-start-2
+    my-lint-layout-generic-check-comment-statements
     my-lint-layout-php-check-control-statements
     my-lint-layout-php-check-block-end-and-code
     my-lint-layout-php-check-line-up-assignment
@@ -537,9 +540,8 @@ without brace requirement.")
 (defconst my-lint-layout-check-java-code-functions
   '(my-lint-layout-generic-class-count
     my-lint-layout-generic-check-statement-end
-    my-lint-layout-php-check-statement-start
-    my-lint-layout-php-check-statement-start-2
-    my-lint-layout-php-check-comment-statements
+    my-lint-layout-generic-check-statement-start-brace-end
+    my-lint-layout-generic-check-comment-statements
     my-lint-layout-php-check-control-statements
     my-lint-layout-php-check-block-end-and-code
     my-lint-layout-php-check-line-up-assignment
@@ -1684,7 +1686,7 @@ Return variable content string."
 	 "[newline] no empty line found between '}' and next code line"
 	 prefix)))))
 
-(defun my-lint-layout-php-check-comment-statement-examine
+(defun my-lint-layout-generic-check-comment-statement-examine
   (str &optional prefix)
   "Examine comment STR and text around point."
   (when (looking-at "[^ \t\r\n]")
@@ -1700,18 +1702,18 @@ Return variable content string."
        prefix
        (1+ (my-lint-layout-current-line-number))))))
 
-(defun my-lint-layout-php-check-comment-statements (&optional prefix)
+(defun my-lint-layout-generic-check-comment-statements (&optional prefix)
   "Check comment markers."
   (let ((re "^[ \t]*\\([#]\\|//\\|/\\*+\\)")
 	str)
     (while (re-search-forward re nil t)
       (setq str (match-string 1))
       (cond
-       ;; #button { border: 1px; }
+       ;; CSS text reads: #button { border: 1px; }
        ((and (string= "#" str)
 	     (looking-at "[_a-z].*{")))
        ((not (string-match "#" str))
-	(my-lint-layout-php-check-comment-statement-examine
+	(my-lint-layout-generic-check-comment-statement-examine
 	 str prefix))))))
 
 (defun my-lint-layout-generic-doc-above-p ()
@@ -2149,7 +2151,7 @@ KEYWORD
    nil
    t))
 
-(defun my-lint-layout-php-check-statement-start-2 (&optional prefix)
+(defun my-lint-layout-generic-check-statement-start-2 (&optional prefix)
   "Check incorrect statement like:
 
 if ( check );
@@ -2182,9 +2184,10 @@ if ( check );
 	 "[code] extra whitespace before statement end(;)"
 	 prefix)))))
 
-(defun my-lint-layout-php-check-statement-start (&optional prefix)
+(defun my-lint-layout-generic-check-statement-start (&optional prefix)
   "Check lines beyond `my-lint-layout-generic-line-length-max'."
   (let* ((col my-lint-layout-generic-line-length-max)
+	 (php-p (my-lint-layout-code-php-p))
 	 keyword
 	 fullstr
 	 point
@@ -2192,6 +2195,7 @@ if ( check );
 	 indent
 	 comment-p
 	 continue-p
+	 brace-end-p
 	 statement-start-col
 	 statement-line
 	 brace-start-col
@@ -2217,6 +2221,7 @@ if ( check );
       (forward-char -1)  ;; At brace start
       (save-excursion
 	(goto-char kwd-point)
+	(setq brace-end-p (looking-at ".*{"))
 	(setq statement-start-col (current-column)
 	      statement-line      (my-lint-layout-current-line-number))
 	(when continue-p
@@ -2230,14 +2235,37 @@ if ( check );
       ;; brace-start-line (my-lint-layout-current-line-number))
       (my-lint-layout-php-statement-brace-and-indent prefix)
       (my-lint-layout-php-check-statement-brace-detach fullstr)
-      (when (string-match "\\<if\\>\\|\\<els.*if\\>" keyword)
+      (when (and php-p
+		 (string-match "\\<if\\>\\|\\<els.*if\\>" keyword))
 	(my-lint-layout-php-check-keywords-case keyword fullstr prefix))
-      (unless (eq statement-start-col brace-start-col)
+      ;; Brace placement check
+      (cond
+       ((and (eq my-lint-layout-generic-brace-style 'brace-end)
+	     (not brace-end-p))
+	(my-lint-layout-message
+	 (format "[code] brace { not at prevous line of keyword '%s'"
+		 (or keyword ""))
+	 prefix))
+       ((and (not (eq my-lint-layout-generic-brace-style 'brace-end))
+	     (not (eq statement-start-col brace-start-col)))
 	(my-lint-layout-message
 	 (format "[code] brace { not directly under keyword '%s', expect col %d"
 		 (or keyword "")
 		 statement-start-col)
-	 prefix)))))
+	 prefix))))))
+
+
+(defun my-lint-layout-generic-check-statement-start-brace-end
+  (&optional prefix)
+  "Set `my-lint-layout-generic-brace-style'."
+  (let ((my-lint-layout-generic-brace-style 'brace-end))
+    (my-lint-layout-generic-check-statement-start prefix)))
+
+(defun my-lint-layout-generic-check-statement-start-lined-up
+  (&optional prefix)
+  "Set `my-lint-layout-generic-brace-style'."
+  (let ((my-lint-layout-generic-brace-style))
+    (my-lint-layout-generic-check-statement-start prefix)))
 
 ;;; ........................................................ &conflict ...
 
