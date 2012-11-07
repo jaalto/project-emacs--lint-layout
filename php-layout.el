@@ -546,7 +546,7 @@ without brace requirement.")
     my-lint-layout-generic-check-block-end-and-code
     ;; my-lint-layout-php-check-line-up-assignment
     my-lint-layout-generic-check-brace-extra-newline
-    my-lint-layout-php-check-regexp-occur-main
+    my-lint-layout-java-check-regexp-occur-main
     my-lint-layout-generic-class-check-variables
     my-lint-layout-php-check-input-form-main
     my-lint-layout-php-check-sql-kwd-statements
@@ -1185,15 +1185,15 @@ displayed."
 
 (defconst my-lint-layout-generic-check-regexp-occur-camelcase-style-list
   (list
-   '("^[ \t]*[$][a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
-     "variable name not CamelCase"
+   '("^[ \t]*[$]?[a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
+     "variable name not camelCase"
      nil
      nil
      (lambda ()
        (let ((str (my-lint-layout-current-line-string)))
 	 (my-lint-layout-with-case
 	   ;; Global variable
-	   (not (string-match "[$][A-Z][A-Z0-9]+_" str)))))))
+	   (not (string-match "[$]?[A-Z][A-Z0-9]+_" str)))))))
   "*CamelCase variable checks.")
 
 (defun my-lint-layout-generic-run-occur-list (list &optional prefix)
@@ -1229,6 +1229,109 @@ displayed."
       (my-lint-layout-generic-run-occur-list
        (symbol-value var) prefix))))
 
+;;; ...................................................... &occur-java ...
+
+(defconst my-lint-layout-java-check-regexp-occur-funcdef-style-list
+  (list
+   ;; function name ()
+   (list
+    (concat
+     "^[ \t]+"
+     "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "[^(][ \t]+("
+     "in method definition, space before starting paren"))
+
+   ;; function this_is_name()
+   (list
+    (concat
+     "^[ \t]+"
+     "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "[A-Z][^(]*[ \t]*("
+     "in method definition, name not camelCase"))
+
+   ;; function name( param, def)
+   (list
+    (concat
+     "^[ \t]+"
+     "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "[A-Z][^(]*[ \t]*([\t ]"
+     "in method definition, extra space after opening paren"))
+
+   ;; function name(param, def )
+   (list
+    (concat
+     "^[ \t]+"
+     "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "[A-Z][^(]*[ \t]*([^)\r\n]*[ \t])"
+     "in method definition, extra space before closing paren")))
+  "Check Modern layout style.")
+
+(defconst my-lint-layout-java-check-regexp-occur-list
+  (list
+
+   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)("
+     "in statement, no space between keyword and starting paren")
+
+   '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
+     "in statement, no space before operator")
+
+   '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
+     "in statement, no space after operator")
+
+   ;; '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
+   ;;   "in statement, no space after starting paren")
+
+   ;; '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
+   ;;   "in statement, no space after keyword and paren")
+
+   '("this\\.[^][ )\t\r\n]+[ \t]+("
+     "in method call, possibly extra space before opening paren")
+
+   ;; funcall(code )
+   '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([^)\r\n]*[ \t]+)"
+     "in method call, possibly extra space before closing paren"
+     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+
+   ;; funcall( code)
+   '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
+     "in method call, possibly extra space after opening paren"
+     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+
+   ;; code );
+   '("[^) \t\r\n]+[ \t]+);"
+     "in method call, possibly extra space before closing paren (statement)"
+     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+
+   '("[a-zA-Z][a-zA-Z0-9_]*=[ \t]+[a-zA-Z0-9_\"\']"
+     "in var assign, no space at left of equal sign")
+
+   '("[a-zA-Z][a-zA-Z0-9_]*[ \t]+=[a-zA-Z0-9_\"'<]"
+     "in var assign, no space at right of equal sign"))
+  "Search ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
+See `my-lint-layout-generic-run-occur-list'.")
+
+(defvar my-lint-layout-java-check-regexp-occur-variable
+  '(my-lint-layout-java-check-regexp-occur-funcdef-style-list
+    my-lint-layout-java-check-regexp-occur-list
+    my-lint-layout-generic-check-regexp-occur-camelcase-style-list)
+  "*List of occur variable names.")
+
+(defun my-lint-layout-java-check-regexp-occur-main (&optional prefix)
+  "Run all occur checks."
+  (my-lint-layout-generic-run-occur-variable-list
+   my-lint-layout-java-check-regexp-occur-variable prefix))
+
+(defun my-lint-layout-java-check-regexp-occur-buffer (&optional prefix)
+  "Check from `point-min' with `my-lint-layout-java-check-regexp-occur-main'."
+  (my-lint-layout-with-point-min
+    (my-lint-layout-java-check-regexp-occur-main prefix)))
+
+(defun my-lint-layout-java-check-regexp-occur-buffer-interactive ()
+  "Call `my-lint-layout-java-check-regexp-occur-buffer'."
+  (interactive)
+  (my-lint-layout-with-interactive
+    (my-lint-layout-java-check-regexp-occur-buffer)))
+
 ;;; ....................................................... &occur-php ...
 
 (defconst my-lint-layout-php-check-regexp-occur-modern-style-list
@@ -1237,7 +1340,7 @@ displayed."
      "in funcdef, no space before starting paren")
 
    '("^[ \t]*function[ \t][a-z0-9]+_[^ \t]*[ \t]*("
-     "in funcdef, name not CamelCase"))
+     "in funcdef, name not camelCase"))
   "Check Modern layout style.")
 
 ;; NOTES:
@@ -2254,7 +2357,6 @@ if ( check );
 		 (or keyword "")
 		 statement-start-col)
 	 prefix))))))
-
 
 (defun my-lint-layout-generic-check-statement-start-brace-end
   (&optional prefix)
