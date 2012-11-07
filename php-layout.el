@@ -5258,7 +5258,7 @@ Point must be at the beginning of function definition line."
 	    (my-lint-layout-java-doc-string-test-class str line prefix))
 	   ((memq 'function type)
 	    (my-lint-layout-generic-doc-string-test-function
-	     str line prefix data))
+	     str line prefix data)))
 	  (my-lint-layout-php-doc-examine-content-other
 	   str line type prefix))))))
 
