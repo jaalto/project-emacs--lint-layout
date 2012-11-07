@@ -4784,7 +4784,7 @@ The DATA contains full function content as string."
 STR is docstring at LINE number. PREFIX is for messages.
 DATA is the full function content."
   (save-excursion
-    ;;  * @param  $var string
+    ;;  * @param $var string
     (goto-char (point-min))
     (let (word
 	  str)
@@ -5228,8 +5228,9 @@ Point must be at the beginning of function definition line."
 	   ((memq 'function type)
 	    (my-lint-layout-generic-doc-string-test-function
 	     str line prefix data)
-	    (my-lint-layout-php-doc-examine-content-function
-	     str line prefix data)))
+	    (when (my-lint-layout-code-php-p)
+	      (my-lint-layout-php-doc-examine-content-function
+	       str line prefix data))))
 	  (my-lint-layout-php-doc-examine-content-other
 	   str line type prefix))))))
 
