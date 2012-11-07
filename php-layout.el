@@ -4931,7 +4931,8 @@ DATA is the full function content."
   (line &optional type prefix)
   "Check first line capital letter."
   (my-lint-layout-with-case
-    (unless (looking-at "^[ \t]+[*][ \t]*[A-Z]")
+    (when (and (not (looking-at "^[ \t]+[*][ \t]*@")) ;; Std, not token line
+	       (not (looking-at "^[ \t]+[*][ \t]*[A-Z]")))
       (my-lint-layout-message
        (format "[doc] sentence does not start with capital letter%s"
 	       (if (memq 'include type)
