@@ -567,7 +567,7 @@ without brace requirement.")
     ;; my-lint-layout-php-check-multiline-sql
     my-lint-layout-php-check-words
     ;; my-lint-layout-php-check-keywords-main
-    my-lint-layout-check-whitespace
+    ;; my-lint-layout-check-whitespace
     ;; my-lint-layout-check-eof-marker
     my-lint-layout-check-line-length)
   "*List of Java code check functions")
