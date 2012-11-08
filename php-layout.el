@@ -600,6 +600,15 @@ without brace requirement.")
     my-lint-layout-sql-check-comments)
   "*List of functions for SQL.")
 
+(defvar my-lint-layout-check-whitespace-functions
+  '(my-lint-layout-whitespace-multiple-newlines
+    my-lint-layout-whitespace-indent-space-only
+    my-lint-layout-whitespace-indent-mixed
+    my-lint-layout-whitespace-trailing
+    my-lint-layout-whitespace-trailing-cr
+    my-lint-layout-whitespace-at-eob)
+  "*List of whitespace check functions.")
+
 (defvar my-lint-layout-check-css-functions
   '(my-lint-layout-check-comment-javadoc-invalid
     my-lint-layout-css-check-generic
@@ -794,7 +803,7 @@ Related articles:
       (incf  pos))
     count))
 
-(defun my-lint-layout-current-line-number ()
+(defun my-lint-layout-current-line-number-traditional ()
   "Return line number. Lines are counted from 1..x"
   ;;  - always use line beginning as reference
   ;;  - The count-lines returns 0 for 1st line, therefore 1+
@@ -806,6 +815,12 @@ Related articles:
       (incf i))
     (goto-char point)
     i))
+
+(defun my-lint-layout-current-line-number (&optional point)
+  "Return line number."
+  (if (fboundp 'line-number-at-pos)
+      (line-number-at-pos point)
+    (my-lint-layout-current-line-number-traditional)))
 
 (defsubst my-lint-layout-buffer-data-p ()
   "Check that buffer contains text."
@@ -1191,8 +1206,10 @@ Return:
 	  (setq col-found (current-column))
 	  (unless (eq col col-found)
 	    (my-lint-layout-message
-	     (format "[comment] star(*) at col %d possibly not lined up with start col %d"
-		     col-found col)
+	     (format
+	      `,(concat "[comment] star(*) at col %d possibly"
+			"not lined up with start col %d")
+	      col-found col)
 	     prefix))))
 	(forward-line 1)))))
 
@@ -2610,7 +2627,7 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 ;;; ...................................................... &whitespace ...
 
 (defun my-lint-layout-whitespace-extra-newlines (&optional msg prefix)
-  "Check extra newlines at point."
+  "Check extra newlines after current point."
   (when (looking-at "\\(\\(?:[ \t]*\r?\n\\)+\\)")
     (let ((str (match-string 0))
 	  (line (my-lint-layout-current-line-number)))
@@ -2620,8 +2637,17 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 	       (or msg ""))
        prefix line))))
 
-(defun my-lint-layout-whitespace-indent (&optional prefix)
-  "Check indentation whitespace problems "
+(defun my-lint-layout-whitespace-indent-space-only (&optional prefix)
+  "Check indentation: spaces only, no tabs."
+  (when (re-search-forward "^\t[^ \t\r\n]" nil t)
+    (my-lint-layout-message
+     (format
+      "[whitespace] tab used for indentation at line %d"
+      (my-lint-layout-current-line-number))
+     prefix)))
+
+(defun my-lint-layout-whitespace-indent-mixed (&optional prefix)
+  "Check indentation: space + tab."
   (while (re-search-forward "^ +\t" nil t)
     (my-lint-layout-message
      `,(concat
@@ -2630,21 +2656,21 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
      prefix)))
 
 (defun my-lint-layout-whitespace-trailing (&optional prefix)
-  "Check trailing whitespace."
+  "Check for trailing whitespace."
   (while (re-search-forward "[ \t]+$" nil t)
     (my-lint-layout-message
      "[whitespace] trailing whitepace at the end of line"
      prefix)))
 
 (defun my-lint-layout-whitespace-trailing-cr (&optional prefix)
-  "Check trailing CR (^M) whitespace."
-  (while (re-search-forward "C-m$" nil t)
+  "Check for trailing CR (^M)."
+  (while (re-search-forward "\r$" nil t)
     (my-lint-layout-message
      "[whitespace] trailing whitepace (\\r i.e. ^M) at the end of line"
      prefix)))
 
 (defun my-lint-layout-whitespace-multiple-newlines (&optional prefix)
-  "Check multiple newlines."
+  "Check extra newlines before point."
   (while (re-search-forward "^[ \t]*\r?\n\\([ \t]*\r?\n\\)+" nil t)
     (my-lint-layout-message
      (format "[newline] extra newline(s) %d found above"
@@ -2653,7 +2679,7 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
      prefix)))
 
 (defun my-lint-layout-whitespace-at-eob (&optional prefix)
-  "Check whitespaces at the end of buffer."
+  "Check extra or missing newline at the end of buffer."
   (goto-char (point-max))
   (when (re-search-backward "[^ \t\r\n]\\(\n\\)?" nil t)
     (cond
@@ -2669,16 +2695,8 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 
 (defun my-lint-layout-check-whitespace (&optional prefix)
   "Check whitespace problems: eol, bob, eob from current point."
-  (save-excursion
-    (my-lint-layout-whitespace-multiple-newlines prefix))
-  (save-excursion
-    (my-lint-layout-whitespace-indent prefix))
-  (save-excursion
-    (my-lint-layout-whitespace-trailing prefix))
-  (save-excursion
-    (my-lint-layout-whitespace-trailing-cr prefix))
-  (save-excursion
-    (my-lint-layout-whitespace-at-eob prefix)))
+  (my-lint-layout-generic-run-list
+   my-lint-layout-check-whitespace-functions prefix))
 
 (defun my-lint-layout-check-whitespace-buffer (&optional prefix)
   "Check from `point-min' with `my-lint-layout-check-whitespace'."
