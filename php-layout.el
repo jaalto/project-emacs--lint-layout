@@ -2664,10 +2664,19 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 
 (defun my-lint-layout-whitespace-trailing-cr (&optional prefix)
   "Check for trailing CR (^M)."
-  (while (re-search-forward "\r$" nil t)
-    (my-lint-layout-message
-     "[whitespace] trailing whitepace (\\r i.e. ^M) at the end of line"
-     prefix)))
+  ;; If this is a Windows file, then skip. Check first and last line.
+  (let ((dos (save-excursion
+	       ;; FIXME this is for any buffer, but we could also
+	       ;; check the Emacs EOL variable?
+	       (and (goto-char (point-min))
+		    (looking-at ".*\r")
+		    (goto-char (point-max))
+		    (looking-at ".*\r")))))
+    (unless dos
+      (while (re-search-forward "\r$" nil t)
+	(my-lint-layout-message
+	 "[whitespace] trailing whitepace (\\r i.e. ^M) at the end of line"
+	 prefix)))))
 
 (defun my-lint-layout-whitespace-multiple-newlines (&optional prefix)
   "Check extra newlines before point."
