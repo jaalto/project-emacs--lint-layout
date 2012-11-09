@@ -104,6 +104,10 @@
 ;;          my-lint-layout-php-check-phpdoc-interactive
 ;;          my-lint-layout-php-check-regexp-occur-buffer-interactive
 ;;
+;;          my-lint-layout-java-check-all-interactive
+;;          my-lint-layout-java-check-phpdoc-interactive
+;;          my-lint-layout-java-check-regexp-occur-buffer-interactive
+;;
 ;;          my-lint-layout-check-whitespace-buffer-interactive
 ;;          my-lint-layout-check-line-length-buffer-interactive
 ;;          my-lint-layout-check-eof-marker-interactive
@@ -2902,8 +2906,10 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 		     (make-string col ?\.)
 		     "\\(.+\\)")))
     (while (and (re-search-forward re nil t)
-		;; Ignore URLs and long path/names/to/dir
-		(not (string-match "://\\|/.*/" (match-string 0))))
+		;; Ignore URLs, C:\paths and path/name lines
+		(not (string-match
+		      "://\\|[a-z]:[\\].+[\\]\\|/[a-zA-Z0-9][a-zA-Z0-9_]+/"
+		      (match-string 0))))
       (my-lint-layout-message
        (format "line lenght past column %d: %s" col (match-string 1))
        prefix))))
