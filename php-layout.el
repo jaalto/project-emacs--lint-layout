@@ -2373,7 +2373,7 @@ Return variable content string."
      ((and indent
 	   (> i indent))
       (my-lint-layout-message
-       (format "[code] indent, possibly too at col %d, expect %d"
+       (format "[code] indent, possibly too much at col %d, expect %d"
 	       i indent)
        prefix)))))
 
