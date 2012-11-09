@@ -647,6 +647,13 @@ Related articles:
    "\\)\\>")
   "*Regexp of `my-lint-layout-css-web-safe-font-list'.")
 
+(defvar my-lint-layout-code-type nil
+  "Variable set to a values of `my-lint-layout-code-type-p'.
+Internal variable, not meant ot be set by use.
+
+Set locally to a buffer in `my-lint-layout-code-type-set-local-variable'.
+See also `my-lint-layout-check-file-list'.")
+
 ;;; ....................................................... &utilities ...
 
 (put 'my-lint-layout-debug-message 'my-lint-layout-debug-message 0)
@@ -676,11 +683,13 @@ Related articles:
       "\\|@author\\|@since\\|@version"))
    nil t))
 
-(defsubst my-lint-layout-code-java-p ()
-  "Return t if buffer is Java code."
+(defsubst my-lint-layout-code-java-p (&optional filename)
+  "Return non-nil if Java code. Optional check FILENAME."
   (or (memq major-mode '(java-mode))
-      (string-match (buffer-name) "\\.java"))
-      (save-excursion (my-lint-layout-code-java-search)))
+      (and (stringp filename)
+	   (string-match "\\.java" filename))
+      (string-match "\\.java" (or (buffer-file-name) (buffer-name)))
+      (save-excursion (my-lint-layout-code-java-search))))
 
 (defsubst my-lint-layout-code-php-search ()
   "Position point at first detected PHP code line."
@@ -688,23 +697,49 @@ Related articles:
   ;; $variable
   (re-search-forward "^[ \t]*[$][a-zA-Z]" nil t))
 
-(defsubst my-lint-layout-code-php-p ()
-  "Return t if buffer is PHP code."
+(defsubst my-lint-layout-code-php-p (&optional filename)
+  "Return non-nil if PHP code."
   (or (memq major-mode '(php-mode))
-      (string-match (buffer-name) "\\.php")
+      (and (stringp filename)
+	   (string-match "\\.php\\|\\.inc" filename))
+      (string-match "\\.php\\|\\.inc" (or (buffer-file-name) (buffer-name)))
       (save-excursion (my-lint-layout-code-php-search))))
 
-(defsubst my-lint-layout-code-css-p ()
+(defsubst my-lint-layout-code-css-p (&optional filename)
   "Return t if buffer is PHP code."
   (or (memq major-mode '(sql-mode))
-      (string-match (buffer-name) "\\.sql")))
+      (and (stringp filename)
+	   (string-match "\\.sql" filename))
+      (string-match "\\.sql" (or (buffer-file-name) (buffer-name)))))
 
-(defsubst my-lint-layout-code-sql-p ()
+(defsubst my-lint-layout-code-sql-p (&optional filename)
   "Return t if buffer is PHP code."
   (or (memq major-mode '(css-mode))
       (string-match (buffer-name) "\\.css")))
 
-(defsubst my-lint-layout-result-erase-buffer ()
+(defsubst my-lint-layout-code-type-p (&optional filenam)
+  "Return java-mode, php-mode, css-mode, sql-mode"
+  (cond
+   ((or (eq my-lint-layout-code-type 'java-mode)
+	(my-lint-layout-code-java-p))
+    'java-mode)
+   ((or (eq my-lint-layout-code-type 'java-mode)
+	(my-lint-layout-code-php-p))
+    'php-mode)
+   ((or (eq my-lint-layout-code-type 'java-mode)
+	(my-lint-layout-code-sql-p))
+    'sql-mode)
+   ((or (eq my-lint-layout-code-type 'java-mode)
+	(my-lint-layout-code-css-p))
+    'css-mode)))
+
+(defsubst my-lint-layout-code-type-set-local-variable
+  "Set `my-lint-layout-code-type' local to buffer."
+  (make-local-variable 'my-lint-layout-code-type)
+  (setq my-lint-layout-code-type
+	(my-lint-layout-code-type-p)))
+
+(defsubst my-lint `-layout-result-erase-buffer ()
   "Create and clear `my-lint-layout-buffer-name'."
   (my-lint-layout-with-result-buffer
     (setq buffer-read-only nil)
@@ -865,9 +900,9 @@ Related articles:
 
 (defsubst my-lint-layout-generic-search-forward-function-beginning ()
   (cond
-   ((my-lint-layout-code-php-p)
+   ((eq 'php-mode (my-lint-layout-code-type-p))
     (re-search-forward my-lint-layout-php-function-regexp nil t))
-   ((my-lint-layout-code-java-p)
+   ((eq 'java-mode (my-lint-layout-code-type-p))
     (re-search-forward my-lint-layout-java-function-regexp nil t))
    (t
     (error "Unkown file type for buffer %s" (buffer-name)))))
@@ -920,9 +955,9 @@ The comment marker, if any, is in (match-string 2)."
 (defsubst my-lint-layout-search-forward-variable-beginning (&optional max)
   (re-search-forward
    (cond
-    ((my-lint-layout-code-php-p)
+    ((eq 'php-mode (my-lint-layout-code-type-p))
      my-lint-layout-php-variable-regexp)
-    ((my-lint-layout-code-java-p)
+    ((eq 'java-mode (my-lint-layout-code-type-p))
      my-lint-layout-java-variable-regexp)
     (t
      (error "Error: Unknown file type for buffer %s" (buffer-name))))
@@ -943,10 +978,10 @@ The comment marker, if any, is in (match-string 2)."
 
 (defsubst my-lint-layout-generic-function-regexp ()
   (cond
-   ((my-lint-layout-code-php-p)
+   ((eq 'php-mode (my-lint-layout-code-type-p))
     my-lint-layout-php-function-regexp)
-    ((my-lint-layout-code-java-p)
-     my-lint-layout-java-function-regexp)))
+   ((eq 'java-mode (my-lint-layout-code-type-p))
+    my-lint-layout-java-function-regexp)))
 
 (defsubst my-lint-layout-type-function-string-p (str)
   (string-match
@@ -1053,6 +1088,14 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 	    (buffer-name))
 	  (format-time-string "%Y-%m-%d %H:%M")))
 
+(defsubst my-lint-layout-looking-at-empty-line-p ()
+  "If `looking-at' at empty line."
+  (looking-at "[ \t]*$"))
+
+(defsubst my-lint-layout-looking-at-comment-doc-block-p ()
+  "If `looking-at' at /** doc block."
+  (looking-at "[ \t]*/\\*\\*[ \t\r\n]"))
+
 ;; FIXME: comment-type 'sigle 'multi
 (defsubst my-lint-layout-looking-at-comment-start-p ()
   "If `looking-at' at comment start."
@@ -1077,8 +1120,8 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 (defsubst my-lint-layout-looking-at-statement-p ()
   "If `looking-at' at semicolon at the end of line."
   (my-lint-layout-with-save-point
-    (goto-char (line-end-position))
-    (search-backward ";" (line-beginning-position) t)))
+    (goto-char (line-beginning-position))
+    (looking-at "^.*;[ \t\r]*\n")))
 
 (defsubst my-lint-layout-looking-at-variable-at-line-p ()
   "If `looking-at' at variable at line"
@@ -1122,7 +1165,8 @@ See `my-lint-layout-buffer-name'."
     (insert (format "%s%04d: %s\n"
 		    (my-lint-layout-prefix prefix)
 		    line
-		    msg))))
+		    msg))
+    t))
 
 (defsubst my-lint-layout-doc-line-startp-p ()
   "Check /* line. Return starting point."
@@ -1650,7 +1694,8 @@ See `my-lint-layout-generic-run-occur-list'.")
 
 (defun my-lint-layout-generic-class-forward ()
   "Goto next class definition."
-  (let ((class  (save-excursion (my-lint-layout-search-forward-class-beginning)))
+  (let ((class  (save-excursion
+		  (my-lint-layout-search-forward-class-beginning)))
 	(iface  (my-lint-layout-search-forward-interface-beginning)))
     (cond
      ((and class iface)
@@ -1671,7 +1716,6 @@ See `my-lint-layout-generic-run-occur-list'.")
       (my-lint-layout-message
        (format "multiple classes or interfaces in same file: %d" count)
        prefix))))
-
 
 (defun my-lint-layout-conditional-above-p ()
   "Check if fif/else line is above."
@@ -1708,7 +1752,8 @@ See `my-lint-layout-generic-run-occur-list'.")
 	    nil t)
       ;; (setq str (match-string 0))
       (my-lint-layout-message
-       "[code] possible maintenance problem, multiple output calls, HERE doc recommended"
+       `,(concat "[code] possible maintenance problem, "
+		 "multiple output calls, HERE doc recommended")
        prefix))))
 
 (defsubst my-lint-layout-php-print-command-forward-1 ()
@@ -1922,9 +1967,9 @@ Return variable content string."
 (defsubst my-lint-layout-generic-re-search-forward-doc-keyword ()
   "Search `my-lint-layout-php-doc-location-regexp'."
   (cond
-   ((my-lint-layout-code-php-p)
+   ((eq 'php-mode (my-lint-layout-code-type-p))
     (my-lint-layout-php-re-search-forward-doc-keyword))
-   ((my-lint-layout-code-java-p)
+   ((eq 'java-mode (my-lint-layout-code-type-p))
     (my-lint-layout-java-re-search-forward-doc-keyword))))
 
 (defsubst my-lint-layout-xml-element-beginning (tag &optional end)
@@ -2156,26 +2201,40 @@ Return variable content string."
     (string-match "^ *" str)
     (length (match-string 0 str))))
 
-(defsubst my-lint-layout-php-statement-brace-forward (&optional brace)
-  "Find statement block BRACE, which is '{' by default."
+(defsubst my-lint-layout-generic-statement-brace-forward (&optional brace)
+  "Find statement block start. Optionally closing BRACE end."
   ;;  Notice that BRACE is hre used in regexp.
   ;;
   ;; if ( preg_match("^[0-9]{1,9}$", $bfield ) )
   ;; {
-  (let ((skip-chars "^{")
-	(re "{[ \t]*$"))
-    (when brace
-      ;; FIXME: Not working
-      (setq skip-chars "^}")
-      (setq re "}[ \t]*\\(.*//.*\\)$"))
-    (forward-char 1)
-    (while (and (not (eobp))
-		(if (looking-at re)
-		    nil
-		  (progn
-		    (forward-char 1)
-		    t)))
-      (skip-chars-forward skip-chars))))
+  ;;
+  (if brace
+      (setq brace "}")
+    (setq brace "{"))
+  (let ((opoint (point))
+	(skip-chars (concat "^" brace))
+	found
+	point)
+    (if (eq (char-after)		; on brace, move forward
+	    (if brace
+		?}
+	      ?{))
+	(forward-char 1))
+    (while (and (null found)
+		(not (eobp))
+		(skip-chars-forward skip-chars)
+		(setq point (point)))
+      ;; Ignore brace inside comments
+      (unless (my-lint-layout-with-save-point
+		(goto-char (line-beginning-position))
+		(unless (my-lint-layout-looking-at-comment-point-p)
+		  (setq found point)))
+	(if (not (eobp))
+	    (forward-char 1))))
+    (if (looking-at "[{}]")
+	found
+      (goto-char opoint)		; Don't move
+      nil)))
 
 (defsubst my-lint-layout-php-statement-brace-end-forward (&optional col)
   "Find ending brace at `current-column' or COL"
@@ -2193,8 +2252,8 @@ Return variable content string."
 (defun my-lint-layout-php-check-indent-string-check
   (str line &optional prefix base-indent match-str)
   "Check STR for correct indent and report LINE as error."
-  (let ((i      (my-lint-layout-php-indent-level str))
-	(istep  my-lint-layout-generic-indent-step))
+  (let ((i (my-lint-layout-php-indent-level str))
+	(istep my-lint-layout-generic-indent-step))
     (when (numberp i)
       (cond
        ((and (or (null base-indent)
@@ -2268,12 +2327,105 @@ Return variable content string."
 	   base-indent
 	   match)))))
 
-(defun my-lint-layout-php-statement-brace-and-indent (&optional prefix)
-  ;;  Disabled. See above. Needs rewrite.
-  )
+(defun my-lint-layout-generic-check-indent-current
+  (indent &optional prefix)
+  "Check current point for INDENT. Optional message PREFIX."
+  (let* ((istep my-lint-layout-generic-indent-step)
+	 (i (current-column))
+	 (even-p (zerop (mod i istep))))
+    ;;  Comments are a special case
+    ;;
+    ;;  /*
+    ;;   *
+    ;;   |
+    ;;   Correct indent position: 1 + indentation
+    ;;
+    (cond
+     ((and (and indent)
+	   (looking-at "\\*")
+	   (not (eq i (1+ indent))))
+      (my-lint-layout-message
+       (format "[code] indent, comment char '*' expected at col %d"
+	       (1+ indent))
+       prefix))
+     ((and (and indent)
+	   (looking-at "}")
+	   (not (eq i indent)))
+      (my-lint-layout-message
+       (format "[code] indent, ending '}' expected at col %d"
+	       (if (zerop (mod indent istep))
+		   indent
+		 (* istep (/ indent istep))))
+       prefix))
+     ((and (not (zerop i))
+	   (not even-p))
+      (my-lint-layout-message
+       (format (concat "[code] indent, possibly incorrect "
+		       "at col %d, expect multiple of %d")
+	       i
+	       istep)))
+     ((and indent
+	   (< i indent))
+      (my-lint-layout-message
+       (format "[code] indent, possibly missing at col %d, expect %d"
+	       i indent)
+       prefix))
+     ((and indent
+	   (> i indent))
+      (my-lint-layout-message
+       (format "[code] indent, possibly too at col %d, expect %d"
+	       i indent)
+       prefix)))))
 
-(defun my-lint-layout-php-statement-brace-and-indent-todo (&optional prefix)
-  "Check that code is indented according to brace column at point."
+(defun my-lint-layout-generic-check-indent-forward (indent &optional prefix)
+  "Check that lines are indented correctly until next brace.
+Use BASE-INDENT, optional message PREFIX."
+  (while (and (forward-line 1)
+	      (not (eobp))
+	      (not (looking-at "^.*[{}]")))
+    (cond
+     ((my-lint-layout-looking-at-empty-line-p)) ; do nothing
+     ((my-lint-layout-looking-at-comment-doc-block-p) ; skip
+      ;; Handled in my-lint-layout-generic-check-comment-multiline-stars
+      (re-search-forward "^[ \t]*\\*/" nil t))
+     (t
+      (skip-chars-forward " \t")
+      (my-lint-layout-generic-check-indent-current indent prefix)))))
+
+(defun my-lint-layout-generic-statement-brace-and-indent (&optional prefix)
+  "Check that code is indented after each brace.
+If point is at `point-min' then check also ending brace placement.
+Optional message PREFIX."
+  (let ((istep my-lint-layout-generic-indent-step)
+	level
+	expect-indent
+	indent)
+    ;; FIXME: start counting levels are we find starting braces.
+    (if (eq (point) (point-min))
+	(setq level 0))
+    (while (my-lint-layout-generic-statement-brace-forward)
+      (goto-char (line-beginning-position))
+      (unless (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)")  ;Skip brace in comments
+	(skip-chars-forward " \t")
+	;; The starting line be initially incorrect
+	(cond
+	 ((my-lint-layout-generic-check-indent-current nil prefix)
+	  (forward-line 1))		;Error
+	 (t
+	  (setq expect-indent (+ (current-column) istep))
+	  (my-lint-layout-generic-check-indent-forward
+	   expect-indent prefix)
+	  ;; End brace check
+	  (when (and (looking-at "^[ \t]*}")
+		     (setq expect-indent (- expect-indent istep))
+		     (> expect-indent 0))
+	    (skip-chars-forward " \t")
+	    (my-lint-layout-generic-check-indent-current
+	     expect-indent prefix))))))))
+
+;; FIXME: Old, remove
+(defun my-lint-layout-generic-statement-brace-and-indent-todo (&optional prefix)
+  "Check that code is indented after each brace."
   (save-excursion
     (let ((beg (line-end-position))
 	  col
@@ -2434,9 +2586,9 @@ if ( check );
 	  (my-lint-layout-php-check-statement-comment-above keyword prefix)))
       (my-lint-layout-php-check-indent-string-check
        indent statement-line prefix)
-      ;; (my-lint-layout-php-statement-brace-forward)
+      ;; (my-lint-layout-generic-statement-brace-forward)
       ;; brace-start-line (my-lint-layout-current-line-number))
-      (my-lint-layout-php-statement-brace-and-indent prefix)
+      (my-lint-layout-generic-statement-brace-and-indent prefix)
       (my-lint-layout-php-check-statement-brace-detach fullstr)
       (when (and php-p
 		 (string-match "\\<if\\>\\|\\<els.*if\\>" keyword))
@@ -5197,9 +5349,9 @@ Write error at LINE with PREFIX."
 (defun my-lint-layout-generic-doc-examine-typeof (str)
   "Examine what type of docstring."
   (cond
-   ((my-lint-layout-code-php-p)
+   ((eq 'php-mode (my-lint-layout-code-type-p))
     (my-lint-layout-php-doc-examine-typeof str))
-   ((my-lint-layout-code-java-p)
+   ((eq 'java-mode (my-lint-layout-code-type-p))
     (my-lint-layout-java-doc-examine-typeof str))))
 
 (defun my-lint-layout-generic-function-end (&optional column indent)
@@ -5249,16 +5401,17 @@ Point must be at the beginning of function definition line."
     (goto-char (line-beginning-position))
     (let ((re-beg
 	  (cond
-	   ((my-lint-layout-code-php-p)
+	   ((eq 'php-mode (my-lint-layout-code-type-p))
 	    my-lint-layout-php-function-regexp)
-	   ((my-lint-layout-code-java-p)
+	   ((eq 'java-mode (my-lint-layout-code-type-p))
 	    my-lint-layout-java-function-regexp)))
 	  re-end
 	  indent
 	  col
 	  beg
 	  end)
-    (when (looking-at re-beg)
+    (when (and re-beg
+	       (looking-at re-beg))
       (setq beg (point))
       ;; This can be spaces+tabs, so canonicalize
       (setq indent (match-string 1))
@@ -5618,14 +5771,15 @@ According to file extension: *.php, *.css, *.php."
   (let ((name (buffer-name)))
     (or prefix
 	(setq prefix name))
+    (my-lint-layout-code-type-set-local-variable) ; Makes things faster
     (cond
-     ((my-lint-layout-code-java-p)
-      (my-lint-layout-java-check-all-interactive (point-min) prefix))
-     ((my-lint-layout-code-php-p)
+     ((eq 'php-mode (my-lint-layout-code-type-p))
       (my-lint-layout-php-check-all-interactive (point-min) prefix))
-     ((my-lint-layout-code-css-p)
+     ((eq 'java-mode (my-lint-layout-code-type-p))
+      (my-lint-layout-java-check-all-interactive (point-min) prefix))
+     ((eq 'css-mode (my-lint-layout-code-type-p))
       (my-lint-layout-css-check-buffer-interactive prefix))
-     ((my-lint-layout-code-sql-p)
+     ((eq 'sql-mode (my-lint-layout-code-type-p))
       (my-lint-layout-sql-buffer-interactive prefix))
      (t
       (if verb
@@ -5686,6 +5840,7 @@ See `my-lint-layout-check-generic-buffer'"
 	(message "WARN: No such file '%s'" file)
       (let (find-file-hooks)
 	(with-temp-buffer
+	  (my-lint-layout-code-type-set-local-variable)
 	  (insert-file-contents file)
 	  (my-lint-layout-generic-run-list
 	   function-list
