@@ -733,7 +733,7 @@ See also `my-lint-layout-check-file-list'.")
 	(my-lint-layout-code-css-p))
     'css-mode)))
 
-(defsubst my-lint-layout-code-type-set-local-variable
+(defsubst my-lint-layout-code-type-set-local-variable ()
   "Set `my-lint-layout-code-type' local to buffer."
   (make-local-variable 'my-lint-layout-code-type)
   (setq my-lint-layout-code-type
