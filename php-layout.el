@@ -247,7 +247,8 @@ type modifiers to be present:
      "elsif"
      "elseif"
      "else[ \t]+if"
-     "catch")
+     "catch"
+     "finally")
    'words)
   "Control statement continue keyword regexp.")
 
@@ -1435,7 +1436,7 @@ displayed."
    '("^[ \t]*}[ \t]*[\r\n][ \t]*\\<else\\>"
      "in block, 'else' not at previous brace line '}'")
 
-   '("^[ \t]*}\\(else\\|catch\\)\\>"
+   '("^[ \t]*}\\(else\\|catch\\|finally\\)\\>"
      "in block, no space after brace '}'")
 
    '("[a-zA-Z][a-zA-Z0-9_]*[ \t]+=[a-zA-Z0-9_\"'<]"
