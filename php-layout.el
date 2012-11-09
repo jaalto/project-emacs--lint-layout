@@ -681,7 +681,7 @@ See also `my-lint-layout-check-file-list'.")
       "\\|\\<main[ \t]*("
       "\\|\\<\\(float\\|double\\|int\\|long\\|public\\)[ \t]+[^=;]+[=;]"
       "\\|@author\\|@since\\|@version"))
-   nil t))
+   nil t)
 
 (defsubst my-lint-layout-code-java-p (&optional filename)
   "Return non-nil if Java code. Optional check FILENAME."
