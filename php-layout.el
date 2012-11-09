@@ -1415,14 +1415,19 @@ displayed."
    '("this\\.[^][ )\t\r\n]+[ \t]+("
      "in method call, possibly extra space before opening paren")
 
-   ;; funcall(code )
+   ;; funcall(arg )
    '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([^)\r\n]*[ \t]+)"
      "in method call, possibly extra space before closing paren"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
-   ;; funcall( code)
+   ;; funcall( arg)
    '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
      "in method call, possibly extra space after opening paren"
+     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+
+   ;; funcall(arg,arg)
+   '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([^);\r\n]+,[^);\r\n]+)"
+     "in method call, no space after each comma"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
    ;; code );
