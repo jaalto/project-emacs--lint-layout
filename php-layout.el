@@ -2374,7 +2374,8 @@ Return variable content string."
        (format (concat "[code] indent, possibly incorrect "
 		       "at col %d, expect multiple of %d")
 	       i
-	       istep)))
+	       istep)
+       prefix))
      ((and indent
 	   (< i indent))
       (my-lint-layout-message
