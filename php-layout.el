@@ -104,6 +104,10 @@
 ;;          my-lint-layout-php-check-phpdoc-interactive
 ;;          my-lint-layout-php-check-regexp-occur-buffer-interactive
 ;;
+;;          my-lint-layout-java-check-all-interactive
+;;          my-lint-layout-java-check-phpdoc-interactive
+;;          my-lint-layout-java-check-regexp-occur-buffer-interactive
+;;
 ;;          my-lint-layout-check-whitespace-buffer-interactive
 ;;          my-lint-layout-check-line-length-buffer-interactive
 ;;          my-lint-layout-check-eof-marker-interactive
@@ -1428,6 +1432,12 @@ displayed."
    '("[a-zA-Z][a-zA-Z0-9_]*=[ \t]+[a-zA-Z0-9_\"\']"
      "in var assign, no space at left of equal sign")
 
+   '("^[ \t]*}[ \t]*[\r\n][ \t]*\\<else\\>"
+     "in block, 'else' not at previous brace line '}'")
+
+   '("^[ \t]*}\\(else\\|catch\\)\\>"
+     "in block, no space after brace '}'")
+
    '("[a-zA-Z][a-zA-Z0-9_]*[ \t]+=[a-zA-Z0-9_\"'<]"
      "in var assign, no space at right of equal sign"))
   "Search ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
@@ -2348,15 +2358,16 @@ Return variable content string."
        (format "[code] indent, comment char '*' expected at col %d"
 	       (1+ indent))
        prefix))
-     ((and (and indent)
-	   (looking-at "}")
-	   (not (eq i indent)))
-      (my-lint-layout-message
-       (format "[code] indent, ending '}' expected at col %d"
-	       (if (zerop (mod indent istep))
-		   indent
-		 (* istep (/ indent istep))))
-       prefix))
+     ;; Disabled, because does not hand "else if" etc. continuation.
+     ;; ((and (and indent)
+     ;; 	   (looking-at "}")
+     ;; 	   (not (eq i indent)))
+     ;;  (my-lint-layout-message
+     ;;   (format "[code] indent, ending '}' expected at col %d"
+     ;; 	       (if (zerop (mod indent istep))
+     ;; 		   indent
+     ;; 		 (* istep (/ indent istep))))
+     ;;   prefix))
      ((and (not (zerop i))
 	   (not even-p))
       (my-lint-layout-message
@@ -2902,8 +2913,10 @@ and `my-lint-layout-php-function-call-keywords-no-paren'."
 		     (make-string col ?\.)
 		     "\\(.+\\)")))
     (while (and (re-search-forward re nil t)
-		;; Ignore URLs and long path/names/to/dir
-		(not (string-match "://\\|/.*/" (match-string 0))))
+		;; Ignore URLs, C:\paths and path/name lines
+		(not (string-match
+		      "://\\|[a-z]:[\\].+[\\]\\|/[a-zA-Z0-9][a-zA-Z0-9_]+/"
+		      (match-string 0))))
       (my-lint-layout-message
        (format "line lenght past column %d: %s" col (match-string 1))
        prefix))))
