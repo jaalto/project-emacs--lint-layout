@@ -671,8 +671,9 @@ Related articles:
    `,(concat
       "^[ \t]*import[ \t]+[a-z]+\\..*;"
       "\\|public.*static"
-      "\\|@author\\|@since\\|@version"
-      "\\|\\<\\(float\\|double\\|int\\|long\\|public\\)[ \t]+[^=;]+[=;]")
+      "\\|\\<main[ \t]*("
+      "\\|\\<\\(float\\|double\\|int\\|long\\|public\\)[ \t]+[^=;]+[=;]"
+      "\\|@author\\|@since\\|@version"))
    nil t))
 
 (defsubst my-lint-layout-code-java-p ()
