@@ -1087,6 +1087,14 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 	    (buffer-name))
 	  (format-time-string "%Y-%m-%d %H:%M")))
 
+(defsubst my-lint-layout-looking-at-empty-line-p ()
+  "If `looking-at' at empty line."
+  (looking-at "[ \t]*$"))
+
+(defsubst my-lint-layout-looking-at-comment-doc-block-p ()
+  "If `looking-at' at /** doc block."
+  (looking-at "[ \t]*/\\*\\*[ \t\r\n]"))
+
 ;; FIXME: comment-type 'sigle 'multi
 (defsubst my-lint-layout-looking-at-comment-start-p ()
   "If `looking-at' at comment start."
@@ -1111,8 +1119,8 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 (defsubst my-lint-layout-looking-at-statement-p ()
   "If `looking-at' at semicolon at the end of line."
   (my-lint-layout-with-save-point
-    (goto-char (line-end-position))
-    (search-backward ";" (line-beginning-position) t)))
+    (goto-char (line-beginning-position))
+    (looking-at "^.*;[ \t\r]*\n")))
 
 (defsubst my-lint-layout-looking-at-variable-at-line-p ()
   "If `looking-at' at variable at line"
@@ -1156,7 +1164,8 @@ See `my-lint-layout-buffer-name'."
     (insert (format "%s%04d: %s\n"
 		    (my-lint-layout-prefix prefix)
 		    line
-		    msg))))
+		    msg))
+    t))
 
 (defsubst my-lint-layout-doc-line-startp-p ()
   "Check /* line. Return starting point."
@@ -1684,7 +1693,8 @@ See `my-lint-layout-generic-run-occur-list'.")
 
 (defun my-lint-layout-generic-class-forward ()
   "Goto next class definition."
-  (let ((class  (save-excursion (my-lint-layout-search-forward-class-beginning)))
+  (let ((class  (save-excursion
+		  (my-lint-layout-search-forward-class-beginning)))
 	(iface  (my-lint-layout-search-forward-interface-beginning)))
     (cond
      ((and class iface)
@@ -1741,7 +1751,8 @@ See `my-lint-layout-generic-run-occur-list'.")
 	    nil t)
       ;; (setq str (match-string 0))
       (my-lint-layout-message
-       "[code] possible maintenance problem, multiple output calls, HERE doc recommended"
+       `,(concat "[code] possible maintenance problem, "
+		 "multiple output calls, HERE doc recommended")
        prefix))))
 
 (defsubst my-lint-layout-php-print-command-forward-1 ()
@@ -2189,26 +2200,40 @@ Return variable content string."
     (string-match "^ *" str)
     (length (match-string 0 str))))
 
-(defsubst my-lint-layout-php-statement-brace-forward (&optional brace)
-  "Find statement block BRACE, which is '{' by default."
+(defsubst my-lint-layout-generic-statement-brace-forward (&optional brace)
+  "Find statement block start. Optionally closing BRACE end."
   ;;  Notice that BRACE is hre used in regexp.
   ;;
   ;; if ( preg_match("^[0-9]{1,9}$", $bfield ) )
   ;; {
-  (let ((skip-chars "^{")
-	(re "{[ \t]*$"))
-    (when brace
-      ;; FIXME: Not working
-      (setq skip-chars "^}")
-      (setq re "}[ \t]*\\(.*//.*\\)$"))
-    (forward-char 1)
-    (while (and (not (eobp))
-		(if (looking-at re)
-		    nil
-		  (progn
-		    (forward-char 1)
-		    t)))
-      (skip-chars-forward skip-chars))))
+  ;;
+  (if brace
+      (setq brace "}")
+    (setq brace "{"))
+  (let ((opoint (point))
+	(skip-chars (concat "^" brace))
+	found
+	point)
+    (if (eq (char-after)		; on brace, move forward
+	    (if brace
+		?}
+	      ?{))
+	(forward-char 1))
+    (while (and (null found)
+		(not (eobp))
+		(skip-chars-forward skip-chars)
+		(setq point (point)))
+      ;; Ignore brace inside comments
+      (unless (my-lint-layout-with-save-point
+		(goto-char (line-beginning-position))
+		(unless (my-lint-layout-looking-at-comment-point-p)
+		  (setq found point)))
+	(if (not (eobp))
+	    (forward-char 1))))
+    (if (looking-at "[{}]")
+	found
+      (goto-char opoint)		; Don't move
+      nil)))
 
 (defsubst my-lint-layout-php-statement-brace-end-forward (&optional col)
   "Find ending brace at `current-column' or COL"
@@ -2301,12 +2326,105 @@ Return variable content string."
 	   base-indent
 	   match)))))
 
-(defun my-lint-layout-php-statement-brace-and-indent (&optional prefix)
-  ;;  Disabled. See below. Needs rewrite.
-  )
+(defun my-lint-layout-generic-check-indent-current
+  (indent &optional prefix)
+  "Check current point for INDENT. Optional message PREFIX."
+  (let* ((istep my-lint-layout-generic-indent-step)
+	 (i (current-column))
+	 (even-p (zerop (mod i istep))))
+    ;;  Comments are a special case
+    ;;
+    ;;  /*
+    ;;   *
+    ;;   |
+    ;;   Correct indent position: 1 + indentation
+    ;;
+    (cond
+     ((and (and indent)
+	   (looking-at "\\*")
+	   (not (eq i (1+ indent))))
+      (my-lint-layout-message
+       (format "[code] indent, comment char '*' expected at col %d"
+	       (1+ indent))
+       prefix))
+     ((and (and indent)
+	   (looking-at "}")
+	   (not (eq i indent)))
+      (my-lint-layout-message
+       (format "[code] indent, ending '}' expected at col %d"
+	       (if (zerop (mod indent istep))
+		   indent
+		 (* istep (/ indent istep))))
+       prefix))
+     ((and (not (zerop i))
+	   (not even-p))
+      (my-lint-layout-message
+       (format (concat "[code] indent, possibly incorrect "
+		       "at col %d, expect multiple of %d")
+	       i
+	       istep)))
+     ((and indent
+	   (< i indent))
+      (my-lint-layout-message
+       (format "[code] indent, possibly missing at col %d, expect %d"
+	       i indent)
+       prefix))
+     ((and indent
+	   (> i indent))
+      (my-lint-layout-message
+       (format "[code] indent, possibly too at col %d, expect %d"
+	       i indent)
+       prefix)))))
 
-(defun my-lint-layout-php-statement-brace-and-indent-todo (&optional prefix)
-  "Check that code is indented according to brace column at point."
+(defun my-lint-layout-generic-check-indent-forward (indent &optional prefix)
+  "Check that lines are indented correctly until next brace.
+Use BASE-INDENT, optional message PREFIX."
+  (while (and (forward-line 1)
+	      (not (eobp))
+	      (not (looking-at "^.*[{}]")))
+    (cond
+     ((my-lint-layout-looking-at-empty-line-p)) ; do nothing
+     ((my-lint-layout-looking-at-comment-doc-block-p) ; skip
+      ;; Handled in my-lint-layout-generic-check-comment-multiline-stars
+      (re-search-forward "^[ \t]*\\*/" nil t))
+     (t
+      (skip-chars-forward " \t")
+      (my-lint-layout-generic-check-indent-current indent prefix)))))
+
+(defun my-lint-layout-generic-statement-brace-and-indent (&optional prefix)
+  "Check that code is indented after each brace.
+If point is at `point-min' then check also ending brace placement.
+Optional message PREFIX."
+  (let ((istep my-lint-layout-generic-indent-step)
+	level
+	expect-indent
+	indent)
+    ;; FIXME: start counting levels are we find starting braces.
+    (if (eq (point) (point-min))
+	(setq level 0))
+    (while (my-lint-layout-generic-statement-brace-forward)
+      (goto-char (line-beginning-position))
+      (unless (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)")  ;Skip brace in comments
+	(skip-chars-forward " \t")
+	;; The starting line be initially incorrect
+	(cond
+	 ((my-lint-layout-generic-check-indent-current nil prefix)
+	  (forward-line 1))		;Error
+	 (t
+	  (setq expect-indent (+ (current-column) istep))
+	  (my-lint-layout-generic-check-indent-forward
+	   expect-indent prefix)
+	  ;; End brace check
+	  (when (and (looking-at "^[ \t]*}")
+		     (setq expect-indent (- expect-indent istep))
+		     (> expect-indent 0))
+	    (skip-chars-forward " \t")
+	    (my-lint-layout-generic-check-indent-current
+	     expect-indent prefix))))))))
+
+;; FIXME: Old, remove
+(defun my-lint-layout-generic-statement-brace-and-indent-todo (&optional prefix)
+  "Check that code is indented after each brace."
   (save-excursion
     (let ((beg (line-end-position))
 	  col
@@ -2467,9 +2585,9 @@ if ( check );
 	  (my-lint-layout-php-check-statement-comment-above keyword prefix)))
       (my-lint-layout-php-check-indent-string-check
        indent statement-line prefix)
-      ;; (my-lint-layout-php-statement-brace-forward)
+      ;; (my-lint-layout-generic-statement-brace-forward)
       ;; brace-start-line (my-lint-layout-current-line-number))
-      (my-lint-layout-php-statement-brace-and-indent prefix)
+      (my-lint-layout-generic-statement-brace-and-indent prefix)
       (my-lint-layout-php-check-statement-brace-detach fullstr)
       (when (and php-p
 		 (string-match "\\<if\\>\\|\\<els.*if\\>" keyword))
