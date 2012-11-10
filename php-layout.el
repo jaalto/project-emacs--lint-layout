@@ -2396,7 +2396,7 @@ Return variable content string."
      ((and (not (zerop i))
 	   (not even-p))
       (my-lint-layout-message
-       (format (concat "[code] indent, at col %02d, expect multiple of %02d")
+       (format (concat "[code] indent, at col %02d, expect multiple of %d")
 	       i
 	       istep)
        prefix))
