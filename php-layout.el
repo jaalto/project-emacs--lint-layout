@@ -398,17 +398,17 @@ without brace requirement.")
    "\\(?:"
 	    ;; <other modifier>?<access modifier>?function ()
 	    my-lint-layout-generic-other-modifier-regexp
-	    "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)?"
+	    "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)"
 
 	    "\\|"
 
 	    ;; <access modifier>?<other modifier>?function ()
-	    "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)?"
+	    "\\(?:" my-lint-layout-generic-access-modifier-regexp "\\)"
 	    my-lint-layout-generic-other-modifier-regexp
-   "\\)?"
+   "\\)"
    "[ \t]*"
    ;; name ()
-   "[ \t\r\n]+[^(]+(")
+   "[ \t\r\n]+[^(;=]+(")
  "Method regexp. Submatch 1: Indent")
 
 (defconst my-lint-layout-php-variable-regexp
@@ -5012,8 +5012,9 @@ The submatches are as follows: The point is at '!':
   (str line &optional prefix data type)
   "Check docstring in STR, at LINE number. PREFIX for messages.
 The DATA contains full function content as string."
-  (let* ((class-p (my-lint-layout-with-save-point
-		    (my-lint-layout-search-backward-class-p)))
+  (let* (;; FIXME: narrowed, so we can't see anywhere outsie comment
+	 ;;(class-p (my-lint-layout-with-save-point
+	 ;;  (my-lint-layout-search-backward-class-p)))
 	 (need-return-p
 	  (and data
 	       (string-match "^[ \t]*return\\>[ \t]*[^; \t\r\n]" data)))
@@ -5022,8 +5023,9 @@ The DATA contains full function content as string."
 	       (string-match
 		(concat
 		 (my-lint-layout-generic-function-regexp)
-		 "[ \t]*[^) \t\r\n]")
-		data)))
+		 "[ \t]*[^);=]+)")
+		data)
+	       (match-string 0 data)))
 	 (param  (string-match "@param" str))
 	 (php-p  (my-lint-layout-code-php-p))
 	 (access (string-match "@access" str))
