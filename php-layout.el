@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst my-lint-layout-version-time "2012.1110.2049"
+(defconst my-lint-layout-version-time "2012.1110.2114"
   "*Version of last edit YYYY.MMDD")
 
 (defvar my-lint-layout-debug nil
@@ -1987,7 +1987,7 @@ Return variable content string."
 	 prefix)))))
 
 (defun my-lint-layout-generic-check-comment-statement-examine
-  (str &optional prefix)
+  (ignore-re str &optional prefix)
   "Examine comment STR and text around point."
   ;; Allow "//////" "*******" "###########"
   (when (looking-at "[^ /*#\t\r\n]")
@@ -1996,16 +1996,24 @@ Return variable content string."
      prefix))
   ;; Peek previous line
   (save-excursion
+    (let ((col (current-column))
+	  (col-prev))
     (forward-line -1)
-    (unless (looking-at (concat re "\\|^[ \t\r]*$\\|.*{"))
+    (skip-chars-forward " \t")
+    (setq col-prev ((current-column)))
+    (goto-char (line-beginning-position))
+    (when (and
+	   (eq col col-prev)
+	   (not (looking-at
+		 (concat ignore-re "\\|^[ \t\r]*$\\|^.*{"))))
       (my-lint-layout-message
-       "[comment] no empty line before comment start"
+       "[comment] possibly no empty line before comment start"
        prefix
-       (1+ (my-lint-layout-current-line-number))))))
+       (1+ (my-lint-layout-current-line-number)))))))
 
 (defun my-lint-layout-generic-check-comment-statements (&optional prefix)
   "Check comment markers."
-  (let ((re "^[ \t]*\\([#]\\|//\\|/\\*+\\)")
+  (let ((re "^[ \t]*\\([#*]\\|/[/*]\\)")
 	str)
     (while (re-search-forward re nil t)
       (setq str (match-string 1))
@@ -2015,7 +2023,7 @@ Return variable content string."
 	     (looking-at "[_a-z].*{")))
        ((not (string-match "#" str))
 	(my-lint-layout-generic-check-comment-statement-examine
-	 str prefix))))))
+	 re str prefix))))))
 
 (defun my-lint-layout-generic-doc-above-p ()
   "Check if phpdoc is in above line."
