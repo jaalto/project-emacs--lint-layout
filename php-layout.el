@@ -1432,7 +1432,7 @@ displayed."
 (defconst my-lint-layout-java-check-regexp-occur-list
   (list
 
-   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)("
+   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)("
      "in statement, no space between keyword and starting paren")
 
    '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
@@ -1451,7 +1451,7 @@ displayed."
      ;;  */
      "@\\|^[ \t]/?*\\*")
 
-   ;; '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
+   ;; '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)[ \t]*([^ \t\r\n]"
    ;;   "in statement, no space after starting paren")
 
    ;; '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
@@ -1460,17 +1460,17 @@ displayed."
    ;; funcall(arg )
    '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)"
      "in method call, possibly extra space before closing paren"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)\\|^[ \t]/?*\\*")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall( arg)
    '("\\<[_a-zA-Z][._a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
      "in method call, possibly extra space after opening paren"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)\\|^[ \t]/?*\\*")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall (arg)
    '("^[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]+([^);\r\n]*)"
      "in method call, possibly extra space before opening paren"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)\\|^[ \t]/?*\\*")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; this.funcall (arg)
    '("this\\.[^][ )\t\r\n]+[ \t]+("
@@ -1479,12 +1479,12 @@ displayed."
    ;; funcall(arg,arg)
    '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)"
      "in method call, no space after comma"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)")
 
    ;; code );
    '("[^) \t\r\n]+[ \t]+);"
      "in method call, possibly extra space before closing paren (statement)"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)")
 
    '("[a-zA-Z][a-zA-Z0-9_]*=[ \t]+[a-zA-Z0-9_\"\']"
      "in var assign, no space at left of equal sign")
@@ -1556,7 +1556,7 @@ See `my-lint-layout-generic-run-occur-list'.")
     (concat
      "^[ \t]*"
      "\\<\\(function\\|if\\|else\\(?:[ \t\r\n]*if\\)?"
-	   "\\|while\\|class\\|abstract\\|interface\\|foreach\\)"
+	   "\\|while\\|class\\|abstract\\|interface\\|for\\(?:each\\)?\\)"
      "[ \t]*("
      "\\>")
     "Possibly misspelled keyword, expect lowercase"
@@ -1613,10 +1613,10 @@ See `my-lint-layout-generic-run-occur-list'.")
    '("\\$[a-z].*=[^;\n]*\n[^$\r\n]*<<<"
      "in assignment, HERE doc start not right of (=)")
 
-   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)("
+   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)("
      "in statement, no space between keyword like 'if' and starting paren")
 
-   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
+   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)[ \t]*([^ \t\r\n]"
      "in statement, no space after starting paren")
 
    '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
@@ -1627,7 +1627,7 @@ See `my-lint-layout-generic-run-occur-list'.")
    ;;    if ( empty($a>>)
    ;;         and
    ;;         $b )
-   '("\\<\\(if\\|foreach\\|while\\)[ \t]*(.*[^ \t\r\n])[ \t]*\r?\n.*{"
+   '("\\<\\(if\\|for\\(?:each\\)?\\|while\\)[ \t]*(.*[^ \t\r\n])[ \t]*\r?\n.*{"
      "in statement, possibly no space before closing paren")
 
    '("this->[^][ )\t\r\n]+[ \t]+("
@@ -1644,17 +1644,17 @@ See `my-lint-layout-generic-run-occur-list'.")
    ;; funcall(code )
    '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([^)\r\n]*[ \t]+)"
      "in funcall, possibly extra space before closing paren"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)")
 
    ;; funcall( code)
    '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
      "in funcall, possibly extra space after opening paren"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)")
 
    ;; code );
    '("[^) \t\r\n]+[ \t]+);"
      "in funcall, possibly extra space before closing paren (statement)"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)")
 
    ;; function ( param, def)
    (list
@@ -1691,7 +1691,7 @@ See `my-lint-layout-generic-run-occur-list'.")
    ;; if ( $query and mysql_result == false )
    (list
     (concat
-     "\\<\\(?:else[ \t]*if\\|if\\|foreach\\|while\\)[ \t]*("
+     "\\<\\(?:else[ \t]*if\\|if\\|for\\(?:each\\)?\\|while\\)[ \t]*("
      ".*[ \t][$][^ 0-9\t\r\n]+\\>"
      "[ \t]*\\(?:&&\\|[|][|]\\|and\\|or\\)[ \t]+"
      "[a-z0-9_]+[) \t\r\n]")
@@ -1700,7 +1700,7 @@ See `my-lint-layout-generic-run-occur-list'.")
    ;; if ( value and $var )
    (list
     (concat
-     "\\<\\(?:elseif\\|if\\|foreach\\|while\\)[ \t]*("
+     "\\<\\(?:elseif\\|if\\|for\\(?:each\\)?\\|while\\)[ \t]*("
      "[ \t][^ $0-9\t\r\n]+\\>"
      "[ \t]*\\(?:&&\\|[|][|]\\|\\<and\\>\\|\\<or\\>\\)[ \t]*"
      "[$][a-z0-9_]+[) \t\r\n]")
