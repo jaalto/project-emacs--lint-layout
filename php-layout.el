@@ -1460,17 +1460,17 @@ displayed."
    ;; funcall(arg )
    '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)"
      "in method call, possibly extra space before closing paren"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+     "\\<\\(if\\|foreach\\|while\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall( arg)
    '("\\<[_a-zA-Z][._a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
      "in method call, possibly extra space after opening paren"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+     "\\<\\(if\\|foreach\\|while\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall (arg)
    '("^[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]+([^);\r\n]*)"
      "in method call, possibly extra space before opening paren"
-     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+     "\\<\\(if\\|foreach\\|while\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; this.funcall (arg)
    '("this\\.[^][ )\t\r\n]+[ \t]+("
