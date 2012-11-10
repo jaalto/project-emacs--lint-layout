@@ -5561,7 +5561,8 @@ Point must be at the beginning of function definition line."
   "Check empty line before doc-block."
   (my-lint-layout-with-save-point
     (forward-line -1)
-    (unless (looking-at "^[ \t]*[{<]\\|^[ \t\r]*$")
+    (when (and (not (bobp))
+	       (not (looking-at "^[ \t]*[{<]\\|^[ \t\r]*$")))
       ;; private $var;
       ;; /**
       ;;  * Documentation
