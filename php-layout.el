@@ -130,6 +130,9 @@
 (eval-when-compile
   (require 'cl))
 
+(defconst my-lint-layout-version-time "2012.1110.1716"
+  "*Version of last edit YYYY.MMDD")
+
 (defvar my-lint-layout-debug nil
   "Non-nil to turn on debug messages.")
 
