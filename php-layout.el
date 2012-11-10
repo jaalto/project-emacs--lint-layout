@@ -1101,10 +1101,17 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
   "If `looking-at' at /** doc block."
   (looking-at "[ \t]*/\\*\\*[ \t\r\n]"))
 
-;; FIXME: comment-type 'sigle 'multi
-(defsubst my-lint-layout-looking-at-comment-start-p ()
+(defsubst my-lint-layout-looking-at-comment-start-any-p ()
   "If `looking-at' at comment start."
   (looking-at "^[ \t]*\\(/?[*]\\|//\\)"))
+
+(defsubst my-lint-layout-looking-at-comment-start-multiline-p ()
+  "If `looking-at' at comment start."
+  (looking-at "^[ \t]*/[*]"))
+
+(defsubst my-lint-layout-looking-at-comment-start-single-p ()
+  "If `looking-at' at comment start."
+  (looking-at "^[ \t]*\\(//\\|#\\)"))
 
 (defsubst my-lint-layout-looking-at-comment-end-p ()
   "If `looking-at' at comment end."
@@ -1412,11 +1419,8 @@ displayed."
    ;; '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
    ;;   "in statement, no space after keyword and paren")
 
-   '("this\\.[^][ )\t\r\n]+[ \t]+("
-     "in method call, possibly extra space before opening paren")
-
    ;; funcall(arg )
-   '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([^)\r\n]*[ \t]+)"
+   '("\\<[_a-zA-Z][_a-zA-Z0-9]+([^)\r\n]*[ \t]+)"
      "in method call, possibly extra space before closing paren"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
@@ -1425,8 +1429,17 @@ displayed."
      "in method call, possibly extra space after opening paren"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
+   ;; funcall (arg)
+   '("^[ \t]+\\<[_a-zA-Z][_a-zA-Z0-9]+[ \t]+([^);\r\n]*)"
+     "in method call, possibly extra space before opening paren"
+     "\\<\\(if\\|foreach\\|while\\|assert\\)")
+
+   ;; this.funcall (arg)
+   '("this\\.[^][ )\t\r\n]+[ \t]+("
+     "in method call, possibly extra space before opening paren")
+
    ;; funcall(arg,arg)
-   '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([^);\r\n]+,[^);\r\n]+)"
+   '("[ \t]+\\<[_a-zA-Z][_a-zA-Z0-9]+[ \t]*([^);\r\n]+,[^);\r\n]+)"
      "in method call, no space after each comma"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
@@ -2348,7 +2361,13 @@ Return variable content string."
   "Check current point for INDENT. Optional message PREFIX."
   (let* ((istep my-lint-layout-generic-indent-step)
 	 (i (current-column))
-	 (even-p (zerop (mod i istep))))
+	 (even-p (zerop (mod i istep)))
+	 ;; (eight-p
+	 ;;  (and indent			; 8 based ident (ignore those)
+	 ;;       (zerop (mod indent 4))	; expexted 4
+	 ;;       (zerop (mod i 8))		; but is 8
+	 ;;       (memq i '(8 16 24 32 40 48 56 64 72 80))))
+	 )
     ;;  Comments are a special case
     ;;
     ;;  /*
@@ -2377,21 +2396,28 @@ Return variable content string."
      ((and (not (zerop i))
 	   (not even-p))
       (my-lint-layout-message
-       (format (concat "[code] indent, possibly incorrect "
-		       "at col %d, expect multiple of %d")
+       (format (concat "[code] indent, at col %02d, expect multiple of %02d")
 	       i
 	       istep)
        prefix))
+     ;; ((and eight-p			; skip
+     ;; 	   (= i (+ indent 4))))
+     ;; ((and eight-p
+     ;; 	   (< i indent))
+     ;;  (my-lint-layout-message
+     ;;   (format "[code] indent, at col %02d, expect %02d (move right)"
+     ;; 	       i (+ 4 indent))
+     ;;   prefix))
      ((and indent
-	   (< i indent))
+	   (<= i indent))
       (my-lint-layout-message
-       (format "[code] indent, possibly missing at col %d, expect %d"
+       (format "[code] indent, at col %02d, expect %02d (move right)"
 	       i indent)
        prefix))
      ((and indent
 	   (> i indent))
       (my-lint-layout-message
-       (format "[code] indent, possibly too much at col %d, expect %d"
+       (format "[code] indent, at col %02d, expect %02d (move left)"
 	       i indent)
        prefix)))))
 
@@ -2400,10 +2426,10 @@ Return variable content string."
 Use BASE-INDENT, optional message PREFIX."
   (while (and (forward-line 1)
 	      (not (eobp))
-	      (not (looking-at "^.*[{}]")))
+	      (not (looking-at "^.*{\\|^[ \t]*}")))
     (cond
      ((my-lint-layout-looking-at-empty-line-p)) ; do nothing
-     ((my-lint-layout-looking-at-comment-doc-block-p) ; skip
+     ((my-lint-layout-looking-at-comment-start-multiline-p) ; skip
       ;; Handled in my-lint-layout-generic-check-comment-multiline-stars
       (re-search-forward "^[ \t]*\\*/" nil t))
      (t
@@ -2433,42 +2459,15 @@ Optional message PREFIX."
 	  (setq expect-indent (+ (current-column) istep))
 	  (my-lint-layout-generic-check-indent-forward
 	   expect-indent prefix)
+	  ;; FIXME: only when we start counting.
 	  ;; End brace check
-	  (when (and (looking-at "^[ \t]*}")
-		     (setq expect-indent (- expect-indent istep))
-		     (> expect-indent 0))
-	    (skip-chars-forward " \t")
-	    (my-lint-layout-generic-check-indent-current
-	     expect-indent prefix))))))))
-
-;; FIXME: Old, remove
-(defun my-lint-layout-generic-statement-brace-and-indent-todo (&optional prefix)
-  "Check that code is indented after each brace."
-  (save-excursion
-    (let ((beg (line-end-position))
-	  col
-	  point)
-      ;; FIXME: does not work correct because the ending brace must
-      ;; be paired. Rewrite: count pair, backtrack pairs.
-      (when (setq brace-end-point
-		  (my-lint-layout-php-statement-brace-end-forward))
-	;; If lined-up style: this is the base column
-	;; If K&R: line start is the base column
-	;; (setq point (point))
-	;; (goto-char (line-beginning-position))
-	;; (cond
-	;;  ((looking-at "^[ \t]{")
-	;;   (goto-char (1- (match-end 0)))
-	;;   (setq col (current-column)))
-	;;  (t
-	;;   (skip-chars-forward " \t")
-	;;   (setq col (current-column))))
-	;; (goto-char point)
-	(my-lint-layout-php-statement-brace-block-check
-	 beg
-	 brace-end-point
-	 (current-column)
-	 prefix)))))
+	  ;; (when (and (looking-at "^[ \t]*}")
+	  ;; 	     (setq expect-indent (- expect-indent istep))
+	  ;; 	     (> expect-indent 0))
+	  ;;   (skip-chars-forward " \t")
+	  ;;   (my-lint-layout-generic-check-indent-current
+	  ;;    expect-indent prefix))
+	  ))))))
 
 (defun my-lint-layout-php-check-statement-comment-above
   (&optional str prefix)
