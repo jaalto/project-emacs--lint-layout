@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst my-lint-layout-version-time "2012.1110.2048"
+(defconst my-lint-layout-version-time "2012.1110.2049"
   "*Version of last edit YYYY.MMDD")
 
 (defvar my-lint-layout-debug nil
@@ -5921,7 +5921,7 @@ See `my-lint-layout-check-generic-buffer'"
 	  (insert-file-contents file)
 	  (my-lint-layout-code-type-set-local-variable)
 	  (my-lint-layout-debug-message
-	   "debug layout: type %s %s"
+	   "debug layout: type %s"
 	   my-lint-layout-code-type)
 	  (my-lint-layout-generic-run-list
 	   function-list
