@@ -1420,17 +1420,17 @@ displayed."
    ;;   "in statement, no space after keyword and paren")
 
    ;; funcall(arg )
-   '("\\<[_a-zA-Z][_a-zA-Z0-9]+([^)\r\n]*[ \t]+)"
+   '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)"
      "in method call, possibly extra space before closing paren"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
    ;; funcall( arg)
-   '("\\<[_a-zA-Z][_a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
+   '("\\<[_a-zA-Z][._a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
      "in method call, possibly extra space after opening paren"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
    ;; funcall (arg)
-   '("^[ \t]+\\<[_a-zA-Z][_a-zA-Z0-9]+[ \t]+([^);\r\n]*)"
+   '("^[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]+([^);\r\n]*)"
      "in method call, possibly extra space before opening paren"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
@@ -1439,7 +1439,7 @@ displayed."
      "in method call, possibly extra space before opening paren")
 
    ;; funcall(arg,arg)
-   '("[ \t]+\\<[_a-zA-Z][_a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)"
+   '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)"
      "in method call, no space after comma"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
@@ -2433,6 +2433,18 @@ Use BASE-INDENT, optional message PREFIX."
      ((my-lint-layout-looking-at-comment-start-multiline-p) ; skip
       ;; Handled in my-lint-layout-generic-check-comment-multiline-stars
       (re-search-forward "^[ \t]*\\*/" nil t))
+     ((looking-at "^[ \t]*[a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;]+$")
+      ;; Only check start line
+      (skip-chars-forward " \t")
+      (my-lint-layout-generic-check-indent-current indent prefix)
+      ;;
+      ;;   Ignore rest, for continued function calls:
+      ;;
+      ;;   funcall(arg,
+      ;;           arg,
+      ;;           arg);
+      (or (search-forward ";" nil t)
+	  (re-search-forward "^[ \t]*[^ \t]" nil t)))
      (t
       (skip-chars-forward " \t")
       (my-lint-layout-generic-check-indent-current indent prefix)))))
