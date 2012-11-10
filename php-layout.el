@@ -2363,7 +2363,7 @@ Return variable content string."
 	 (i (current-column))
 	 (even-p (zerop (mod i istep)))
 	 ;; (eight-p
-	 ;;  (and indent			; 8 based ident (ignore those)
+	 ;;  (and indent			; 8 based ident check
 	 ;;       (zerop (mod indent 4))	; expexted 4
 	 ;;       (zerop (mod i 8))		; but is 8
 	 ;;       (memq i '(8 16 24 32 40 48 56 64 72 80))))
