@@ -1946,7 +1946,8 @@ Return variable content string."
 (defun my-lint-layout-generic-check-comment-statement-examine
   (str &optional prefix)
   "Examine comment STR and text around point."
-  (when (looking-at "[^ \t\r\n]")
+  ;; Allow "//////" "*******" "###########"
+  (when (looking-at "[^ /*#\t\r\n]")
     (my-lint-layout-message
      "[comment] no space between comment marker and text"
      prefix))
