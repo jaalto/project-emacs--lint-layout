@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst my-lint-layout-version-time "2012.1110.1819"
+(defconst my-lint-layout-version-time "2012.1110.2035"
   "*Version of last edit YYYY.MMDD")
 
 (defvar my-lint-layout-debug nil
@@ -990,7 +990,9 @@ The comment marker, if any, is in (match-string 2)."
    ((eq 'php-mode (my-lint-layout-code-type-p))
     my-lint-layout-php-function-regexp)
    ((eq 'java-mode (my-lint-layout-code-type-p))
-    my-lint-layout-java-function-regexp)))
+    my-lint-layout-java-function-regexp)
+   (t
+    (error "Unkown file type for buffer %s" (buffer-name)))))
 
 (defsubst my-lint-layout-type-function-string-p (str)
   (string-match
