@@ -1439,8 +1439,8 @@ displayed."
      "in method call, possibly extra space before opening paren")
 
    ;; funcall(arg,arg)
-   '("[ \t]+\\<[_a-zA-Z][_a-zA-Z0-9]+[ \t]*([^);\r\n]+,[^);\r\n]+)"
-     "in method call, no space after each comma"
+   '("[ \t]+\\<[_a-zA-Z][_a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)"
+     "in method call, no space after comma"
      "\\<\\(if\\|foreach\\|while\\|assert\\)")
 
    ;; code );
