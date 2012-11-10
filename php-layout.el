@@ -2409,7 +2409,7 @@ Return variable content string."
      ;; 	       i (+ 4 indent))
      ;;   prefix))
      ((and indent
-	   (<= i indent))
+	   (< i indent))
       (my-lint-layout-message
        (format "[code] indent, at col %02d, expect %02d (move right)"
 	       i indent)
