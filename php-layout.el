@@ -1116,7 +1116,7 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 
 (defsubst my-lint-layout-looking-at-comment-start-single-p ()
   "If `looking-at' at comment start."
-  (looking-at "^[ \t]*\\(//\\|#\\)"))
+  (looking-at "^[ \t]*\\(//\\|[#]\\)"))
 
 (defsubst my-lint-layout-looking-at-comment-end-p ()
   "If `looking-at' at comment end."
@@ -1437,11 +1437,19 @@ displayed."
 
    '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
      "in statement, no space before operator"
-     "@")				; <address@example.com>
+     ;; <address@example.com>
+     ;; /**
+     ;;  * comment
+     ;;  */
+     "@\\|^[ \t]/?*\\*")
 
    '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
      "in statement, no space after operator"
-     "@")				; <address@example.com>
+     ;; <address@example.com>
+     ;; /**
+     ;;  * comment
+     ;;  */
+     "@\\|^[ \t]/?*\\*")
 
    ;; '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
    ;;   "in statement, no space after starting paren")
