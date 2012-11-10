@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst my-lint-layout-version-time "2012.1110.1716"
+(defconst my-lint-layout-version-time "2012.1110.1725"
   "*Version of last edit YYYY.MMDD")
 
 (defvar my-lint-layout-debug nil
@@ -5037,12 +5037,6 @@ The DATA contains full function content as string."
       (my-lint-layout-message
        (format "[doc] unnecessary wording: %s" (match-string 0 str))
        prefix line))
-    (when (and php-p
-	       class-p
-	       (not access))
-      (my-lint-layout-message
-       "[doc] @access token not found"
-       prefix line))
     (when (and need-param-p
 	       (not param))
       (my-lint-layout-message
@@ -5063,16 +5057,22 @@ The DATA contains full function content as string."
       (my-lint-layout-message
        "[doc] @return token not found"
        prefix line))
-    (if (and (and php-p access param)
-	     (> access param))
-	(my-lint-layout-message
-	 "[doc] incorrect order. Should be @access..@param"
-	 prefix line))
-    (if (and (and php-p access return)
-	     (> access return))
-	(my-lint-layout-message
-	 "[doc] incorrect order. Should be @access..@return"
-	 prefix line))))
+    (when php-p
+      (if (and class-p
+	       (not access))
+	  (my-lint-layout-message
+	   "[doc] @access token not found"
+	   prefix line))
+      (if (and (and access param)
+	       (> access param))
+	  (my-lint-layout-message
+	   "[doc] incorrect order. Should be @access..@param"
+	   prefix line))
+      (if (and (and access return)
+	       (> access return))
+	  (my-lint-layout-message
+	   "[doc] incorrect order. Should be @access..@return"
+	   prefix line)))))
 
 (defun my-lint-layout-php-doc-examine-content-function
   (str line &optional prefix data)
