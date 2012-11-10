@@ -745,7 +745,7 @@ See also `my-lint-layout-check-file-list'.")
   (setq my-lint-layout-code-type
 	(my-lint-layout-code-type-p)))
 
-(defsubst my-lint `-layout-result-erase-buffer ()
+(defsubst my-lint-layout-result-erase-buffer ()
   "Create and clear `my-lint-layout-buffer-name'."
   (my-lint-layout-with-result-buffer
     (setq buffer-read-only nil)
