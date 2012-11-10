@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst my-lint-layout-version-time "2012.1110.2114"
+(defconst my-lint-layout-version-time "2012.1110.2129"
   "*Version of last edit YYYY.MMDD")
 
 (defvar my-lint-layout-debug nil
@@ -1997,10 +1997,10 @@ Return variable content string."
   ;; Peek previous line
   (save-excursion
     (let ((col (current-column))
-	  (col-prev))
+	  col-prev)
     (forward-line -1)
     (skip-chars-forward " \t")
-    (setq col-prev ((current-column)))
+    (setq col-prev (current-column))
     (goto-char (line-beginning-position))
     (when (and
 	   (eq col col-prev)
