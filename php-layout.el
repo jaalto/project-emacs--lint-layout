@@ -1435,10 +1435,12 @@ displayed."
      "in statement, no space between keyword and starting paren")
 
    '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
-     "in statement, no space before operator")
+     "in statement, no space before operator"
+     "@")				; <address@example.com>
 
    '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
-     "in statement, no space after operator")
+     "in statement, no space after operator"
+     "@")				; <address@example.com>
 
    ;; '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\|foreach\\|while\\)[ \t]*([^ \t\r\n]"
    ;;   "in statement, no space after starting paren")
