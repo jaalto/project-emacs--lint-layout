@@ -688,6 +688,7 @@ See also `my-lint-layout-check-file-list'.")
       "\\|@author\\|@since\\|@version")
    nil t))
 
+
 (defsubst my-lint-layout-code-java-p (&optional filename)
   "Return non-nil if Java code. Optional check FILENAME."
   (or (memq major-mode '(java-mode))
@@ -1071,7 +1072,7 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 
 (defsubst my-lint-layout-string-comment-p (str)
   "Check if STR looks like comment."
-  (string-match "^[ \t]*\\([*]\\|//\\)" str))
+  (string-match "^[ \t]*\\([*]\\|//\\|#\\)" str))
 
 (defsubst my-lint-layout-looking-at-assignment-column-p ()
   "Return assignmnet '=' column position."
@@ -1108,6 +1109,10 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 (defsubst my-lint-layout-looking-at-comment-start-multiline-p ()
   "If `looking-at' at comment start."
   (looking-at "^[ \t]*/[*]"))
+
+(defsubst my-lint-layout-comment-skip-multiline ()
+  "Skip to multiline comment end."
+  (re-search-forward "\\*/[ \t\r]*$" nil t))
 
 (defsubst my-lint-layout-looking-at-comment-start-single-p ()
   "If `looking-at' at comment start."
@@ -1157,6 +1162,20 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
   "if..else."
   (or (my-lint-layout-looking-at-conditional-p)
       (my-lint-layout-looking-at-continue-statement-p)))
+
+;; FIXME
+(defsubst my-lint-layout-code-statement-end-search ()
+  "Search until statement end semicolon."
+  (let ((search t))
+    (while (and (not (eobp))
+		search)
+      (forward-line 1)
+      (cond
+       ((my-lint-layout-looking-at-comment-start-multiline-p)
+	(my-lint-layout-comment-skip-multiline))
+       ((my-lint-layout-looking-at-comment-start-single-p))
+       ((looking-at "^.*;[ \t\r]*$")
+	(setq search nil))))))
 
 (defsubst my-lint-layout-result-header-string-insert ()
   "Insert file and time string."
@@ -1333,7 +1352,7 @@ displayed."
 
 (defun my-lint-layout-generic-run-occur-list (list &optional prefix)
   "Check LIST of regexps."
-  (let (line)
+  (let (line point)
     (dolist (elt list)
       (multiple-value-bind (re msg not-re case func) elt
 	(save-excursion
@@ -1341,21 +1360,29 @@ displayed."
 				      nil
 				    t)))
 	    (while (re-search-forward re nil t)
-	      (setq line (my-lint-layout-current-line-string))
-	      (when (and (not (my-lint-layout-string-comment-p line))
-			 (or (null not-re)
-			     (not (or (save-match-data
-					(string-match not-re line))
-				      (save-excursion
-					(goto-char (line-beginning-position))
-					(looking-at not-re)))))
-			 (or (null func)
-			     (funcall func)))
-		(my-lint-layout-message
-		 (format "[code] %s: %s"
-			 msg
-			 (my-lint-layout-current-line-string))
-		 prefix)))))))))
+	      (setq point (point))
+	      (goto-char (line-beginning-position))
+	      (cond
+	       ((my-lint-layout-looking-at-comment-start-single-p))
+	       ((my-lint-layout-looking-at-comment-start-multiline-p)
+		(my-lint-layout-comment-skip-multiline))
+	       (t
+		(goto-char point)
+		(setq line (my-lint-layout-current-line-string))
+		(when (and
+		       (or (null not-re)
+			   (not (or (save-match-data
+				      (string-match not-re line))
+				    (save-excursion
+				      (goto-char (line-beginning-position))
+				      (looking-at not-re)))))
+		       (or (null func)
+			   (funcall func)))
+		  (my-lint-layout-message
+		   (format "[code] %s: %s"
+			   msg
+			   (my-lint-layout-current-line-string))
+		   prefix)))))))))))
 
 (defun my-lint-layout-generic-run-occur-variable-list (list &optional prefix)
   "Check LIST of varibales that contain regexps."
@@ -2432,9 +2459,10 @@ Use BASE-INDENT, optional message PREFIX."
      ((my-lint-layout-looking-at-empty-line-p)) ; do nothing
      ((my-lint-layout-looking-at-comment-start-multiline-p) ; skip
       ;; Handled in my-lint-layout-generic-check-comment-multiline-stars
-      (re-search-forward "^[ \t]*\\*/" nil t))
-     ((looking-at "^[ \t]*[a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;]+$")
-      ;; Only check start line
+      (my-lint-layout-comment-skip-multiline))
+     ((looking-at
+       "^[ \t]*\\(new[ \t]+\\)?[a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;]*$")
+      ;; Only check starting line
       (skip-chars-forward " \t")
       (my-lint-layout-generic-check-indent-current indent prefix)
       ;;
@@ -2443,8 +2471,7 @@ Use BASE-INDENT, optional message PREFIX."
       ;;   funcall(arg,
       ;;           arg,
       ;;           arg);
-      (or (search-forward ";" nil t)
-	  (re-search-forward "^[ \t]*[^ \t]" nil t)))
+      (my-lint-layout-code-statement-end-search))
      (t
       (skip-chars-forward " \t")
       (my-lint-layout-generic-check-indent-current indent prefix)))))
