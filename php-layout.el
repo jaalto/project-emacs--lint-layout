@@ -1363,7 +1363,8 @@ displayed."
 	      (setq point (point))
 	      (goto-char (line-beginning-position))
 	      (cond
-	       ((my-lint-layout-looking-at-comment-start-single-p))
+	       ((my-lint-layout-looking-at-comment-start-single-p)
+		(goto-char point))
 	       ((my-lint-layout-looking-at-comment-start-multiline-p)
 		(my-lint-layout-comment-skip-multiline))
 	       (t
