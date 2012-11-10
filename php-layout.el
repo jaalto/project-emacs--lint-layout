@@ -1954,7 +1954,7 @@ Return variable content string."
   ;; Peek previous line
   (save-excursion
     (forward-line -1)
-    (unless (looking-at (concat re "\\|^[ {}\t\r]*$"))
+    (unless (looking-at (concat re "\\|^[ \t\r]*$\\|.*{"))
       (my-lint-layout-message
        "[comment] no empty line before comment start"
        prefix
