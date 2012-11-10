@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst my-lint-layout-version-time "2012.1110.1815"
+(defconst my-lint-layout-version-time "2012.1110.1819"
   "*Version of last edit YYYY.MMDD")
 
 (defvar my-lint-layout-debug nil
@@ -411,7 +411,7 @@ without brace requirement.")
    "\\)"
    "[ \t]*"
    ;; name ()
-   "[^ ();,.+=\t\r\n]+[^(;=]+(")
+   "[^().+;=]+(")
  "Method regexp. Submatch 1: Indent")
 
 (defconst my-lint-layout-php-variable-regexp
