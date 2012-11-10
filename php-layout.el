@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst my-lint-layout-version-time "2012.1110.2035"
+(defconst my-lint-layout-version-time "2012.1110.2048"
   "*Version of last edit YYYY.MMDD")
 
 (defvar my-lint-layout-debug nil
@@ -5918,8 +5918,11 @@ See `my-lint-layout-check-generic-buffer'"
 	(message "WARN: No such file '%s'" file)
       (let (find-file-hooks)
 	(with-temp-buffer
-	  (my-lint-layout-code-type-set-local-variable)
 	  (insert-file-contents file)
+	  (my-lint-layout-code-type-set-local-variable)
+	  (my-lint-layout-debug-message
+	   "debug layout: type %s %s"
+	   my-lint-layout-code-type)
 	  (my-lint-layout-generic-run-list
 	   function-list
 	   file
