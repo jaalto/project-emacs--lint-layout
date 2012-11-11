@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst my-lint-layout-version-time "2012.1110.2129"
+(defconst my-lint-layout-version-time "2012.1111.0938"
   "*Version of last edit YYYY.MMDD")
 
 (defvar my-lint-layout-debug nil
@@ -2002,6 +2002,14 @@ Return variable content string."
     (skip-chars-forward " \t")
     (setq col-prev (current-column))
     (goto-char (line-beginning-position))
+    ;; We need to check current column due to cases like:
+    ;;
+    ;;    funcall(arg   // comment
+    ;;            arg,  // comment
+    ;;                  // and longer comment for the above
+    ;;            arg,  // comment
+    ;;            arg);
+    ;;
     (when (and
 	   (eq col col-prev)
 	   (not (looking-at
