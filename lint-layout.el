@@ -1436,7 +1436,6 @@ displayed."
 
 (defconst lint-layout-java-check-regexp-occur-list
   (list
-
    '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)("
      "in statement, no space between keyword and starting paren")
 
@@ -1465,17 +1464,17 @@ displayed."
    ;; funcall(arg )
    '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)"
      "in method call, possibly extra space before closing paren"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)\\|^[ \t]/?*\\*")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall( arg)
    '("\\<[_a-zA-Z][._a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
      "in method call, possibly extra space after opening paren"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)\\|^[ \t]/?*\\*")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall (arg)
    '("^[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]+([^);\r\n]*)"
      "in method call, possibly extra space before opening paren"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)\\|^[ \t]/?*\\*")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; this.funcall (arg)
    '("this\\.[^][ )\t\r\n]+[ \t]+("
@@ -1484,12 +1483,12 @@ displayed."
    ;; funcall(arg,arg)
    '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)"
      "in method call, no space after comma"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
 
    ;; code );
    '("[^) \t\r\n]+[ \t]+);"
      "in method call, possibly extra space before closing paren (statement)"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|assert\\)")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
 
    '("[a-zA-Z][a-zA-Z0-9_]*=[ \t]+[a-zA-Z0-9_\"\']"
      "in var assign, no space at left of equal sign")
