@@ -72,6 +72,12 @@ DATE_NOW_MM=${DATE_NOW_ISO%-*}
 DATE_NOW_MM=${DATE_NOW_MM#*-}
 DATE_NOW_MM_NAME=$(date "+%b")
 
+FIND_OPT="-iname *.php\
+ -o -iname *.java \
+ -o -iname *.css \
+ -o -iname *.sql \
+"
+
 #######################################################################
 #
 #   Utilities: Help and Definitons
@@ -98,6 +104,11 @@ OPTIONS
     -r, --recursive DIR
         Run style checks recursively for all files in DIR.
 
+    -t, --type
+        Only used with --recursive option. Check only certain type
+        of file extensions. Allowed values for TYPE: java, php, css
+        and sql.
+
     -w, --whitespace
         Run whitespace checks only.
 
@@ -112,7 +123,7 @@ EXAMPLES
 
         $PROGRAM HelloWorld.java
 
-    Check directory recursively for *.java files
+    Check directory recursively for files
 
         $PROGRAM -r directory/
 
@@ -248,6 +259,8 @@ Version ()
 
 Main ()
 {
+    local type
+
     while :
     do
         case "$1" in
@@ -280,22 +293,37 @@ Main ()
                 recursive=$1
                 shift
                 if [ ! "$recursive" ]; then
-                    Die "option --recursive needs ARG. See --help"
+                    Die "ERROR: missing --recursive ARG. See --help."
                 fi
 
-                if [[ "$recursive" == -* ]]; then
-                    Die "Invalid --recursive arg: $recursive. See --help"
-                fi
+                case "$resursive" in
+                    -* ) Die "ERROR: Invalid --recursive $recursive." \
+                             "See --help."
+                        ;;
+                esac
 
                 if [ ! -d "$recursive" ]; then
-                    Die "Error: no such directory: $recursive"
+                    Die "ERROR: no such directory $recursive"
                 fi
+                ;;
+            -t | --type)
+                shift
+                type=$1
+                [ "$type" ] || Die "ERROR: missing --type ARG"
+
+                case "$type" in
+                    java | php | inc | sql | css)
+                        ;;
+                    *)  Die "ERROR: Unknown --type $type. See --help."
+                        ;;
+                esac
+                shift
+
                 ;;
             -w | --whitespace)
                 shift
                 WHITESPACE_OPT=whitespace
                 ;;
-
             -v | --verbose)
                 VERBOSE="verbose"
                 shift
@@ -313,7 +341,14 @@ Main ()
         esac
     done
 
-    local file
+    if [ ! "$type" ]; then
+        case "$0" in
+            java*) type=java ;;
+            php*) type=php ;;
+            css*) type=css ;;
+            sql*) type=sql ;;
+        esac
+    fi
 
     if [ "$recursive" ]; then
 
@@ -322,7 +357,15 @@ Main ()
         # find "$recursive" -iname "*.java" > $TMPBASE.files
         # EmacsCall $(< $TMPBASE.files)
 
-        find "$recursive" -iname "*.java" > $TMPBASE.files
+        local opt
+
+        if [ "$type" ]; then
+            find "$recursive" -iname "*.$type"
+        else
+            find "$recursive" $FIND_OPT
+        fi > $TMPBASE.files
+
+        local file
 
         while read file
         do
