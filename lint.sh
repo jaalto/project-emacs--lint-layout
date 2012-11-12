@@ -1,0 +1,344 @@
+#!/bin/bash
+#
+#  lint.sh -- A static analysis tool for programming languages
+#
+#  Copyright
+#
+#       Copyright (C) 2009-2012 Jari Aalto
+#
+#   License
+#
+#       This program is free software; you can redistribute it and/or
+#       modify it under the terms of the GNU General Public License as
+#       published by the Free Software Foundation; either version 2 of
+#       the License, or (at your option) any later version.
+#
+#       This program is distributed in the hope that it will be useful, but
+#       WITHOUT ANY WARRANTY; without even the implied warranty of
+#       MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE. See the GNU
+#       General Public License for more details.
+#
+#       You should have received a copy of the GNU General Public License
+#       along with this program. If not, see <http://www.gnu.org/licenses/>.
+#
+#   Call syntax
+#
+#	<program name> --help
+#
+#   Notes
+#
+#       Need GNU binutils: grep, find etc.
+
+# Make sure this program is run under Bash becasue SunOS /bin/sh does
+# not support $()
+
+( eval "[[ 1 ]]" 2> /dev/null ) || exec /bin/bash "$0" "$@"
+
+# Locations
+
+PROGRAM_DIR=$(cd $(dirname $0); pwd)
+
+EMACS_LIBDIR=${EMACS_LIBDIR:-/home/staff11/jaalto/public_html/bin}
+EMACS_PROGRAM=${EMACS_PROGRAM:-lint-layout}
+EMACS_OPTIONS="--batch -q --no-site-file"
+EMACS_BIN=${EMACS_BIN:-emacs}
+
+# System variables
+
+PROGRAM=$(basename $0)
+VERSION="2012.1207.1334"
+
+# Run in clean environment
+
+TZ=Europe/Helsinki
+LC_ALL=C
+LANG=C
+unset DEBUG VERBOSE WHITESPACE_OPT
+
+# Prefer GNU programs
+
+PATH="/usr/local/bin/gnu:$PATH"
+
+# Temporary directories and files
+
+TMPDIR=${TMPDIR:-/tmp}
+TMPBASE=$TMPDIR/${LOGNAME:-${USER:-nobody}}.javalint-$$.tmp
+
+# Date
+
+DATE_NOW_ISO=$(date "+%Y-%m-%d")
+DATE_NOW_YYYY=${DATE_NOW_ISO%%-*}
+DATE_NOW_MM=${DATE_NOW_ISO%-*}
+DATE_NOW_MM=${DATE_NOW_MM#*-}
+DATE_NOW_MM_NAME=$(date "+%b")
+
+#######################################################################
+#
+#   Utilities: Help and Definitons
+#
+#######################################################################
+
+Help ()
+{
+    echo "\
+SYNOPSIS
+    $PROGRAM [options] FILE ...
+
+DESCRIPTION
+    A static style checking Lint tool for programming languages: Java,
+    PHP, SQL and CSS.
+
+OPTIONS
+    -D, --debug [LEVEL]
+        Enable debug. If LEVEL is set, enable all (development option).
+
+    -l, --libdir DIR
+        Define library dir (development option).
+
+    -r, --recursive DIR
+        Run style checks recursively for all files in DIR.
+
+    -w, --whitespace
+        Run whitespace checks only.
+
+    -h, --help
+        Display help.
+
+    -V, --version
+        Display version number.
+
+EXAMPLES
+    Check style of a single file:
+
+        $PROGRAM HelloWorld.java
+
+    Check directory recursively for *.java files
+
+        $PROGRAM -r directory/
+
+STANDARDS
+    For Java, see official Code Conventions for the Java Programming
+    Language at <http://www.oracle.com/technetwork/java/codeconv-138413.html>.
+
+COPYRIGHT
+    This program is free software; you can redistribute it and/or
+    modify it under the terms of the GNU General Public License as
+    published by the Free Software Foundation; either version 2 of
+    the License, or (at your option) any later version."
+
+    exit 0
+}
+
+AtExit ()
+{
+    rm -f "$TMPBASE"*
+}
+
+Warn ()
+{
+    echo "$*" >&2
+}
+
+Die ()
+{
+    Warn "$*"
+    exit 1
+}
+
+#######################################################################
+#
+#   Emacs lint library
+#
+#######################################################################
+
+EmacsLib ()
+{
+    local base="$EMACS_LIBDIR/$EMACS_PROGRAM"
+    local lib try
+
+    for try in "$base.elc" "$base.el"
+    do
+        if [ -f "$try" ]; then
+            lib="$try"
+            break;
+        fi
+    done
+
+    if [ "$lib" ]; then
+        echo "$lib"
+    else
+        return 1
+    fi
+}
+
+EmacsCall ()
+{
+    local args="$*"  # For debug only
+    local debug="(setq find-file-hook nil)"
+
+    if [ "$DEBUG" ]; then
+        debug="(setq find-file-hook nil lint-layout-debug t)"
+        set -x
+    fi
+
+    local lib=$(EmacsLib)
+
+    # lint-layout-check-whitespace
+    # lint-layout-check-batch-generic-command-line
+    # lint-layout-java-check-all-tests
+    local function=lint-layout-java-check-all-tests
+    local eval="(lint-layout-check-batch-generic-command-line)"
+
+    if [ "$WHITESPACE_OPT" ]; then
+        function=lint-layout-check-whitespace
+        eval="(progn (lint-layout-check-batch-command-line '($function)))"
+    fi
+
+    $EMACS_BIN \
+        $EMACS_OPTIONS \
+	--eval "$debug" \
+	-l "$lib" \
+	--eval "$eval" \
+        "$@" 2>&1 |
+        egrep -v 'byte-compiled|Loading'
+
+    [ "$DEBUG" ] && set +x
+}
+
+#######################################################################
+#
+#   Main functionality
+#
+#######################################################################
+
+CheckFile ()
+{
+    local file=$1
+
+    if [ ! "$file" ]; then
+        return 1
+    fi
+
+    if [ ! -f "$file" ]; then
+        Warn "Warn: no such file, ignored $file"
+        return 1
+    fi
+
+    if [ ! -r "$file" ]; then
+        Warn "Warn: file not readable, ignored $file"
+        return 1
+    fi
+
+    EmacsCall "$file"
+}
+
+Version ()
+{
+    lib=$(EmacsLib)
+    lib=${lib%c}  # not compiled file
+
+    if [ ! "$lib" ]; then
+        Die "Version information not available"
+    fi
+
+    awk '/def.*version-time/ { sub(/^[^0-9]+/,""); sub(/.$/,""); print; exit}' "$lib"
+
+    exit 0
+}
+
+Main ()
+{
+    while :
+    do
+        case "$1" in
+            -D | --debug)
+		shift
+		DEBUG=debug
+                case "$1" in
+                    [0-9]*)
+                        set -x
+                        shift
+                        ;;
+                esac
+                ;;
+            -h | --help)
+                Help
+                ;;
+            -l | --libdir)
+                shift
+                if [ ! "$1" ]; then
+                    Die "Missing --libdir ARG"
+                elif [ ! -d "$1" ]; then
+                    Die "ERROR: Not a directory: $1"
+                else
+                    EMACS_LIBDIR="$1"
+                fi
+                shift
+                ;;
+            -r | --recursive)
+                shift
+                recursive=$1
+                shift
+                if [ ! "$recursive" ]; then
+                    Die "option --recursive needs ARG. See --help"
+                fi
+
+                if [[ "$recursive" == -* ]]; then
+                    Die "Invalid --recursive arg: $recursive. See --help"
+                fi
+
+                if [ ! -d "$recursive" ]; then
+                    Die "Error: no such directory: $recursive"
+                fi
+                ;;
+            -w | --whitespace)
+                shift
+                WHITESPACE_OPT=whitespace
+                ;;
+
+            -v | --verbose)
+                VERBOSE="verbose"
+                shift
+                ;;
+            -V | --version)
+                Version
+                ;;
+            -*)
+                Warn "Unknown option: $1" >&2
+                shift
+                ;;
+            *)  # no more options. Stop while loop
+                break
+                ;;
+        esac
+    done
+
+    local file
+
+    if [ "$recursive" ]; then
+
+        # Not whitespace path safe
+
+        # find "$recursive" -iname "*.java" > $TMPBASE.files
+        # EmacsCall $(< $TMPBASE.files)
+
+        find "$recursive" -iname "*.java" > $TMPBASE.files
+
+        while read file
+        do
+            EmacsCall "$file"
+        done < $TMPBASE.files
+    else
+        if [ ! "$1" ]; then
+            Die "ERROR: missing argument. See --help"
+        fi
+
+        EmacsCall "$@"
+    fi
+}
+
+trap 'AtExit' 0 1 2 3 15
+
+Main "$@"
+
+# End of file
