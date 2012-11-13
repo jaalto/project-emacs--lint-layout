@@ -205,6 +205,14 @@ EmacsCall ()
         eval="(progn (lint-layout-check-batch-command-line '($function)))"
     fi
 
+    case "$TYPE" in
+        *java*)
+            eval="(progn (setq lint-layout-check-java-generic-functions (append '(lint-layout-java-check-doc-missing lint-layout-generic-check-doc-main lint-layout-whitespace-multiple-newlines lint-layout-whitespace-at-eob) lint-layout-check-java-code-functions)) (lint-layout-check-batch-generic-command-line))"
+            ;;
+
+    esac
+
+
     $EMACS_BIN \
         $EMACS_OPTIONS \
 	--eval "$debug" \
@@ -314,12 +322,12 @@ Main ()
             -t | --type)
                 shift
                 TYPE=$1
-                [ "$type" ] || Die "ERROR: missing --type ARG"
+                [ "$TYPE" ] || Die "ERROR: missing --type ARG. See --help."
 
-                case "$type" in
+                case "$TYPE" in
                     java | php | inc | sql | css)
                         ;;
-                    *)  Die "ERROR: Unknown --type $type. See --help."
+                    *)  Die "ERROR: Unknown --type $TYPE. See --help."
                         ;;
                 esac
                 shift
