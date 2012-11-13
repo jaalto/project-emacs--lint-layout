@@ -53,7 +53,7 @@ VERSION="2012.1207.1334"
 TZ=Europe/Helsinki
 LC_ALL=C
 LANG=C
-unset DEBUG VERBOSE WHITESPACE_OPT
+unset DEBUG VERBOSE WHITESPACE_OPT TYPE
 
 # Prefer GNU programs
 
@@ -121,7 +121,7 @@ OPTIONS
 EXAMPLES
     Check style of a single file:
 
-        $PROGRAM HelloWorld.java
+        $PROGRAM file${TYPE:+.$TYPE}
 
     Check directory recursively for files
 
@@ -259,7 +259,12 @@ Version ()
 
 Main ()
 {
-    local type
+    case "$0" in
+        *java*) TYPE=java ;;
+        *php*) TYPE=php ;;
+        *css*) TYPE=css ;;
+        *sql*) TYPE=sql ;;
+    esac
 
     while :
     do
@@ -308,7 +313,7 @@ Main ()
                 ;;
             -t | --type)
                 shift
-                type=$1
+                TYPE=$1
                 [ "$type" ] || Die "ERROR: missing --type ARG"
 
                 case "$type" in
@@ -341,15 +346,6 @@ Main ()
         esac
     done
 
-    if [ ! "$type" ]; then
-        case "$0" in
-            java*) type=java ;;
-            php*) type=php ;;
-            css*) type=css ;;
-            sql*) type=sql ;;
-        esac
-    fi
-
     if [ "$recursive" ]; then
 
         # Not whitespace path safe
@@ -359,8 +355,8 @@ Main ()
 
         local opt
 
-        if [ "$type" ]; then
-            find "$recursive" -iname "*.$type"
+        if [ "$TYPE" ]; then
+            find "$recursive" -iname "*.$TYPE"
         else
             find "$recursive" $FIND_OPT
         fi > $TMPBASE.files
