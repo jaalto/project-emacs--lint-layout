@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1113.1710"
+(defconst lint-layout-version-time "2012.1113.1731"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -551,7 +551,7 @@ without brace requirement.")
     lint-layout-php-check-sql-kwd-statements
     lint-layout-php-check-multiline-print
     lint-layout-php-check-multiline-sql
-    lint-layout-php-check-words
+    lint-layout-generic-check-words
     lint-layout-php-check-keywords-main
     lint-layout-check-whitespace
     lint-layout-check-eof-marker
@@ -569,11 +569,11 @@ without brace requirement.")
     lint-layout-generic-check-brace-extra-newline
     lint-layout-java-check-regexp-occur-main
     lint-layout-generic-class-check-variables
-    lint-layout-php-check-input-form-main
+    ;; lint-layout-php-check-input-form-main
     ;; lint-layout-php-check-sql-kwd-statements
     ;; lint-layout-php-check-multiline-print
     ;; lint-layout-php-check-multiline-sql
-    lint-layout-php-check-words
+    lint-layout-generic-check-words
     ;; lint-layout-php-check-keywords-main
     ;; lint-layout-check-whitespace
     ;; lint-layout-check-eof-marker
@@ -1303,7 +1303,7 @@ displayed."
       (if point
 	  (goto-char point))
       (lint-layout-debug-message
-       "debug layout: check %s %s %s" function prefix (buffer-name))
+       "debug layout: run %s %s %s" function prefix (buffer-name))
       (funcall function prefix))))
 
 ;;; ........................................................... &occur ...
@@ -2815,7 +2815,7 @@ and `lint-layout-php-function-call-keywords-no-paren'."
 "
   "Search common misspelled or template words.")
 
-(defun lint-layout-php-check-words (&optional prefix)
+(defun lint-layout-generic-check-words (&optional prefix)
   "Check words."
   (let (str)
     (while (re-search-forward
@@ -2829,16 +2829,16 @@ and `lint-layout-php-function-call-keywords-no-paren'."
 	 (format "[misc] mispelled word: %s" str))
        prefix))))
 
-(defun lint-layout-php-check-words-buffer (&optional prefix)
-  "Check from `point-min' with `lint-layout-php-check-words'."
+(defun lint-layout-generic-check-words-buffer (&optional prefix)
+  "Check from `point-min' with `lint-layout-generic-check-words'."
   (lint-layout-with-point-min
-    (lint-layout-php-check-words prefix)))
+    (lint-layout-generic-check-words prefix)))
 
-(defun lint-layout-php-check-words-buffer-interactive ()
-  "Run `lint-layout-php-check-words-buffer' and show results."
+(defun lint-layout-generic-check-words-buffer-interactive ()
+  "Run `lint-layout-generic-check-words-buffer' and show results."
   (interactive)
   (lint-layout-with-interactive
-    (lint-layout-php-check-words-buffer)))
+    (lint-layout-generic-check-words-buffer)))
 
 ;;; ............................................................. &eof ...
 
@@ -5289,7 +5289,7 @@ DATA is the full function content."
   (lint-layout-with-case
     (unless (looking-at "^[ \t]*[*][ \t]*$\\|^[ \t]+[*]/")
       (lint-layout-message
-       "[doc] no empty line after first line short description"
+       "[doc] no paragraph break after first line short description"
        prefix
        (+ 2 line))))
   (goto-char (point-min)))
