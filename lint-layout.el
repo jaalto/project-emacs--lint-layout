@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1113.1645"
+(defconst lint-layout-version-time "2012.1113.1710"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -3370,7 +3370,7 @@ Optional PREFIX is used add filename to the beginning of line."
 	   (function-before
 	    "[newline] extra %d before function definition")
 	   (empty
-	    "[newline] empty brace block found")))
+	    "[newline] empty brace block")))
 	elt)
     (when (setq elt (assoc type list))
       (multiple-value-bind (dummy format) elt
@@ -5196,16 +5196,16 @@ DATA is the full function content."
      "[doc] @since token not found or recognized"
      prefix line)))
 
-(defun lint-layout-php-doc-examine-content-other--test-doc-comment
+(defun lint-layout-generic-doc-examine-content-other--test-doc-comment
   (line &optional type prefix)
   "Check doc-comment."
-    (unless (looking-at "^[ \t]+[*]")
-      (lint-layout-message
-       "[doc] not a valid documentation comment"
-       prefix
-       (1+ line))))
+  (unless (looking-at "^[ \t]+[*]")
+    (lint-layout-message
+     "[doc] not a valid documentation comment"
+     prefix
+     (1+ line))))
 
-(defun lint-layout-php-doc-examine-content-other--test-period
+(defun lint-layout-generic-doc-examine-content-other--test-period
   (line &optional type prefix)
   "Check that line ends to a period."
   ;;  Complete sentence ends to period.
@@ -5220,36 +5220,43 @@ DATA is the full function content."
      prefix
      (1+ line))))
 
-(defun lint-layout-php-doc-examine-content-other--first-sentence
+(defun lint-layout-generic-doc-examine-content-other--first-sentence
   (line &optional type prefix)
   "Check two words; that first line is a sentence."
-  (when (and (not
-	      (looking-at
-	       (concat ".*"
-		       lint-layout-generic-doc-1st-line-ignore-regexp)))
+  ;; Ignore toplevel comments
+  (when (and (not (memq 'file type))
+	     (not (memq 'class type))
 	     (not (looking-at
-		   "^[ \t]+[*][ \t]*[^ \t\r\n]+[ \t][^ \t\r\n]+")))
-    ;; Search at least two words. Ignore toplevel comments
-    (when (and (not (memq 'file type))
-	       (not (memq 'class type)))
+		   (concat "^.*"
+			   lint-layout-generic-doc-1st-line-ignore-regexp))))
+    (when (looking-at
+	   "^[ \t]+[*][ \t]*\\([^ \t\r\n]+\\)")
+      (let ((word (match-string 1)))
+	(unless (string-match "s$" "word")
+	  (lint-layout-message
+	   "[doc] line does not start with a verb ending to 's'"
+	   prefix
+	   (1+ line)))
+	(unless (lint-layout-with-case (string-match "[A-Z]" "word"))
+	  (lint-layout-message
+	   (format "[doc] line does not start with capital a letter%s"
+		   (if (memq 'include type)
+		       " (interpreted as require include comment)"
+		     ""))
+	   prefix
+	   (1+ line)))))
+    (when (and (not
+		(looking-at
+		 (concat "^.*"
+			 lint-layout-generic-doc-1st-line-ignore-regexp)))
+	       ;; Search at least two words.
+	       (not (looking-at
+		     "^[ \t]+[*][ \t]*[^ \t\r\n]+[ \t][^ \t\r\n]+")))
+
       (lint-layout-message
        (format "[doc] line does not explain code that follows%s"
 	       (if (memq 'include type)
 		   " (interpreted as require or include comment)"
-		 ""))
-       prefix
-       (1+ line)))))
-
-(defun lint-layout-php-doc-examine-content-other--first-capital
-  (line &optional type prefix)
-  "Check first line capital letter."
-  (lint-layout-with-case
-    (when (and (not (looking-at "^[ \t]+[*][ \t]*@")) ;; Std, not token line
-	       (not (looking-at "^[ \t]+[*][ \t]*[A-Z]")))
-      (lint-layout-message
-       (format "[doc] sentence does not start with capital letter%s"
-	       (if (memq 'include type)
-		   " (interpreted as require include comment)"
 		 ""))
        prefix
        (1+ line)))))
@@ -5388,14 +5395,12 @@ Write error at LINE with PREFIX."
       (lint-layout-php-doc-examine-content-other--all-lines
        line type prefix))
     (forward-line 1)
-    (lint-layout-php-doc-examine-content-other--test-doc-comment
+    (lint-layout-generic-doc-examine-content-other--test-doc-comment
      line type prefix)
-    (lint-layout-php-doc-examine-content-other--test-period
+    (lint-layout-generic-doc-examine-content-other--test-period
      line type prefix)
     (unless (memq 'file type)
-      (lint-layout-php-doc-examine-content-other--first-sentence
-       line type prefix)
-      (lint-layout-php-doc-examine-content-other--first-capital
+      (lint-layout-generic-doc-examine-content-other--first-sentence
        line type prefix))
     (unless (or (memq 'include type)
 		(memq 'class type)
