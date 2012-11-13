@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1112.1255"
+(defconst lint-layout-version-time "2012.1113.1645"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -5046,7 +5046,7 @@ The DATA contains full function content as string."
 		 "[ \t]*[^);=]+)")
 		data)
 	       (match-string 0 data)))
-	 (param  (string-match "@param" str))
+	 (param  (string-match "@param[ \t]+[^ \t\r\n]+[ \t]+[^ \t\r\n]" str))
 	 (php-p  (lint-layout-code-php-p))
 	 (access (string-match "@access" str))
 	 return)
@@ -5057,7 +5057,7 @@ The DATA contains full function content as string."
     (when (and need-param-p
 	       (not param))
       (lint-layout-message
-       "[doc] @param token not found"
+       "[doc] @param token not found or recognized"
        prefix line))
     (when (and param
 	       (not need-param-p))
@@ -5183,17 +5183,17 @@ DATA is the full function content."
 
 (defun lint-layout-java-doc-string-test-class (str line &optional prefix)
   "Examine dostring: class."
-  (unless (string-match "\\* @author" str)
+  (unless (string-match "\\* @author[ \t]+[^ \t\r\n]" str)
     (lint-layout-message
-     "[doc] @author token not found"
+     "[doc] @author token not found or recognized"
      prefix line))
-  (unless (string-match "\\* @version" str)
+  (unless (string-match "\\* @version[ \t]+[^ \t\r\n]" str)
     (lint-layout-message
-     "[doc] @version token not found"
+     "[doc] @version token not found or recognized"
      prefix line))
-  (unless (string-match "\\* @since" str)
+  (unless (string-match "\\* @since[ \t]+[^ \t\r\n]" str)
     (lint-layout-message
-     "[doc] @since token not found"
+     "[doc] @since token not found or recognized"
      prefix line)))
 
 (defun lint-layout-php-doc-examine-content-other--test-doc-comment
