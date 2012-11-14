@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.1922"
+(defconst lint-layout-version-time "2012.1114.1953"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -290,8 +290,8 @@ type modifiers to be present:
    "^"
    "\\([ \t]*\\)"
    "\\("
-   lint-layout-generic-control-statement-regexp
-   "\\|function"
+        lint-layout-generic-control-statement-regexp
+        "\\|function" ;; PHP
    "\\)"
    "\\([ \t].*(.*)[ \t\r\n]*\\|[ \t\r\n]*\\)")
   "Left anchored statement.
@@ -2542,9 +2542,17 @@ Use BASE-INDENT, optional message PREFIX."
      (t
       (skip-chars-forward " \t")
       (lint-layout-generic-check-indent-current indent prefix)
-      (unless (looking-at "^.*;")
+      (when (and
+	     ;; ignore lines: while, for, if ...
+	     (not
+	      (looking-at
+	       (concat ".*" lint-layout-generic-control-statement-regexp)))
+	     (not (looking-at "[ \t][/#*]")) ; comment
+	     ;;   variable =
+	     ;;      value;
+	     (looking-at ".*=[^;]+\r?\n"))
+	;; Until statement end ";"
 	(lint-layout-code-statement-end-search))))))
-
 
 (defun lint-layout-generic-statement-brace-and-indent (&optional prefix)
   "Check that code is indented after each brace.
