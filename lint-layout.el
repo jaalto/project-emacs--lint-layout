@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.1953"
+(defconst lint-layout-version-time "2012.1114.2050"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1458,7 +1458,7 @@ displayed."
      ;; /**
      ;;  * comment
      ;;  */
-     "@\\|^[ \t]/?*\\*")
+     "@\\|^[ \t]*[/*]")
 
    '("^[ \t]+class[ \t]+[^ \t\r\n]+[ \t\r\n]*{"
      "in classdef, keyword not at beginning of line")
