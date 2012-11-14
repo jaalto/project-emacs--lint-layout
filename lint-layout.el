@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.0527"
+(defconst lint-layout-version-time "2012.1114.0708"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -682,6 +682,15 @@ See also `lint-layout-check-file-list'.")
   `(let ((buffer (get-buffer-create lint-layout-buffer-name)))
      (with-current-buffer buffer
        ,@body)))
+
+(defsubst lint-layout-string-match-count (regexp string)
+  "Count how many times REGEXP match forward in STRING.
+Return nil or number of occurrances."
+  (let (count)
+    (while (string-match regexp string)
+      (setq count (1+ (or count 0))
+	    string (substring string (match-end 0))))
+    count))
 
 (defsubst lint-layout-code-java-search ()
   "Position point at first detected Java code line."
@@ -2544,7 +2553,7 @@ Optional message PREFIX."
           ;;    expect-indent prefix))
           ))))))
 
-(defun lint-layout-php-check-statement-comment-above
+(defun lint-layout-generic-check-statement-comment-above
   (&optional str prefix)
   "Check misplaced comment: just above continue statement.
 
@@ -2564,7 +2573,8 @@ else
                "next brace block"))
      prefix)))
 
-(defun lint-layout-php-check-statement-continue-detach (str &optional prefix)
+(defun lint-layout-generic-check-statement-continue-detach
+  (str &optional prefix)
   "At statement STR, like 'else', peek above line."
   (forward-line -1)
   (unless (looking-at "^[ \t]*}")
@@ -2573,7 +2583,7 @@ else
              str)
      prefix)))
 
-(defun lint-layout-php-check-statement-brace-detach (str &optional prefix)
+(defun lint-layout-generic-check-statement-brace-detach (str &optional prefix)
   "Check if there is empty lines between keyword and brace:
 KEYWORD
 
@@ -2585,13 +2595,13 @@ KEYWORD
              (match-string 1 str))
      prefix)))
 
-(defsubst lint-layout-php-check-statement-continue-p (string)
+(defsubst lint-layout-generic-check-statement-continue-p (string)
   "Check STRING against statement continue keywords."
   (string-match
    lint-layout-generic-control-statement-continue-regexp
    string))
 
-(defsubst lint-layout-php-statement-forward ()
+(defsubst lint-layout-generic-statement-forward ()
   "Search control statement forward."
   (re-search-forward
    lint-layout-generic-statement-regexp-line
@@ -2606,14 +2616,14 @@ if ( check );
     line
 }"
   (let (str)
-    (while (lint-layout-php-statement-forward)
+    (while (lint-layout-generic-statement-forward)
       (when (looking-at ";")
         (lint-layout-message
          (format "possibly misplaced semicolon: %s"
                  (lint-layout-current-line-string))
          prefix)))))
 
-(defsubst lint-layout-php-brace-statement-forward (&optional max)
+(defsubst lint-layout-generic-brace-statement-forward (&optional max)
   "Search statement with brace forward."
   (re-search-forward
    lint-layout-generic-statement-regexp-brace
@@ -2650,7 +2660,7 @@ if ( check );
          brace-end-col
          brace-end-point
          brace-end-line)
-    (while (lint-layout-php-brace-statement-forward)
+    (while (lint-layout-generic-brace-statement-forward)
       (setq point     (match-beginning 1) ;; Left margin
             kwd-point (match-beginning 2) ;; keyword start
             keyword   (match-string 2)    ;; Keyword
@@ -2664,7 +2674,7 @@ if ( check );
             ;; Cursor is one char after brace, correct that
             brace-start-col (1- (current-column)))
       (setq continue-p
-            (lint-layout-php-check-statement-continue-p keyword))
+            (lint-layout-generic-check-statement-continue-p keyword))
       (forward-char -1)  ;; At brace start
       (save-excursion
         (goto-char kwd-point)
@@ -2673,15 +2683,15 @@ if ( check );
               statement-line      (lint-layout-current-line-number))
         (when continue-p
           (goto-char point)
-          (lint-layout-php-check-statement-continue-detach keyword prefix)
+          (lint-layout-generic-check-statement-continue-detach keyword prefix)
           (goto-char point)
-          (lint-layout-php-check-statement-comment-above keyword prefix)))
+          (lint-layout-generic-check-statement-comment-above keyword prefix)))
       (lint-layout-php-check-indent-string-check
        indent statement-line prefix)
       ;; (lint-layout-generic-statement-brace-forward)
       ;; brace-start-line (lint-layout-current-line-number))
       (lint-layout-generic-statement-brace-and-indent prefix)
-      (lint-layout-php-check-statement-brace-detach fullstr)
+      (lint-layout-generic-check-statement-brace-detach fullstr)
       (when (and php-p
                  (string-match "\\<if\\>\\|\\<els.*if\\>" keyword))
         (lint-layout-php-check-keywords-case keyword fullstr prefix))
@@ -2715,7 +2725,7 @@ if ( check );
 
 ;;; ........................................................ &conflict ...
 
-;; CVS reports lines like:
+;; Version control software conflict markers
 ;;
 ;; <<<<<<< driver.c
 ;;     exit(nerr == 0 ? EXIT_SUCCESS : EXIT_FAILURE);
@@ -2724,7 +2734,7 @@ if ( check );
 ;; >>>>>>> 1.6
 ;;
 (defconst lint-layout-vc-conflict-marker-regexp
-  "^\\(<<<<<<<\\|>>>>>>>\\) [0-9a-zA-Z]\\|^=======$"
+  "^\\(<<<<<<<\\|>>>>>>>\\) [a-zA-Z0-9]\\|^=======$"
   "Version control conflict marker.")
 
 (defun lint-layout-php-check-vc-conflict-marker (&optional prefix)
@@ -5045,7 +5055,7 @@ The DATA contains full function content as string."
          (param  (string-match "@param[ \t]+[^ \t\r\n]+[ \t]+[^ \t\r\n]" str))
          (php-p  (lint-layout-code-php-p))
          (access (string-match "@access" str))
-         return)
+         (return (string-match "@return[ \t]+[^ \t\r\n]+" str)))
     (when (string-match "this[ \t]+\\(function\\|method\\)" str)
       (lint-layout-message
        (format "[doc] unnecessary wording: %s" (match-string 0 str))
@@ -5060,13 +5070,31 @@ The DATA contains full function content as string."
       (lint-layout-message
        "[doc] @param token is unnecessary"
        prefix line))
+    (when (and need-param-p
+	       param)
+      (let ((commas (lint-layout-string-match-count "," need-param-p))
+	    (params (lint-layout-string-match-count "@param" str)))
+	(when (or (and (null commas)	; Just one param
+		       (not (eq 1 params)))
+		  (and commas
+		       params
+		       (not (eq (1+ commas) params)))) ; 2+ params
+	  (lint-layout-message
+	   "[doc] @param count does not match method parameter count"
+	   prefix line))))
+    (when (and param
+	       return
+	       (< return param))
+      (lint-layout-message
+       "[doc] tags not in order @param @return"
+       prefix line))
     (when (and return
-               (not need-return-p))
+	       (not need-return-p))
       (lint-layout-message
        "[doc] @return token is unnecessary"
        prefix line))
-    (when (and need-return-p
-               (not (setq return (string-match "@return" str))))
+    (when (and (not return)
+	       need-return-p)
       (lint-layout-message
        "[doc] @return token not found"
        prefix line))
@@ -5179,18 +5207,32 @@ DATA is the full function content."
 
 (defun lint-layout-java-doc-string-test-class (str line &optional prefix)
   "Examine dostring: class."
-  (unless (string-match "\\* @author[ \t]+[^ \t\r\n]" str)
-    (lint-layout-message
-     "[doc] @author token not found or recognized"
-     prefix line))
-  (unless (string-match "\\* @version[ \t]+[^ \t\r\n]" str)
-    (lint-layout-message
-     "[doc] @version token not found or recognized"
-     prefix line))
-  (unless (string-match "\\* @since[ \t]+[^ \t\r\n]" str)
-    (lint-layout-message
-     "[doc] @since token not found or recognized"
-     prefix line)))
+  ;; See "order of tags" at
+  ;; http://www.oracle.com/technetwork/java/javase/documentation/index-137868.html
+  (let (author
+	version
+	since)
+    (unless (setq author (string-match "\\* @author[ \t]+[^ \t\r\n]" str))
+      (lint-layout-message
+       "[doc] @author token not found or recognized"
+       prefix line))
+    (unless (setq version (string-match "\\* @version[ \t]+[^ \t\r\n]" str))
+      (lint-layout-message
+       "[doc] @version token not found or recognized"
+       prefix line))
+    (unless (setq since (string-match "\\* @since[ \t]+[^ \t\r\n]" str))
+      (lint-layout-message
+       "[doc] @since token not found or recognized"
+       prefix line))
+    (when (and author
+	       version
+	       since
+	       (or (not (< author version))
+		   (not (< author since))
+		   (not (< version since))))
+      (lint-layout-message
+       "[doc] tags not in order @author @version @since"
+       prefix line))))
 
 (defun lint-layout-generic-doc-examine-content-other--test-doc-comment
   (line &optional type prefix)
@@ -5654,14 +5696,23 @@ Point must be at the beginning of function definition line."
            prefix))
          (t
           (let ((top-level-p (lint-layout-doc-package-string-p str)))
-            (lint-layout-java-doc-examine-main
-             beg
-             end
-             (if top-level-p
-                 '(class)
-               type)
-             (lint-layout-current-line-number)
-             prefix))))))))
+	    (cond
+	     ((lint-layout-code-java-p)
+	      (lint-layout-java-doc-examine-main
+	       beg
+	       end
+	       (if top-level-p
+		   '(class)
+		 type)
+	       (lint-layout-current-line-number)
+	       prefix))
+	     ((lint-layout-code-php-p)
+	      (lint-layout-php-doc-examine-main
+	       beg
+	       end
+	       type
+	       (lint-layout-current-line-number)
+	       prefix))))))))))
 
 ;;; ............................................................ &mode ...
 
