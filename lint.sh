@@ -186,9 +186,11 @@ EmacsCall ()
 {
     local args="$*"  # For debug only
     local debug="(setq find-file-hook nil)"
+    local opt
 
     if [ "$DEBUG" ]; then
-        debug="(setq find-file-hook nil lint-layout-debug t)"
+	opt="--debug-init"
+        debug="(setq find-file-hook nil lint-layout-debug t debug-on-error t)"
         set -x
     fi
 
@@ -215,6 +217,7 @@ EmacsCall ()
 
     $EMACS_BIN \
         $EMACS_OPTIONS \
+        $opt \
 	--eval "$debug" \
 	-l "$lib" \
 	--eval "$eval" \
