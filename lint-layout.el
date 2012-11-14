@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.1519"
+(defconst lint-layout-version-time "2012.1114.1540"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1474,29 +1474,30 @@ displayed."
    ;; '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
    ;;   "in statement, no space after keyword and paren")
 
-   ;; funcall(arg )
-   '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)"
+   ;; funcall(...arg )
+   '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)[^{\r\n]*$"
      "in method call, possibly extra space before closing paren"
+     ;; Ignore:  Constructor () {
      "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
 
-   ;; funcall( arg)
-   '("\\<[_a-zA-Z][._a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)"
+   ;; funcall( arg, ...)
+   '("\\<[_a-zA-Z][._a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)[^{\r\n]*$"
      "in method call, possibly extra space after opening paren"
      "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall (arg)
-   '("^[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]+([^);\r\n]*)"
+   '("^[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]+([^);\r\n]*)[^{\r\n]*$"
      "in method call, possibly extra space before opening paren"
      "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
+
+   ;; funcall(arg,arg)
+   '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)[^{\r\n]*$"
+     "in method call, no space after comma"
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
 
    ;; this.funcall (arg)
    '("this\\.[^][ )\t\r\n]+[ \t]+("
      "in method call, possibly extra space before opening paren")
-
-   ;; funcall(arg,arg)
-   '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)"
-     "in method call, no space after comma"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
 
    ;; code );
    '("[^) \t\r\n]+[ \t]+);"
