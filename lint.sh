@@ -186,7 +186,7 @@ EmacsCall ()
 {
     local args="$*"  # For debug only
     local debug="(setq find-file-hook nil)"
-    local opt="-q"
+    local opt="--batch -q"
 
     if [ "$DEBUG" ]; then
 	opt="$opt --debug-init"
