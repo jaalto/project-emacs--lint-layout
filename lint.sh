@@ -165,9 +165,10 @@ Die ()
 EmacsLib ()
 {
     local base="$EMACS_LIBDIR/$EMACS_PROGRAM"
+    local base2="$PROGRAM_DIR/$EMACS_PROGRAM"
     local lib try
 
-    for try in "$base.elc" "$base.el"
+    for try in "$base.elc" "$base.el" "$base2.elc" "$base2.el"
     do
         if [ -f "$try" ]; then
             lib="$try"
@@ -196,6 +197,10 @@ EmacsCall ()
 
     local lib=$(EmacsLib)
 
+    if [ ! "$lib" ]; then
+        Die "Abort. Lint library is not currently available"
+    fi
+                
     # lint-layout-check-whitespace
     # lint-layout-check-batch-generic-command-line
     # lint-layout-java-check-all-tests
