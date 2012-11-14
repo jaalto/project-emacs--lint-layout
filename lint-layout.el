@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.0711"
+(defconst lint-layout-version-time "2012.1114.0732"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -5052,6 +5052,14 @@ The DATA contains full function content as string."
                  "[ \t]*[^);=]+)")
                 data)
                (match-string 0 data)))
+         (need-throw-p
+          (and data
+               (string-match
+                (concat
+                 "^[ \t]*throw[ \t].*")
+                data)
+               (match-string 0 data)))
+         (throw  (string-match "@throws[ \t]+[^ \t\r\n]+" str))
          (param  (string-match "@param[ \t]+[^ \t\r\n]+[ \t]+[^ \t\r\n]" str))
          (php-p  (lint-layout-code-php-p))
          (access (string-match "@access" str))
@@ -5059,6 +5067,11 @@ The DATA contains full function content as string."
     (when (string-match "this[ \t]+\\(function\\|method\\)" str)
       (lint-layout-message
        (format "[doc] unnecessary wording: %s" (match-string 0 str))
+       prefix line))
+    (when (and need-throw-p
+               (not throw))
+      (lint-layout-message
+       "[doc] @throws token not found or recognized"
        prefix line))
     (when (and need-param-p
                (not param))
