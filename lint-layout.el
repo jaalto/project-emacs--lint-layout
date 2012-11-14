@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.0732"
+(defconst lint-layout-version-time "2012.1114.1412"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -5283,12 +5283,12 @@ DATA is the full function content."
     (when (looking-at
            "^[ \t]+[*][ \t]*\\([^ \t\r\n]+\\)")
       (let ((word (match-string 1)))
-        (unless (string-match "s$" "word")
+        (unless (string-match "s$" word)
           (lint-layout-message
            "[doc] line does not start with a 3rd person verb ending to 's'"
            prefix
            (1+ line)))
-        (unless (lint-layout-with-case (string-match "[A-Z]" "word"))
+        (unless (lint-layout-with-case (string-match "[A-Z]" word))
           (lint-layout-message
            (format "[doc] line does not start with capital a letter%s"
                    (if (memq 'include type)
