@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.1626"
+(defconst lint-layout-version-time "2012.1114.1922"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1514,25 +1514,25 @@ displayed."
      "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
 
    ;; this.funcall (arg)
-   '("this\\.[^][ )\t\r\n]+[ \t]+("
+   '("^[ \t]+this\\.[^][() \t\r\n]+[ \t]+("
      "in method call, possibly extra space before opening paren")
 
    ;; code );
-   '("[^) \t\r\n]+[ \t]+);"
+   '("^[ \t]+[^ )/*\t\r\n]+[ \t]+);"
      "in method call, possibly extra space before closing paren (statement)"
      "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
 
    '("[a-zA-Z][a-zA-Z0-9_]*=[ \t]+[a-zA-Z0-9_\"\']"
-     "in var assign, no space at left of equal sign")
+     "in assignment, no space at left of equal sign")
+
+   '("[a-zA-Z][a-zA-Z0-9_]*[ \t]+=[a-zA-Z0-9_\"'<]"
+     "in assignment, no space at right of equal sign")
 
    '("^[ \t]*}[ \t]*[\r\n][ \t]*\\<else\\>"
      "in block, 'else' not at previous brace line '}'")
 
    '("^[ \t]*}\\(else\\|catch\\|finally\\)\\>"
-     "in block, no space after brace '}'")
-
-   '("[a-zA-Z][a-zA-Z0-9_]*[ \t]+=[a-zA-Z0-9_\"'<]"
-     "in var assign, no space at right of equal sign"))
+     "in block, no space after brace '}'"))
   "Search ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
 See `lint-layout-generic-run-occur-list'.")
 
