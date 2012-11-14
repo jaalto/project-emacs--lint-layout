@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.1540"
+(defconst lint-layout-version-time "2012.1114.1626"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1459,6 +1459,24 @@ displayed."
      ;;  * comment
      ;;  */
      "@\\|^[ \t]/?*\\*")
+
+   '("^[ \t]+class[ \t]+[^ \t\r\n]+[ \t\r\n]*{"
+     "in classdef, keyword not at beginning of line")
+
+   '("^class\\([ \t][ \t]+\\|\t\\)[^ \t\r\n]+[ \t\r\n]*{"
+     "in class declaration, extra spaces after keyword")
+
+   '("^class[ \t]+[^ \t\r\n]+[ \t][ \t]+[ \t\r\n]*{"
+     "in class declaration, extra spaces after identifier")
+
+   '("^class[ \t]+\\([a-z][^ \t\r\n{]*\\)"
+     "in classdef, identifier not capitalized"
+     nil
+     nil
+     (lambda ()
+       (let ((identifier (match-string 1))
+	     case-fold-search)
+	 (string-match "^[a-z]" identifier))))
 
    '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
      "in statement, no space after operator"
