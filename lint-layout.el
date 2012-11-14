@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.1412"
+(defconst lint-layout-version-time "2012.1114.1519"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -2510,15 +2510,22 @@ Use BASE-INDENT, optional message PREFIX."
       (skip-chars-forward " \t")
       (lint-layout-generic-check-indent-current indent prefix)
       ;;
-      ;;   Ignore rest, for continued function calls:
+      ;;   Ignore rest, for continued statements, like:
       ;;
-      ;;   funcall(arg,
-      ;;           arg,
-      ;;           arg);
+      ;;       funcall(arg,
+      ;;               arg,
+      ;;               arg);
+      ;;
+      ;;       code =
+      ;;         x + y;
+      ;;
       (lint-layout-code-statement-end-search))
      (t
       (skip-chars-forward " \t")
-      (lint-layout-generic-check-indent-current indent prefix)))))
+      (lint-layout-generic-check-indent-current indent prefix)
+      (unless (looking-at "^.*;")
+	(lint-layout-code-statement-end-search))))))
+
 
 (defun lint-layout-generic-statement-brace-and-indent (&optional prefix)
   "Check that code is indented after each brace.
