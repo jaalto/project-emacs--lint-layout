@@ -186,10 +186,10 @@ EmacsCall ()
 {
     local args="$*"  # For debug only
     local debug="(setq find-file-hook nil)"
-    local opt
+    local opt="-q"
 
     if [ "$DEBUG" ]; then
-	opt="--debug-init"
+	opt="$opt --debug-init"
         debug="(setq find-file-hook nil lint-layout-debug t debug-on-error t)"
         set -x
     fi
