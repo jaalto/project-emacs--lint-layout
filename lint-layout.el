@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1114.2050"
+(defconst lint-layout-version-time "2012.1115.0646"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -2547,7 +2547,7 @@ Use BASE-INDENT, optional message PREFIX."
 	     (not
 	      (looking-at
 	       (concat ".*" lint-layout-generic-control-statement-regexp)))
-	     (not (looking-at "[ \t][/#*]")) ; comment
+	     (not (looking-at "[ \t]*[/#*]")) ; comment
 	     ;;   variable =
 	     ;;      value;
 	     (looking-at ".*=[^;]+\r?\n"))
