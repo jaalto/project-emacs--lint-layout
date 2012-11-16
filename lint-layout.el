@@ -131,7 +131,7 @@
   ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1116.0856"
+(defconst lint-layout-version-time "2012.1116.0913"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -5690,6 +5690,19 @@ Use optional PREFIX for messages.
         (unless (zerop (skip-chars-forward " \t\r\n"))
           (lint-layout-bol)
           (setq data (lint-layout-generic-function-string-at-point)))
+	;; Before we narrow and loose sight, check where
+	;; "class" statement and its comment is.
+	(when (memq 'class type)
+	  (let (point)
+	    (lint-layout-with-save-point
+	      (lint-layout-min)
+	      (if (re-search-forward "^[ \t]*\\(class\\)[ \t]" nil t)
+		  (setq point (match-beginning 1))))
+	    (when (and point
+		       (> beg point)) ;; comment *after* class definition
+	      (lint-layout-message
+	       "[doc] doc block not before class definition"
+	       prefix line))))
         (narrow-to-region beg end)
         (setq str (buffer-string))
 	(cond
