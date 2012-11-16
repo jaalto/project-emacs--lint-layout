@@ -128,9 +128,10 @@
 (require 'regexp-opt)
 
 (eval-when-compile
+  ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1116.0741"
+(defconst lint-layout-version-time "2012.1116.0836"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -676,6 +677,11 @@ See also `lint-layout-check-file-list'.")
   "Move to `line-beginning-position'."
   (goto-char (line-beginning-position)))
 
+(defsubst lint-layout-goto-line (line)
+  "Go to LINE."
+  (goto-char (point-min))
+  (forward-line (1- line)))
+
 (put 'lint-layout-debug-message 'lint-layout-debug-message 0)
 (put 'lint-layout-debug-message 'edebug-form-spec '(body))
 (defmacro lint-layout-debug-message (&rest body)
@@ -1083,8 +1089,8 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
       ;; HH:MM:SS
       "\\(?:[ \t]+[0-9][0-9]\\(?::[0-9][0-9]\\)\\{1,2\\}?\\)?"
       "\\)"
-      "\\(.?\\)"))
-   str)
+      "\\(.?\\)")
+   str))
 
 (defsubst lint-layout-string-uppercase-p (str)
   "Check if STR is all uppercase."
@@ -1205,7 +1211,7 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 
 (defsubst lint-layout-result-header-string-insert ()
   "Insert file and time string."
-  (insert (lint-layout-php-result-buffer-header)))
+  (insert (lint-layout-make-result-header-string)))
 
 (defsubst lint-layout-result-sort-lines ()
   "Sort lines."
@@ -3134,7 +3140,7 @@ Should be called right after `lint-layout-copyright-search-forward'."
     (and moved
          (lint-layout-copyright-line-p))))
 
-(defsubst lint-layout-copyright-email-string-p ()
+(defsubst lint-layout-copyright-email-string-p (string)
   "Check email address."
   (and (string-match "@" string)
        (string-match "<.+@.+>" string)))
@@ -3166,7 +3172,7 @@ Should be called right after `lint-layout-copyright-search-forward'."
     ;;  Tag "@copyright ....."
     (when (not (string-match "@copyright" string))
       (cond
-       ((or (lint-layout-copyright-email-string-p)
+       ((or (lint-layout-copyright-email-string-p string)
             (lint-layout-copyright-email-re-search-forward-p))
         ;; ok
         nil)
@@ -3230,7 +3236,7 @@ Optional PREFIX is used add filename to the beginning of line."
 \\|<[a-z]+ing\\>\
 \\)")
 
-(defun lint-layout-word-tense (word message) ;Primitive
+(defun lint-layout-word-tense (word message &optional prefix)
   "Check non-active tense."
   (when (and word
              (string-match "\\(ed\\|ing\\)$" word))
@@ -3255,7 +3261,8 @@ Optional PREFIX is used add filename to the beginning of line."
       (when word
         (lint-layout-word-tense
          word
-         (format "[changelog] change marker, wrong tense of verb '%s'" word)))
+         (format "[changelog] change marker, wrong tense of verb '%s'" word)
+	 prefix))
       (when (looking-at "  ")
         (lint-layout-message
          (format
@@ -3305,7 +3312,8 @@ Optional PREFIX is used add filename to the beginning of line."
       (when word
         (lint-layout-word-tense
          word
-         (format "[changelog] at *, wrong tense of verb '%s'" word)))
+         (format "[changelog] at *, wrong tense of verb '%s'" word)
+	 prefix))
       (when (and (string-match " " indent)
                  (not (string= " " indent)))
         (lint-layout-message
@@ -3382,6 +3390,7 @@ Optional PREFIX is used add filename to the beginning of line."
   "Move to first brace that contains problems."
   (let ((start (point))
         (point (point-max))
+	count
         ret-str
         str
         ret)
@@ -3844,11 +3853,11 @@ col
       indent)
      prefix
      (+ (or line 0) (lint-layout-current-line-number))))
-   ((not (zerop (% indent step)))
+   ((not (zerop (% indent lint-layout-generic-indent-step)))
     (lint-layout-message
      (format
       "[sql] possibly incorrect at col %d where multiple of %d expected"
-      indent step)
+      indent lint-layout-generic-indent-step)
      prefix
      (+ (or line 0) (lint-layout-current-line-number))))))
 
@@ -3987,9 +3996,11 @@ The value of LINE is added to current line. PREFIX."
   "Check INSERT INTO statements. PREFIX."
   (let (point
         keyword
+	keyword-values
         table
-        parenbeg
+        paren-beg
         paren-end
+	paren
         line)
     (while (lint-layout-sql-insert-into-forward)
       (setq keyword   (match-string-no-properties 1)
@@ -4891,7 +4902,8 @@ The submatches are as follows: The point is at '!':
                    str)
             (lint-layout-message
              (format
-              "[css] portability; no last resort font sans-serif or serif listed: %s"
+              `,(concat "[css] portability; no last resort font"
+			"sans-serif or serif listed: %s")
               str)
              prefix))
           (unless (string-match lint-layout-css-web-safe-font-regexp str)
@@ -5071,8 +5083,8 @@ The submatches are as follows: The point is at '!':
 
 ;;; ............................................................. &doc ...
 
-(defsubst lint-layout-php-doc-string-narrowed-current-line-number ()
-  "Return correct line number in narrowed doc-block."
+(defsubst lint-layout-php-doc-string-narrowed-current-line-number (line)
+  "Return correct LINE number in narrowed doc-block."
   ;;  Because of narrowing, the first line is not 1, but 0.
   (+ line (1- (lint-layout-current-line-number))))
 
@@ -5154,11 +5166,12 @@ The DATA contains full function content as string."
        "[doc] @return token not found"
        prefix line))
     (when php-p
-      (if (and class-p
-               (not access))
-          (lint-layout-message
-           "[doc] @access token not found"
-           prefix line))
+      ;; FIXME: Where do we get class-p status?
+      ;; (if (and class-p
+      ;;          (not access))
+      ;;     (lint-layout-message
+      ;;      "[doc] @access token not found"
+      ;;      prefix line))
       (if (and (and access param)
                (> access param))
           (lint-layout-message
@@ -5214,12 +5227,13 @@ DATA is the full function content."
                  "@param announces unknown datatype"
                  (cond
                   (case-p
-                   (format " (check spelling)" match))
+                   (format "%s (check spelling)" match))
                   ((and short-p
                         short-case-p)
-                   (format " (possibly abbreviated and incorrect case)" match))
+                   (format "%s (possibly abbreviated and incorrect case)"
+			   match))
                   (short-p
-                   (format " (possibly abbreviated)" match))
+                   (format "%s (possibly abbreviated)" match))
                   (t
                    ""))
                  ": %s")
@@ -5398,17 +5412,6 @@ DATA is the full function content."
        prefix
        (+ line (lint-layout-current-line-number))))))
 
-(defun lint-layout-php-doc-examine-content-other--indent-text
-  (line &optional prefix)
-  "Check proper indent."
-  (when (lint-layout-doc-line-indent-p)
-    (let ((text (match-string 2)))
-      (unless (string= text text-indent)
-        (lint-layout-message
-         "[doc] text indentation mismatch: lined-upnot same as above."
-         prefix
-         (lint-layout-php-doc-string-narrowed-current-line-number))))))
-
 (defun lint-layout-php-doc-examine-content-other--indent-col-error
   (col line &optional prefix)
   "Write error:  *-character possibly not lined up at COL."
@@ -5427,7 +5430,7 @@ Write error at LINE with PREFIX."
         (unless (eq (current-column) col)
           (lint-layout-php-doc-examine-content-other--indent-col-error
            col
-           (lint-layout-php-doc-string-narrowed-current-line-number)
+           (lint-layout-php-doc-string-narrowed-current-line-number line)
            prefix))))))
 
 (defun lint-layout-php-doc-examine-content-other--doc-block-start-error
@@ -5450,14 +5453,15 @@ Write error at LINE with PREFIX."
                (looking-at ".*"))
       (let ((str  (concat ": " (match-string 0))))
         (lint-layout-php-doc-examine-content-other--doc-block-start-error
-         (lint-layout-php-doc-string-narrowed-current-line-number)
+         (lint-layout-php-doc-string-narrowed-current-line-number line)
          prefix
          str)))))
 
 (defun lint-layout-php-doc-examine-content-other--all-lines
   (line &optional type prefix)
   "Check until `point-min' all lines."
-  (let (text-indent
+  (let (point
+	text-indent
         col-indent)
     (while (not (eobp))
       ;; *-line; Which column is the indent
@@ -5475,7 +5479,6 @@ Write error at LINE with PREFIX."
           (setq text-indent (match-string 2)))
         (lint-layout-php-doc-examine-content-other--indent-col
          col-indent line prefix)
-        ;; (lint-layout-php-doc-examine-content-other--indent-text)
         (lint-layout-php-doc-examine-content-other--star-indent line prefix))
       (forward-line 1))))
 
@@ -5649,35 +5652,41 @@ Point must be at the beginning of function definition line."
            str line type prefix))))))
 
 (defun lint-layout-java-doc-examine-main (beg end type line &optional prefix)
-  "Examine docstring
-  ;;    /**
-  ;;     * Short description
-  ;;     *
-  ;;     * Full description .....
-  ;;     */"
+  "Narrow to region BEG END, of TYPE at LINE to examine doc block.
+Use optional PREFIX for messages.
+
+/**
+ * Short description.
+ *
+ * Long description.
+ *
+ * @token
+ * @token
+ */"
   (save-restriction
     (save-excursion
-      (let (data)
+      (let (data
+	    str)
         (goto-char end)
         (unless (zerop (skip-chars-forward " \t\r\n"))
           (lint-layout-bol)
           (setq data (lint-layout-generic-function-string-at-point)))
         (narrow-to-region beg end)
-        (let ((str (buffer-string)))
-          (cond
-           ((memq 'var type)
-            (lint-layout-php-doc-string-test-var-class str line prefix))
-           ((memq 'var-global type)
-            (lint-layout-php-doc-string-test-var-global str line prefix))
-           ((memq 'class type)
-            (lint-layout-java-doc-string-test-class str line prefix))
-           ((memq 'function type)
-            (lint-layout-generic-doc-string-test-function
-             str line prefix data)))
-          (lint-layout-php-doc-examine-content-other
-           str line type prefix))))))
+        (setq str (buffer-string))
+	(cond
+	 ((memq 'var type)
+	  (lint-layout-php-doc-string-test-var-class str line prefix))
+	 ((memq 'var-global type)
+	  (lint-layout-php-doc-string-test-var-global str line prefix))
+	 ((memq 'class type)
+	  (lint-layout-java-doc-string-test-class str line prefix))
+	 ((memq 'function type)
+	  (lint-layout-generic-doc-string-test-function
+	   str line prefix data)))
+	(lint-layout-php-doc-examine-content-other
+	 str line type prefix)))))
 
-(defun lint-layout-php-check-doc--test-empty-line-above (&optional message)
+(defun lint-layout-php-check-doc--test-empty-line-above (&optional prefix)
   "Check empty line before doc-block."
   (lint-layout-with-save-point
     (forward-line -1)
@@ -5705,7 +5714,7 @@ Point must be at the beginning of function definition line."
  <code>"
   (let (point
         next-line-valid-p
-        toplevel-p
+        top-level-p
         valid-p
         str
         beg
@@ -5716,7 +5725,7 @@ Point must be at the beginning of function definition line."
             beg         (line-beginning-position)
             top-level-p (lint-layout-with-save-point
                           (lint-layout-top-level-p)))
-      (lint-layout-php-check-doc--test-empty-line-above)
+      (lint-layout-php-check-doc--test-empty-line-above prefix)
       (when (save-excursion
               (forward-line 1)
               (setq next-line-valid-p (lint-layout-looking-at-doc-p))
@@ -5802,7 +5811,7 @@ Point must be at the beginning of function definition line."
   "Check current line for errors."
   (if (looking-at "^\\([^:]+\\):+\\([0-9]+\\)")
       (list (match-string 1)
-            (string-to-int (match-string 2)))))
+            (string-to-number (match-string 2)))))
 
 (defun my-lint-output-mode-error-info ()
   "Return filename and line at point."
@@ -5828,7 +5837,7 @@ Point must be at the beginning of function definition line."
           (pop-to-buffer buffer)
           ;; (find-file-other-window file)))
           (if line
-              (goto-line line)))))))
+              (lint-layout-goto-line line)))))))
 
 (defun my-lint-output-mode-goto-line-mouse (event)
   (interactive "e")
@@ -5990,7 +5999,8 @@ According to file extension: *.php, *.css, *.php."
   (interactive
    (list (read-file-name "File to check:")
          'verbose))
-  (let (find-file-hooks)
+  (lint-layout-debug-message "debug layout: Generic file: %s" file)
+  (let (find-file-hook)
     (with-current-buffer (find-file file)
       (lint-layout-min)
       (lint-layout-check-generic-buffer
@@ -6004,7 +6014,8 @@ See `lint-layout-check-generic-buffer'"
   (interactive
    (list (read-directory-name "Directory to check: ")
          'verb))
-  (dolist ((file (directory-files dir 'fullpath)))
+  (lint-layout-debug-message "debug layout: Generic dir: %s" dir)
+  (dolist (file (directory-files dir 'fullpath))
     (when (and (not (file-directory-p file))
                (file-exists-p file))
       (lint-layout-check-generic-file file verb))))
@@ -6038,7 +6049,7 @@ See `lint-layout-check-generic-buffer'"
      file)
     (if (not (file-exists-p file))
         (message "WARN: No such file '%s'" file)
-      (let (find-file-hooks)
+      (let (find-file-hook)
         (with-temp-buffer
           (insert-file-contents file)
           (lint-layout-code-type-set-local-variable)
@@ -6049,31 +6060,6 @@ See `lint-layout-check-generic-buffer'"
            function-list
            file
            (point-min)))))))
-
-(defun lint-layout-check-generic-file (file)
-  "Run checks according to file type over FILE.
-The type of file is determined from file extension.
-The `lint-layout-buffer-name' is not emptied nor displayed."
-  (lint-layout-debug-message "debug layout: Generic file: %s" file)
-  (cond
-   ((string-match "\\.php$" file)
-    (lint-layout-check-file-list
-     file
-     'lint-layout-php-check-all-tests))
-   ((string-match "\\.java$" file)
-    (lint-layout-check-file-list
-     file
-     'lint-layout-java-check-all-tests))
-   ((string-match "\\.css$" file)
-    (lint-layout-check-file-list
-     file
-     'lint-layout-css-check-batch-all))
-   ((string-match "\\.sql$" file)
-    (lint-layout-check-file-list
-     file
-     'lint-layout-sql-check-batch-all))
-   (t
-    (message "[WARN] No checks defined for file: %s" file))))
 
 (defun lint-layout-check-batch-file-list (files &optional function)
   "Check FILES with FUNCTION (or list of)."
@@ -6108,7 +6094,7 @@ See:
   "Run correct check for each type of file on command line."
   (let ((debug-on-error t))
     (dolist (file command-line-args-left)
-      (lint-layout-check-generic-file file))
+      (lint-layout-check-generic-file file 'verbose))
     (lint-layout-princ-results)))
 
 ;; End of file
