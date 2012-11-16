@@ -130,7 +130,7 @@
 (eval-when-compile
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1115.0646"
+(defconst lint-layout-version-time "2012.1116.0741"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -668,6 +668,14 @@ See also `lint-layout-check-file-list'.")
 
 ;;; ....................................................... &utilities ...
 
+(defsubst lint-layout-min ()
+  "Move to `point-min'."
+  (goto-char (point-min)))
+
+(defsubst lint-layout-bol ()
+  "Move to `line-beginning-position'."
+  (goto-char (line-beginning-position)))
+
 (put 'lint-layout-debug-message 'lint-layout-debug-message 0)
 (put 'lint-layout-debug-message 'edebug-form-spec '(body))
 (defmacro lint-layout-debug-message (&rest body)
@@ -694,7 +702,7 @@ Return nil or number of occurrances."
 
 (defsubst lint-layout-code-java-search ()
   "Position point at first detected Java code line."
-  (goto-char (point-min))
+  (lint-layout-min)
   (re-search-forward
    `,(concat
       "^[ \t]*import[ \t]+[a-z]+\\..*;"
@@ -715,7 +723,7 @@ Return nil or number of occurrances."
 
 (defsubst lint-layout-code-php-search ()
   "Position point at first detected PHP code line."
-  (goto-char (point-min))
+  (lint-layout-min)
   ;; $variable
   (re-search-forward "^[ \t]*[$][a-zA-Z]" nil t))
 
@@ -779,7 +787,7 @@ Return nil or number of occurrances."
 (defmacro lint-layout-with-point-min (&rest body)
   "Run BODY with from `point-min'. Point is preserved."
   `(save-excursion
-    (goto-char (point-min))
+    (lint-layout-min)
     ,@body))
 
 (put 'lint-layout-with-save-point 'lisp-indent-function 0)
@@ -825,7 +833,7 @@ Return nil or number of occurrances."
   `(progn
      (lint-layout-result-erase-buffer)
      (save-excursion
-       (goto-char (point-min))
+       (lint-layout-min)
        ,@body)
      (with-current-buffer lint-layout-buffer-name
        (sort-lines nil (point-min) (point-max)))
@@ -868,7 +876,7 @@ Return nil or number of occurrances."
   (let ((beg (line-beginning-position))
         (i 1)
         (point (point)))
-    (goto-char (point-min))
+    (lint-layout-min)
     (while (search-forward "\n" beg t)
       (incf i))
     (goto-char point)
@@ -1144,7 +1152,7 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 (defsubst lint-layout-looking-at-comment-point-p ()
   "If `looking-at' at comment."
   (lint-layout-with-save-point
-    (goto-char (line-beginning-position))
+    (lint-layout-bol)
     (looking-at "^[ \t]*\\(/?[*]\\|//\\|[*]/\\)")))
 
 (defsubst lint-layout-looking-at-comment-line-p ()
@@ -1155,13 +1163,13 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 (defsubst lint-layout-looking-at-statement-p ()
   "If `looking-at' at semicolon at the end of line."
   (lint-layout-with-save-point
-    (goto-char (line-beginning-position))
+    (lint-layout-bol)
     (looking-at "^.*;[ \t\r]*\n")))
 
 (defsubst lint-layout-looking-at-variable-at-line-p ()
   "If `looking-at' at variable at line"
   (lint-layout-with-save-point
-    (goto-char (line-beginning-position))
+    (lint-layout-bol)
     (re-search-forward "[$]_*[a-z0.9]+" (line-end-position) t)))
 
 (defsubst lint-layout-looking-at-conditional-p ()
@@ -1379,7 +1387,7 @@ displayed."
                                     t)))
             (while (re-search-forward re nil t)
               (setq point (point))
-              (goto-char (line-beginning-position))
+              (lint-layout-bol)
               (cond
                ((lint-layout-looking-at-comment-start-single-p)
                 (goto-char point))
@@ -1393,7 +1401,7 @@ displayed."
                            (not (or (save-match-data
                                       (string-match not-re line))
                                     (save-excursion
-                                      (goto-char (line-beginning-position))
+                                      (lint-layout-bol)
                                       (looking-at not-re)))))
                        (or (null func)
                            (funcall func)))
@@ -1823,7 +1831,7 @@ See `lint-layout-generic-run-occur-list'.")
 (defun lint-layout-conditional-above-p ()
   "Check if fif/else line is above."
     (save-excursion
-      (goto-char (line-beginning-position))
+      (lint-layout-bol)
       (or (lint-layout-looking-at-control-statement-p)
           ;; FIXME: does't work for multiline if ( .... )
           ;; Only few lines backward
@@ -2032,7 +2040,7 @@ Return variable content string."
     (forward-line -1)
     (skip-chars-forward " \t")
     (setq col-prev (current-column))
-    (goto-char (line-beginning-position))
+    (lint-layout-bol)
     ;; We need to check current column due to cases like:
     ;;
     ;;    funcall(arg   // comment
@@ -2067,9 +2075,9 @@ Return variable content string."
 (defun lint-layout-generic-doc-above-p ()
   "Check if phpdoc is in above line."
   (save-excursion
-    (goto-char (line-beginning-position))
+    (lint-layout-bol)
     (skip-chars-backward "  \t\r\n") ;;  At the end of "*/"
-    (goto-char (line-beginning-position))
+    (lint-layout-bol)
     (looking-at "^[ \t]*[*]/[ \t]*$")))
 
 (defsubst lint-layout-php-re-search-forward-doc-keyword ()
@@ -2113,7 +2121,7 @@ Return variable content string."
         end)
     (with-temp-buffer
       (insert string)
-      (goto-char (point-min))
+      (lint-layout-min)
       (while (lint-layout-xml-element-beginning "textarea")
         ;; "How to limit the number of characters entered in a textarea
         ;;  in an HTML form and other notes on textarea elements"
@@ -2346,7 +2354,7 @@ Return variable content string."
                 (setq point (point)))
       ;; Ignore brace inside comments
       (unless (lint-layout-with-save-point
-                (goto-char (line-beginning-position))
+                (lint-layout-bol)
                 (unless (lint-layout-looking-at-comment-point-p)
                   (setq found point)))
         (if (not (eobp))
@@ -2566,7 +2574,7 @@ Optional message PREFIX."
     (if (eq (point) (point-min))
         (setq level 0))
     (while (lint-layout-generic-statement-brace-forward)
-      (goto-char (line-beginning-position))
+      (lint-layout-bol)
       (unless (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)")  ;Skip brace in comments
         (skip-chars-forward " \t")
         ;; The starting line be initially incorrect
@@ -2597,7 +2605,7 @@ else
     code
 }
 "
-  (goto-char (line-beginning-position))
+  (lint-layout-bol)
   (skip-chars-backward " \t\r\n")
   (when (lint-layout-looking-at-comment-line-p)
     (lint-layout-message
@@ -2701,7 +2709,7 @@ if ( check );
             fullstr   (match-string 0)
             indent    (lint-layout-with-save-point
                         ;; At brace line
-                        (goto-char (line-beginning-position))
+                        (lint-layout-bol)
                         (if (looking-at "[ \t]+")
                             (match-string 0)
                           ""))
@@ -2835,7 +2843,7 @@ and `lint-layout-php-function-call-keywords-no-paren'."
          indent
          line)
     (save-excursion
-      (goto-char (point-min))
+      (lint-layout-min)
       (setq class-p (lint-layout-search-forward-class-p)))
     (while (re-search-forward re nil t)
       (setq str (match-string 0))
@@ -2957,7 +2965,7 @@ and `lint-layout-php-function-call-keywords-no-paren'."
   (let ((dos (save-excursion
                ;; FIXME this is for any buffer, but we could also
                ;; check the Emacs EOL variable?
-               (and (goto-char (point-min))
+               (and (lint-layout-min)
                     (looking-at ".*\r")
                     (goto-char (point-max))
                     (looking-at ".*\r")))))
@@ -3021,9 +3029,9 @@ and `lint-layout-php-function-call-keywords-no-paren'."
 (defun lint-layout-generic-check-mixed-eol-crlf (&optional prefix)
   "Check mixed CR/LF combination in buffer."
   (save-excursion
-    (goto-char (point-min))
+    (lint-layout-min)
     (when (lint-layout-line-ending-lf-1-p)
-      (goto-char (point-min))
+      (lint-layout-min)
       (when (search-forward "\r" nil t)
         (lint-layout-message
          "[file-format] CR LF at the end of line (first occurrance)"
@@ -3850,7 +3858,7 @@ LINE is added to current line number."
   (let ((step  lint-layout-generic-indent-step)
         indent)
     (save-excursion
-      (goto-char (line-beginning-position))
+      (lint-layout-bol)
       (while (not (eobp))
         ;;  Do not check line that has terminating ';'
         ;;  Or single "(" and ")" lines
@@ -3874,9 +3882,9 @@ LINE is added to current line number."
       (insert string)
 ;;;      (display-buffer (current-buffer)) ;; FIXME
       (lint-layout-sql-clean-comments-buffer)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-sql-check-element-indentation prefix line)
-      (goto-char (point-min))
+      (lint-layout-min)
       ;; check every word: the column names
       (while (re-search-forward ".\\([^ ,()\t\r\n]+\\).?" nil t)
         (setq match (match-string 0)
@@ -3963,15 +3971,15 @@ The value of LINE is added to current line. PREFIX."
         word)
     (with-temp-buffer
       (insert string)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-sql-check-null-literal prefix line)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-sql-check-iso-date prefix line)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-sql-check-element-nbr-quotes prefix line)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-sql-check-element-double-quotes prefix line)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-sql-check-element-indentation prefix line))))
 
 (defun lint-layout-sql-check-statement-insert-into-main
@@ -4102,7 +4110,7 @@ The submatches are as follows. The point is at '!':
     (with-temp-buffer
       (insert string)
       (lint-layout-sql-clean-comments-buffer)
-      (goto-char (point-min))
+      (lint-layout-min)
       (let (match
             curline)
         (while (re-search-forward "[ \t]*\\([^,]+\\)" nil t)
@@ -4213,13 +4221,13 @@ The submatches are as follows. The point is at '!':
       (insert string)
 ;;;      (display-buffer (current-buffer)) ;; FIXME
       (lint-layout-sql-clean-comments-buffer)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-sql-check-statement-select-from-part-keyword-case
        prefix line)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-sql-check-statement-select-from-part-equals
        prefix line)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-sql-check-statement-select-from-part-quotes)
       ;; FIXME indentation checks
 ;;       (let (match)
@@ -4625,7 +4633,7 @@ CREATE TABLE table
                  lint-layout-sql-check-statement-data-type-line-up
                  lint-layout-sql-check-statement-create-tables-no-semicolon
                  lint-layout-sql-check-create-table-multiple-col-defs))
-        (goto-char (point-min))
+        (lint-layout-min)
         (lint-layout-debug-message
          "debug layout: %s prefix %s line %s" function prefix (or line 0))
         (funcall function prefix line table)))))
@@ -5169,7 +5177,7 @@ STR is docstring at LINE number. PREFIX is for messages.
 DATA is the full function content."
   (save-excursion
     ;;  * @param $var string
-    (goto-char (point-min))
+    (lint-layout-min)
     (let (word
           str)
       (while (re-search-forward
@@ -5377,7 +5385,7 @@ DATA is the full function content."
        "[doc] no paragraph break after first line short description"
        prefix
        (+ 2 line))))
-  (goto-char (point-min)))
+  (lint-layout-min))
 
 (defun lint-layout-php-doc-examine-content-other--empty-line-tokens
   (line &optional type prefix)
@@ -5436,7 +5444,7 @@ Write error at LINE with PREFIX."
 /**<no characters here>
  *
  */"
-  (goto-char (line-beginning-position))
+  (lint-layout-bol)
   (when (re-search-forward "[ \t]*/[*][*]" (line-end-position) t)
     (when (and (not (looking-at "[ \t\r\n]*$"))
                (looking-at ".*"))
@@ -5475,7 +5483,7 @@ Write error at LINE with PREFIX."
   (str line type &optional prefix)
   "Examine docstring."
   (save-excursion
-    (goto-char (point-min))
+    (lint-layout-min)
     (lint-layout-with-save-point
       (lint-layout-php-doc-examine-content-other--all-lines
        line type prefix))
@@ -5580,7 +5588,7 @@ Return:
   "Return function '(beg end) points with indentation.
 Point must be at the beginning of function definition line."
   (save-excursion
-    (goto-char (line-beginning-position))
+    (lint-layout-bol)
     (let ((re-beg
           (cond
            ((eq 'php-mode (lint-layout-code-type-p))
@@ -5621,7 +5629,7 @@ Point must be at the beginning of function definition line."
       (let (data)
         (goto-char end)
         (unless (zerop (skip-chars-forward " \t\r\n"))
-          (goto-char (line-beginning-position))
+          (lint-layout-bol)
           (setq data (lint-layout-generic-function-string-at-point)))
         (narrow-to-region beg end)
         (let ((str (buffer-string)))
@@ -5652,7 +5660,7 @@ Point must be at the beginning of function definition line."
       (let (data)
         (goto-char end)
         (unless (zerop (skip-chars-forward " \t\r\n"))
-          (goto-char (line-beginning-position))
+          (lint-layout-bol)
           (setq data (lint-layout-generic-function-string-at-point)))
         (narrow-to-region beg end)
         (let ((str (buffer-string)))
@@ -5799,7 +5807,7 @@ Point must be at the beginning of function definition line."
 (defun my-lint-output-mode-error-info ()
   "Return filename and line at point."
   (save-excursion
-    (goto-char (line-beginning-position))
+    (lint-layout-bol)
     (my-lint-output-mode-error-at-point-p)))
 
 (defsubst my-lint-output-mode-find-buffer (name)
@@ -5984,7 +5992,7 @@ According to file extension: *.php, *.css, *.php."
          'verbose))
   (let (find-file-hooks)
     (with-current-buffer (find-file file)
-      (goto-char (point-min))
+      (lint-layout-min)
       (lint-layout-check-generic-buffer
        file
        verb))))
