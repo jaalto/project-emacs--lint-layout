@@ -131,7 +131,7 @@
   ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1116.0913"
+(defconst lint-layout-version-time "2012.1116.0916"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -5701,7 +5701,7 @@ Use optional PREFIX for messages.
 	    (when (and point
 		       (> beg point)) ;; comment *after* class definition
 	      (lint-layout-message
-	       "[doc] doc block not before class definition"
+	       "[doc] documentation block not before class definition"
 	       prefix line))))
         (narrow-to-region beg end)
         (setq str (buffer-string))
