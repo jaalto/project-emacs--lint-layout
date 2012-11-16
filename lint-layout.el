@@ -131,7 +131,7 @@
   ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1116.0836"
+(defconst lint-layout-version-time "2012.1116.0846"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1491,6 +1491,22 @@ displayed."
        (let ((identifier (match-string 1))
 	     case-fold-search)
 	 (string-match "^[a-z]" identifier))))
+
+   ;;  int var; String j;
+   (list
+    (concat
+     "^[ \t]+"
+     lint-layout-generic-vartype-modifier-regexp
+     "[ \t]+[^ \t\r\n]+.*;[^;\r\n]+;")
+    "multiple variable statements ")
+
+   ;;  int one, two;
+   (list
+    (concat
+     "^[ \t]+"
+     lint-layout-generic-vartype-modifier-regexp
+     "[ \t]+[^ ,\t\r\n]+.*,[^,;\r\n]+[,;]")
+    "multiple variable definitions with comma")
 
    '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
      "in statement, no space after operator"
