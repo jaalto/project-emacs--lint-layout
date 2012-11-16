@@ -131,7 +131,7 @@
   ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1116.0846"
+(defconst lint-layout-version-time "2012.1116.0856"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -2552,6 +2552,9 @@ Use BASE-INDENT, optional message PREFIX."
      ((lint-layout-looking-at-empty-line-p)) ; do nothing
      ((lint-layout-looking-at-comment-start-multiline-p) ; skip
       ;; Handled in lint-layout-generic-check-comment-multiline-stars
+      ;; Only check starting line
+      (skip-chars-forward " \t")
+      (lint-layout-generic-check-indent-current indent prefix)
       (lint-layout-comment-skip-multiline))
      ((looking-at
        "^[ \t]*\\(new[ \t]+\\)?[a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;]*$")
@@ -2599,7 +2602,7 @@ Optional message PREFIX."
       (lint-layout-bol)
       (unless (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)")  ;Skip brace in comments
         (skip-chars-forward " \t")
-        ;; The starting line be initially incorrect
+        ;; Check that the starting line is initially incorrect
         (cond
          ((lint-layout-generic-check-indent-current nil prefix)
           (forward-line 1))             ;Error
