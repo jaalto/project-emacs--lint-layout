@@ -5907,7 +5907,7 @@ Use optional PREFIX for messages.
 (define-derived-mode my-lint-output-mode fundamental-mode "Lint"
   "Major mode for Lint output.
 Runs `my-lint-output-mode-hook'."
-  (setq buffer-read-only t)
+  ;; (setq buffer-read-only t)
   (my-lint-output-mode-map-define)
   (setq font-lock-defaults
         my-lint-output-mode-font-lock-keywords)
