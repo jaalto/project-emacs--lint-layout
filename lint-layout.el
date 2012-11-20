@@ -1497,16 +1497,16 @@ displayed."
     (concat
      "^[ \t]+"
      lint-layout-generic-vartype-modifier-regexp
-     "[ \t]+[^ \t\r\n]+.*;[^;\r\n]+;")
-    "multiple variable statements ")
+     "[ \t]+[^ *()\t\r\n]+.*;[^;\r\n]+;")
+    "possible multiple variable statements")
 
    ;;  int one, two;
    (list
     (concat
      "^[ \t]+"
      lint-layout-generic-vartype-modifier-regexp
-     "[ \t]+[^ ,\t\r\n]+.*,[^,;\r\n]+[,;]")
-    "multiple variable definitions with comma")
+     "[ \t]+[^ ,*(){}\t\r\n]+,[^,;\r\n]+[,;]")
+    "possible multiple variable definitions with comma")
 
    '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
      "in statement, no space after operator"
