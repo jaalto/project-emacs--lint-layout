@@ -131,7 +131,7 @@
   ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1116.0916"
+(defconst lint-layout-version-time "2012.1121.1148"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1351,19 +1351,15 @@ displayed."
    '("^[ \t]*global[ \t]+\\([$].*[a-z].*\\);"
      "global variable name not all uppercase"
      nil
-     t))
+     'case))
   "*CamelCase variable checks.")
 
 (defconst lint-layout-php-check-regexp-occur-camelcase-style-list
-  '("^[ \t]*[$]?[a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
-    "variable name not camelCase"
-    nil
-    nil
-    (lambda ()
-      (let ((str (lint-layout-current-line-string)))
-        (lint-layout-with-case
-          ;; Global variable
-          (not (string-match "[$]?[A-Z][A-Z0-9]+_" str))))))
+  (list
+   '("^[ \t]*[$]?[a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
+     "variable name not camelCase"
+     nil
+    'case)))
   "*CamelCase variable checks.")
 
 (defconst lint-layout-java-check-regexp-occur-camelcase-style-list
@@ -1374,12 +1370,7 @@ displayed."
        "[a-zA-Z0-9]+_[a-zA-Z0-9_]+[ \t\r\n]*[=;]")
     "variable name not camelCase"
     nil
-    nil
-    (lambda ()
-      (let ((str (lint-layout-current-line-string)))
-        (lint-layout-with-case
-          ;; Global variable
-          (not (string-match "[$]?[A-Z][A-Z0-9]+_" str)))))))
+    'case))
   "*CamelCase variable checks.")
 
 (defun lint-layout-generic-run-occur-list (list &optional prefix)
@@ -1428,37 +1419,47 @@ displayed."
 
 (defconst lint-layout-java-check-regexp-occur-funcdef-style-list
   (list
+   ;; function Capitalized()
+   (list
+    (concat
+     "^[ \t]+"
+     "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "[^(=\r\n]*[ \t]+\\([A-Z][^ (=\t\r\n]*\\)[ \t]*(")
+    "in method definition, identifier does not start lowercase"
+    nil
+    'case)
+
    ;; function name ()
    (list
     (concat
      "^[ \t]+"
      "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
-     "[^(][ \t]+("
-     "in method definition, space before starting paren"))
+     "[^(=\r\n]+[ \t]+(")
+    "in method definition, whitespace before starting paren")
 
-   ;; function this_is_name()
+   ;; function this_name()
    (list
     (concat
      "^[ \t]+"
      "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
-     "[A-Z][^(]*[ \t]*("
-     "in method definition, name not camelCase"))
+     "[^(=\r\n]*[ \t]+\\([a-zA-Z][^ (=\t\r\n]*\\)_[^ (=\t\r\n]*[ \t]*(")
+    "in method definition, identifier not camelCase")
 
    ;; function name( param, def)
    (list
     (concat
      "^[ \t]+"
      "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
-     "[A-Z][^(]*[ \t]*([\t ]"
-     "in method definition, extra space after opening paren"))
+     "[^(=\r\n]*[ \t]+[^ (=\t\r\n]*[ \t]*([ \t]")
+     "in method definition, extra whitespace after opening paren")
 
    ;; function name(param, def )
    (list
     (concat
      "^[ \t]+"
      "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
-     "[A-Z][^(]*[ \t]*([^)\r\n]*[ \t])"
-     "in method definition, extra space before closing paren")))
+     "[^(=\r\n]*[ \t]+[^ (=\t\r\n]*[ \t]*([^=()]+[ \t])")
+     "in method definition, extra whitespace before closing paren"))
   "Check Modern layout style.")
 
 (defconst lint-layout-java-check-regexp-occur-list
