@@ -131,7 +131,7 @@
   ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1121.1153"
+(defconst lint-layout-version-time "2012.1121.1154"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1359,7 +1359,7 @@ displayed."
    '("^[ \t]*[$]?[a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
      "variable name not camelCase"
      nil
-    'case)))
+    'case))
   "*CamelCase variable checks.")
 
 (defconst lint-layout-java-check-regexp-occur-camelcase-style-list
