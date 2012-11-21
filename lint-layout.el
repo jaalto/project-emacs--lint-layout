@@ -131,7 +131,7 @@
   ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1121.1148"
+(defconst lint-layout-version-time "2012.1121.1153"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1460,7 +1460,42 @@ displayed."
      "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
      "[^(=\r\n]*[ \t]+[^ (=\t\r\n]*[ \t]*([^=()]+[ \t])")
      "in method definition, extra whitespace before closing paren"))
-  "Check Modern layout style.")
+  "Checks for method definitions.
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
+
+(defconst lint-layout-java-check-method-call-occur-list
+  (list
+   ;; funcall(...arg )
+   '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)[^{\r\n]*$"
+     "in method call, possibly extra space before closing paren"
+     ;; Ignore:  Constructor () {
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
+
+   ;; funcall( arg, ...)
+   '("\\<[_a-zA-Z][._a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)[^{\r\n]*$"
+     "in method call, possibly extra space after opening paren"
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
+
+   ;; funcall (arg)
+   '("^[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]+([^);\r\n]*)[^{\r\n]*$"
+     "in method call, possibly extra space before opening paren"
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
+
+   ;; funcall(arg,arg)
+   '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)[^{\r\n]*$"
+     "in method call, no space after comma"
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
+
+   ;; this.funcall (arg)
+   '("^[ \t]+this\\.[^][() \t\r\n]+[ \t]+("
+     "in method call, possibly extra space before opening paren")
+
+   ;; code );
+   '("^[ \t]+[^ )/*\t\r\n]+[ \t]+);"
+     "in method call, possibly extra space before closing paren (statement)"
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)"))
+  "Checks for method calls.
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
 (defconst lint-layout-java-check-regexp-occur-list
   (list
@@ -1523,36 +1558,6 @@ displayed."
    ;; '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
    ;;   "in statement, no space after keyword and paren")
 
-   ;; funcall(...arg )
-   '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)[^{\r\n]*$"
-     "in method call, possibly extra space before closing paren"
-     ;; Ignore:  Constructor () {
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
-
-   ;; funcall( arg, ...)
-   '("\\<[_a-zA-Z][._a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)[^{\r\n]*$"
-     "in method call, possibly extra space after opening paren"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
-
-   ;; funcall (arg)
-   '("^[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]+([^);\r\n]*)[^{\r\n]*$"
-     "in method call, possibly extra space before opening paren"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
-
-   ;; funcall(arg,arg)
-   '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)[^{\r\n]*$"
-     "in method call, no space after comma"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
-
-   ;; this.funcall (arg)
-   '("^[ \t]+this\\.[^][() \t\r\n]+[ \t]+("
-     "in method call, possibly extra space before opening paren")
-
-   ;; code );
-   '("^[ \t]+[^ )/*\t\r\n]+[ \t]+);"
-     "in method call, possibly extra space before closing paren (statement)"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
-
    '("[a-zA-Z][a-zA-Z0-9_]*=[ \t]+[a-zA-Z0-9_\"\']"
      "in assignment, no space at left of equal sign")
 
@@ -1564,11 +1569,13 @@ displayed."
 
    '("^[ \t]*}\\(else\\|catch\\|finally\\)\\>"
      "in block, no space after brace '}'"))
-  "Search ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
+  "Generic checks for Java.
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
 See `lint-layout-generic-run-occur-list'.")
 
 (defvar lint-layout-java-check-regexp-occur-variable
   '(lint-layout-java-check-regexp-occur-funcdef-style-list
+    lint-layout-java-check-method-call-occur-list
     lint-layout-java-check-regexp-occur-list
     lint-layout-java-check-regexp-occur-camelcase-style-list)
   "*List of occur variable names.")
