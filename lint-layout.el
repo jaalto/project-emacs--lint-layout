@@ -5373,7 +5373,7 @@ DATA is the full function content."
            (1+ line)))
         (unless (lint-layout-with-case (string-match "[A-Z]" word))
           (lint-layout-message
-           (format "[doc] line does not start with capital a letter%s"
+           (format "[doc] line does not start with a capital letter%s"
                    (if (memq 'include type)
                        " (interpreted as require include comment)"
                      ""))
