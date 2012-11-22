@@ -131,7 +131,7 @@
   ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1121.1154"
+(defconst lint-layout-version-time "2012.1122.1953"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -475,18 +475,12 @@ without brace requirement.")
 (defconst lint-layout-java-doc-location-regexp
    (concat
     ;; Keywords
-    "\\(" ;; static public ...
+    "^[ \t]*"
+    "\\("
         "\\(?:"
-                lint-layout-generic-other-modifier-regexp
                 lint-layout-generic-access-modifier-regexp
-                "\\)"
-        "\\|\\<"
-        (regexp-opt
-        '("final"
-          ;; "import"
-          )
-        t)
-        "\\>"
+                lint-layout-generic-other-modifier-regexp
+        "\\)"
     "\\)")
   "Regexp to match location where javadoc blocks should exist.")
 
