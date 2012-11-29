@@ -2355,7 +2355,7 @@ Return variable content string."
 
 (defsubst lint-layout-generic-statement-brace-forward (&optional brace)
   "Find statement block start. Optionally closing BRACE end."
-  ;;  Notice that BRACE is hre used in regexp.
+  ;;  Notice that BRACE in here used in regexp.
   ;;
   ;; if ( preg_match("^[0-9]{1,9}$", $bfield ) )
   ;; {
@@ -2367,10 +2367,7 @@ Return variable content string."
         (skip-chars (concat "^" brace))
         found
         point)
-    (if (eq (char-after)                ; on brace, move forward
-            (if brace
-                ?}
-              ?{))
+    (if (string= (format "%c" (char-after)) brace) ; on brace, move a little
         (forward-char 1))
     (while (and (null found)
                 (not (eobp))
@@ -2558,6 +2555,14 @@ Use BASE-INDENT, optional message PREFIX."
       (skip-chars-forward " \t")
       (lint-layout-generic-check-indent-current indent prefix)
       (lint-layout-comment-skip-multiline))
+     ((looking-at "^[ \t]*[^=\r\n]*[[][]][^=\r\n]*[ \t\r\n]*=[ \t\r\n]{")
+      ;; Only check starting line
+      (skip-chars-forward " \t")
+      (lint-layout-generic-check-indent-current indent prefix)
+      ;; Skip array initializations
+      ;; int[] values = { 1, -5, 10, -15, 0, 7 };
+      (or (re-search-forward ";[ \t]*$" nil t)
+	  (re-search-forward "^[ \t][^ \t\r\n]")))
      ((looking-at
        "^[ \t]*\\(new[ \t]+\\)?[a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;]*$")
       ;; Only check starting line
@@ -2601,8 +2606,11 @@ Optional message PREFIX."
     (if (eq (point) (point-min))
         (setq level 0))
     (while (lint-layout-generic-statement-brace-forward)
-      (lint-layout-bol)
-      (unless (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)")  ;Skip brace in comments
+      (unless (save-excursion
+		(lint-layout-bol)
+		(or (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)") ;brace in comments
+		    ;;  int[] array = { 1, 2 };
+		    (looking-at "^.+=.+}[ \t]*;[ \t]*$")))
         (skip-chars-forward " \t")
         ;; Check that the starting line is initially incorrect
         (cond
