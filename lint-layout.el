@@ -128,10 +128,10 @@
 (require 'regexp-opt)
 
 (eval-when-compile
-  ;; Need gensym
+  ;; Need gensym, incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1205.0146"
+(defconst lint-layout-version-time "2012.1205.0211"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -195,13 +195,12 @@ tokens could be lined up.")
     "const")
   "List of function, method or variable modifiers.")
 
-(eval-when-compile
+(eval-and-compile
 ;;  Need this function at load-time
 (defun lint-layout-make-word-sequence-regexp (list)
-  "From LIST make regrep '(A|B...)?(AB|B...)' x (length LIST).
-The idea is to spell out all word combinations:
+  "From LIST make regexp for word combinations.
 
- '(a b)  => (?:\b(a|b|c)\b[ \]*)?(?:\b(a|b|c)\b[ \]*)?"
+ '(a b)  => (?:\b(a|b)\b[ \]*)?(?:\b(a|b)\b[ \]*)?"
   (let* ((len (length list))
          (i   0)
          (re  (concat
@@ -794,7 +793,7 @@ Return nil or number of occurrances."
 (put 'lint-layout-with-save-point 'edebug-form-spec '(body))
 (defmacro lint-layout-with-save-point (&rest body)
   "Run body and restore point. Lighter than `save-excursion'."
-  (let ((point (gensym "point-")))
+  (let ((point (make-symbol "point-tmp")))
     `(let ((,point (point)))
        (prog1
            (progn
@@ -4941,8 +4940,8 @@ The submatches are as follows: The point is at '!':
              prefix))
           (unless (string-match lint-layout-css-web-safe-font-regexp str)
             (let ((fonts (mapconcat
-                          '(lambda (x)
-                             (capitalize x))
+                          (lambda (x)
+			    (capitalize x))
                           lint-layout-css-web-safe-font-list
                           ",")))
               (lint-layout-message
