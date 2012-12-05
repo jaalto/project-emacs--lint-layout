@@ -23,7 +23,7 @@
 #
 #   Call syntax
 #
-#	<program name> --help
+#       <program name> --help
 #
 #   Notes
 #
@@ -190,7 +190,7 @@ EmacsCall ()
     local opt=""
 
     if [ "$DEBUG" ]; then
-	opt="$opt --debug-init"
+        opt="$opt --debug-init"
         debug="(setq find-file-hook nil lint-layout-debug t debug-on-error t)"
         set -x
     fi
@@ -200,7 +200,7 @@ EmacsCall ()
     if [ ! "$lib" ]; then
         Die "Abort. Lint library is not currently available"
     fi
-                
+
     # lint-layout-check-whitespace
     # lint-layout-check-batch-generic-command-line
     # lint-layout-java-check-all-tests
@@ -212,20 +212,30 @@ EmacsCall ()
         eval="(progn (lint-layout-check-batch-command-line '($function)))"
     fi
 
+    local java="(progn (setq lint-layout-check-java-generic-functions (append '(lint-layout-java-check-doc-missing lint-layout-generic-check-doc-main lint-layout-whitespace-multiple-newlines lint-layout-whitespace-at-eob) lint-layout-check-java-code-functions)) (lint-layout-check-batch-generic-command-line))"
+
     case "$TYPE" in
         *java*)
-            eval="(progn (setq lint-layout-check-java-generic-functions (append '(lint-layout-java-check-doc-missing lint-layout-generic-check-doc-main lint-layout-whitespace-multiple-newlines lint-layout-whitespace-at-eob) lint-layout-check-java-code-functions)) (lint-layout-check-batch-generic-command-line))"
+            eval="$java"
             ;;
-
     esac
 
+    # For single files, turn on options
+
+    if [ $# -eq 1 ]; then
+        case "$*" in
+            *.java)
+                eval="$java"
+                ;;
+        esac
+    fi
 
     $EMACS_BIN \
         $EMACS_OPTIONS \
         $opt \
-	--eval "$debug" \
-	-l "$lib" \
-	--eval "$eval" \
+        --eval "$debug" \
+        -l "$lib" \
+        --eval "$eval" \
         "$@" 2>&1 |
         egrep -v 'byte-compiled|Loading'
 
@@ -286,8 +296,8 @@ Main ()
     do
         case "$1" in
             -D | --debug)
-		shift
-		DEBUG=debug
+                shift
+                DEBUG=debug
                 case "$1" in
                     [0-9]*)
                         set -x
