@@ -131,7 +131,7 @@
   ;; Need gensym
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1122.1953"
+(defconst lint-layout-version-time "2012.1205.0146"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -2601,6 +2601,8 @@ Optional message PREFIX."
   (let ((istep lint-layout-generic-indent-step)
         level
         expect-indent
+	brace-lined-up
+	point
         indent)
     ;; FIXME: start counting levels are we find starting braces.
     (if (eq (point) (point-min))
@@ -2608,27 +2610,29 @@ Optional message PREFIX."
     (while (lint-layout-generic-statement-brace-forward)
       (unless (save-excursion
 		(lint-layout-bol)
+		;; Determine current brace style
+		(if (looking-at "^[ \t]{[ \t]*$")
+		    (setq brace-lined-up t))
 		(or (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)") ;brace in comments
 		    ;;  int[] array = { 1, 2 };
 		    (looking-at "^.+=.+}[ \t]*;[ \t]*$")))
-        (skip-chars-forward " \t")
         ;; Check that the starting line is initially incorrect
-        (cond
-         ((lint-layout-generic-check-indent-current nil prefix)
-          (forward-line 1))             ;Error
-         (t
-          (setq expect-indent (+ (current-column) istep))
-          (lint-layout-generic-check-indent-forward
-           expect-indent prefix)
-          ;; FIXME: only when we start counting.
-          ;; End brace check
-          ;; (when (and (looking-at "^[ \t]*}")
-          ;;         (setq expect-indent (- expect-indent istep))
-          ;;         (> expect-indent 0))
-          ;;   (skip-chars-forward " \t")
-          ;;   (lint-layout-generic-check-indent-current
-          ;;    expect-indent prefix))
-          ))))))
+	(lint-layout-bol)
+	(skip-chars-forward " \t")
+	(lint-layout-generic-check-indent-current nil prefix)
+	(setq expect-indent (+ (current-column) istep))
+	(forward-line 1)
+	(lint-layout-generic-check-indent-forward
+	 expect-indent prefix)
+	;; FIXME: only when we start counting.
+	;; End brace check
+	;; (when (and (looking-at "^[ \t]*}")
+	;;         (setq expect-indent (- expect-indent istep))
+	;;         (> expect-indent 0))
+	;;   (skip-chars-forward " \t")
+	;;   (lint-layout-generic-check-indent-current
+	;;    expect-indent prefix))
+	))))
 
 (defun lint-layout-generic-check-statement-comment-above
   (&optional str prefix)
