@@ -57,7 +57,7 @@
 ;;      configurable:
 ;;
 ;;      o   Maximum code column 80
-;;      o   Extra whitespace at end of lines (spaces and tabs)
+;;      o   Extra whitespace at the end of lines (spaces and tabs)
 ;;      o   Mixed SPACE+TAB indentation
 ;;      o   Brace placement (Allman lined-up; K&R)
 ;;      o   Indentation multiple of 4.
@@ -128,10 +128,10 @@
 (require 'regexp-opt)
 
 (eval-when-compile
-  ;; Need gensym, incf
+  ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1205.0211"
+(defconst lint-layout-version-time "2012.1205.0215"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1934,7 +1934,7 @@ print 'this' .
 
 (defsubst lint-layout-php-var-sql-forward-1 ()
   "Find SQL content in variable.
-Point is at end of variable after search.
+Point is at the end of variable after search.
 Return variable content string."
   (let (ret
         point
@@ -3031,7 +3031,7 @@ and `lint-layout-php-function-call-keywords-no-paren'."
       ;; eob trailing newlines?
       (forward-line 1)
       (lint-layout-whitespace-extra-newlines
-       " at end of file" prefix))
+       " at the end of file" prefix))
      (t
       (lint-layout-message
        "[newline] missing newline from last line of file"
