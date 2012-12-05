@@ -222,7 +222,7 @@ EmacsCall ()
 
     # For single files, turn on options
 
-    if [ $# -eq 1 ]; then
+    if [ ! "$TYPE" ] && [ $# -eq 1 ]; then
         case "$*" in
             *.java)
                 eval="$java"
