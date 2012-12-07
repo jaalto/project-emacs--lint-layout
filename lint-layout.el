@@ -131,7 +131,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1207.0930"
+(defconst lint-layout-version-time "2012.1207.1039"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -2543,23 +2543,23 @@ Return variable content string."
 (defun lint-layout-generic-check-indent-forward (indent &optional prefix)
   "Check that lines are indented correctly until next brace.
 Use BASE-INDENT, optional message PREFIX."
-  (while (and (forward-line 1)
-              (not (eobp))
+  (while (and (not (eobp))
+	      ;; Stop at brace
               (not (looking-at "^.*{\\|^[ \t]*}")))
     (cond
      ((lint-layout-looking-at-empty-line-p)) ; do nothing
      ((lint-layout-looking-at-comment-start-multiline-p) ; skip
-      ;; Handled in lint-layout-generic-check-comment-multiline-stars
-      ;; Only check starting line
+      ;;  Handled in lint-layout-generic-check-comment-multiline-stars
+      ;;  Only check starting line
       (skip-chars-forward " \t")
       (lint-layout-generic-check-indent-current indent prefix)
       (lint-layout-comment-skip-multiline))
      ((looking-at "^[ \t]*[^=\r\n]*[[][]][^=\r\n]*[ \t\r\n]*=[ \t\r\n]{")
-      ;; Only check starting line
+      ;;  Only check starting line
       (skip-chars-forward " \t")
       (lint-layout-generic-check-indent-current indent prefix)
-      ;; Skip array initializations
-      ;; int[] values = { 1, -5, 10, -15, 0, 7 };
+      ;;  Skip array initializations
+      ;;  int[] values = { 1, -5, 10, -15, 0, 7 };
       (or (re-search-forward ";[ \t]*$" nil t)
 	  (re-search-forward "^[ \t][^ \t\r\n]")))
      ((looking-at
@@ -2591,7 +2591,28 @@ Use BASE-INDENT, optional message PREFIX."
 	     ;;      value;
 	     (looking-at ".*=[^;]+\r?\n"))
 	;; Until statement end ";"
-	(lint-layout-code-statement-end-search))))))
+	(lint-layout-code-statement-end-search))))
+    (forward-line 1)))
+
+;; lines: while, for, if ...
+;; (looking-at ".*\\<else[ \t]+if\\>")
+;; (looking-at ".*\\<\\(try\\|while\\|for\\(each\\)?\\)[ \t]*(\\>"))
+
+(defun lint-layout-control-statement-backward ()
+  "Search if, for, while control statement backward."
+  (lint-layout-bol)
+  (let ((regexp
+	 `,(concat
+	    "^[ \t}]*"
+	    "\\("
+	        "\\<\\(try\\|while\\|for\\(each\\)?\\)[ \t]*(\\>"
+	        "\\|"
+		"\\<\\(else[ \t]+\\)?if\\>"
+	    "\\)")))
+    (while (and
+	    (not (bobp))
+	    (not (looking-at regexp))
+	    (forward-line -1)))))
 
 (defun lint-layout-generic-statement-brace-and-indent (&optional prefix)
   "Check that code is indented after each brace.
@@ -2617,12 +2638,29 @@ Optional message PREFIX."
 		    (looking-at "^.+=.+}[ \t]*;[ \t]*$")))
         ;; Check that the starting line is initially incorrect
 	(lint-layout-bol)
-	(skip-chars-forward " \t")
+	;; statements that span multiple lines. We must check previous lines
+	;;
+	;;  } else if (statement ||
+	;;             statement) {       // Cursor is *here*
+	(cond
+	 ((and (not brace-lined-up)
+	       (not (looking-at
+		     `,(concat
+			"^[ \t}]*"
+			lint-layout-generic-control-statement-regexp)))
+	       (looking-at ".*)[ \t]*{"))
+	  ;; Search back until control statement start to read correct indent
+	  (save-excursion
+	    (lint-layout-control-statement-backward)
+	    (lint-layout-bol)
+	    (skip-chars-forward " \t")
+	    (setq expect-indent (+ (current-column) istep))))
+	 (t
+	  (skip-chars-forward " \t")
+	  (setq expect-indent (+ (current-column) istep))))
 	(lint-layout-generic-check-indent-current nil prefix)
-	(setq expect-indent (+ (current-column) istep))
 	(forward-line 1)
-	(lint-layout-generic-check-indent-forward
-	 expect-indent prefix)
+	(lint-layout-generic-check-indent-forward expect-indent prefix)
 	;; FIXME: only when we start counting.
 	;; End brace check
 	;; (when (and (looking-at "^[ \t]*}")
