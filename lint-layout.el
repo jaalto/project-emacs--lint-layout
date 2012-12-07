@@ -131,7 +131,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1207.1039"
+(defconst lint-layout-version-time "2012.1207.1119"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -186,7 +186,7 @@ tokens could be lined up.")
       "String")
     t)
    "\\>")
-  "Variale type modifiers.")
+  "Variable type modifiers.")
 
 (defconst lint-layout-generic-other-modifier-list
   '("abstract"
@@ -1539,11 +1539,14 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
    '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
      "in statement, no space after operator"
-     ;; <address@example.com>
-     ;; /**
-     ;;  * comment
-     ;;  */
-     "@\\|^[ \t]/?*\\*")
+     ;; Ignore cases like:
+     ;;
+     ;;     <address@example.com>
+     ;;
+     ;;     /**
+     ;;      * comment
+     ;;      */
+     "@\\|^[ \t]*/?\\*")
 
    ;; '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)[ \t]*([^ \t\r\n]"
    ;;   "in statement, no space after starting paren")
@@ -2353,8 +2356,8 @@ Return variable content string."
     (length (match-string 0 str))))
 
 (defsubst lint-layout-generic-statement-brace-forward (&optional brace)
-  "Find statement block start. Optionally closing BRACE end."
-  ;;  Notice that BRACE in here used in regexp.
+  "Find statement block start. Optionally closing BRACE."
+  ;;  Notice that BRACE here is used in regexp.
   ;;
   ;; if ( preg_match("^[0-9]{1,9}$", $bfield ) )
   ;; {
@@ -2366,7 +2369,10 @@ Return variable content string."
         (skip-chars (concat "^" brace))
         found
         point)
-    (if (string= (format "%c" (char-after)) brace) ; on brace, move a little
+    (if (string= (format "%c"
+			 (or (char-after)
+			     ?\ ))  ;; there is no char-after at EOB
+		 brace) ; on brace, move a little
         (forward-char 1))
     (while (and (null found)
                 (not (eobp))
@@ -2619,6 +2625,20 @@ Use BASE-INDENT, optional message PREFIX."
 If point is at `point-min' then check also ending brace placement.
 Optional message PREFIX."
   (let ((istep lint-layout-generic-indent-step)
+	(control-statement-re
+	 `,(concat
+	    "^[ \t}]*"
+	    lint-layout-generic-control-statement-regexp))
+	;; public static void main(String[] args)
+	(function-statement-re
+	 `,(concat
+	    "^[ \t]*"
+	    "\\("
+		lint-layout-generic-vartype-modifier-regexp
+		"\\|\\<void\\>"
+		"\\|\\<static\\>"
+		"\\|" lint-layout-generic-access-modifier-regexp
+	    "\\)"))
         level
         expect-indent
 	brace-lined-up
@@ -2634,8 +2654,8 @@ Optional message PREFIX."
 		(if (looking-at "^[ \t]{[ \t]*$")
 		    (setq brace-lined-up t))
 		(or (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)") ;brace in comments
-		    ;;  int[] array = { 1, 2 };
-		    (looking-at "^.+=.+}[ \t]*;[ \t]*$")))
+		    ;;  int[] array = { 1, 2 }; // comment
+		    (looking-at "^.+=.+}[ \t]*;[ \t]*\\([/#].*\\)?$")))
         ;; Check that the starting line is initially incorrect
 	(lint-layout-bol)
 	;; statements that span multiple lines. We must check previous lines
@@ -2644,11 +2664,9 @@ Optional message PREFIX."
 	;;             statement) {       // Cursor is *here*
 	(cond
 	 ((and (not brace-lined-up)
-	       (not (looking-at
-		     `,(concat
-			"^[ \t}]*"
-			lint-layout-generic-control-statement-regexp)))
-	       (looking-at ".*)[ \t]*{"))
+	       (looking-at ".*)[ \t]*{")
+	       (not (looking-at control-statement-re))
+	       (not (looking-at function-statement-re)))
 	  ;; Search back until control statement start to read correct indent
 	  (save-excursion
 	    (lint-layout-control-statement-backward)
@@ -2657,8 +2675,8 @@ Optional message PREFIX."
 	    (setq expect-indent (+ (current-column) istep))))
 	 (t
 	  (skip-chars-forward " \t")
-	  (setq expect-indent (+ (current-column) istep))))
-	(lint-layout-generic-check-indent-current nil prefix)
+	  (setq expect-indent (+ (current-column) istep))
+	  (lint-layout-generic-check-indent-current nil prefix)))
 	(forward-line 1)
 	(lint-layout-generic-check-indent-forward expect-indent prefix)
 	;; FIXME: only when we start counting.
