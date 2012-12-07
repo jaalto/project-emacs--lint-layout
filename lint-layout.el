@@ -73,17 +73,17 @@
 ;;
 ;;      Some of the PHP checks include:
 ;;
-;;      o   The use and definition of function or methods:
+;;      o   The use and definition of a function or methods:
 ;;
-;;          function name () // in definition <neme> surrounding space
+;;          function name () // spaces around <name>
 ;;          {
-;;              call( $param, $param); // leading space in muti-arg calls
+;;              call( $param, $param); // leading space in multi-arg calls
 ;;              call(aram);            // single arg call
 ;;          }
 ;;
 ;;      o   Readable keywords `and' and `or' preferred over
 ;;          traditional && and ||.
-;;      o   Literal keywords in lowercase: false, true, null
+;;      o   Literal keywords in lowercase: false, true, null.
 ;;      o   Multiline concat dot-operator(.) could be written using
 ;;          <<<HERE documents.
 ;;      o   Instead echo(), print() is suggested due to function to exist
@@ -95,7 +95,7 @@
 ;;      Normally functions start scanning from current point foward, unless
 ;;      "buffer" is mentioned:
 ;;
-;;          ;; Decides correct test set for *.css, *.php, *.sql file
+;;          ;; Decides correct test set for a *.css, *.php, *.sql file
 ;;          lint-layout-check-generic-buffer
 ;;          lint-layout-check-generic-file
 ;;          lint-layout-check-generic-directory
@@ -131,7 +131,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1205.0215"
+(defconst lint-layout-version-time "2012.1207.0930"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
