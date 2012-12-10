@@ -1462,22 +1462,22 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
    '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)[^{\r\n]*$"
      "in method call, possibly extra space before closing paren"
      ;; Ignore:  Constructor () {
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|return\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall( arg, ...)
    '("\\<[_a-zA-Z][._a-zA-Z0-9>-]+([ \t]+[^)\r\n]*)[^{\r\n]*$"
      "in method call, possibly extra space after opening paren"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|return\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall (arg)
    '("^[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]+([^);\r\n]*)[^{\r\n]*$"
      "in method call, possibly extra space before opening paren"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)\\|^[ \t]/?*\\*")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|return\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall(arg,arg)
    '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)[^{\r\n]*$"
      "in method call, no space after comma"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)")
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|return\\|assert\\)")
 
    ;; this.funcall (arg)
    '("^[ \t]+this\\.[^][() \t\r\n]+[ \t]+("
@@ -1486,7 +1486,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
    ;; code );
    '("^[ \t]+[^ )/*\t\r\n]+[ \t]+);"
      "in method call, possibly extra space before closing paren (statement)"
-     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|assert\\)"))
+     "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|return\\|assert\\)"))
   "Checks for method calls.
 Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
