@@ -2689,6 +2689,19 @@ Optional message PREFIX."
 	;;    expect-indent prefix))
 	))))
 
+(defun lint-layout-generic-statement-brace-and-indent-untabify
+  (&optional prefix)
+  "Untabify and check that code is indented after each brace.
+If point is at `point-min' then check also ending brace placement.
+Optional message PREFIX."
+  (let ((buffer (current-buffer)))
+    (with-temp-buffer
+      (insert-buffer buffer)
+      ;; Without untabify, the column positions and code statement
+      ;; lines would not be read correctly.
+      (untabify (point-min) (point-max))
+      (lint-layout-generic-statement-brace-and-indent prefix))))
+
 (defun lint-layout-generic-check-statement-comment-above
   (&optional str prefix)
   "Check misplaced comment: just above continue statement.
@@ -2826,7 +2839,7 @@ if ( check );
        indent statement-line prefix)
       ;; (lint-layout-generic-statement-brace-forward)
       ;; brace-start-line (lint-layout-current-line-number))
-      (lint-layout-generic-statement-brace-and-indent prefix)
+      (lint-layout-generic-statement-brace-and-indent-untabify prefix)
       (lint-layout-generic-check-statement-brace-detach fullstr)
       (when (and php-p
                  (string-match "\\<if\\>\\|\\<els.*if\\>" keyword))
