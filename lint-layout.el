@@ -2696,7 +2696,7 @@ If point is at `point-min' then check also ending brace placement.
 Optional message PREFIX."
   (let ((buffer (current-buffer)))
     (with-temp-buffer
-      (insert-buffer buffer)
+      (insert-buffer-substring buffer)
       ;; Without untabify, the column positions and code statement
       ;; lines would not be read correctly.
       (untabify (point-min) (point-max))
@@ -2855,7 +2855,8 @@ if ( check );
        ((and (not (eq lint-layout-generic-brace-style 'brace-end))
              (not (eq statement-start-col brace-start-col)))
         (lint-layout-message
-         (format "[code] brace { not directly under keyword '%s', expect col %d"
+         (format `,(concat "[code] brace { not directly under keyword '%s', "
+			   "expect col %d")
                  (or keyword "")
                  statement-start-col)
          prefix))))))
