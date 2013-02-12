@@ -1495,14 +1495,6 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
    '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)("
      "in statement, no space between keyword and starting paren")
 
-   '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
-     "in statement, no space before operator"
-     ;; <address@example.com>
-     ;; /**
-     ;;  * comment
-     ;;  */
-     "@\\|^[ \t]*[/*]")
-
    '("^[ \t]+class[ \t]+[^ \t\r\n]+[ \t\r\n]*{"
      "in classdef, keyword not at beginning of line")
 
@@ -1537,16 +1529,23 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
      "[ \t]+[^ ,*(){}\t\r\n]+,[^,;\r\n]+[,;]")
     "possible multiple variable definitions with comma")
 
+   '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
+     "in statement, no space before operator"
+     ;; [EXCLUDE]
+     ;;
+     ;; <address@example.com>
+     ;;
+     ;; /**
+     ;;  * skip anything inside a comment
+     ;;  */
+     ;;
+     ;;  ArrayList<StringBuilder>
+     ;;
+     "@\\|^[ \t]*[/*]\\|<[a-zA-Z]+>")
+
    '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
      "in statement, no space after operator"
-     ;; Ignore cases like:
-     ;;
-     ;;     <address@example.com>
-     ;;
-     ;;     /**
-     ;;      * comment
-     ;;      */
-     "@\\|^[ \t]*/?\\*")
+     "@\\|^[ \t]*/?\\*\\|<[a-zA-Z]+>")
 
    ;; '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)[ \t]*([^ \t\r\n]"
    ;;   "in statement, no space after starting paren")
