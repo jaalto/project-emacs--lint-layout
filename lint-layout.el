@@ -1360,9 +1360,10 @@ displayed."
    (list
     `,(concat
        lint-layout-java-modifier-regexp
-       "[a-zA-Z0-9]+_[a-zA-Z0-9_]+[ \t\r\n]*[=;]")
+       "[a-zA-Z]+_[a-zA-Z0-9_]+[ \t\r\n]*[=;]")
     "variable name not camelCase"
-    nil
+    ;;  Ignore GLOBAL_VARIABLES
+    "\\<[A-Z][A-Z0-9]*_[A-Z0-9_]+\\>"
     'case))
   "*CamelCase variable checks.")
 
