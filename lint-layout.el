@@ -131,7 +131,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2012.1207.1119"
+(defconst lint-layout-version-time "2013.0904.0857"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -806,9 +806,9 @@ Return nil or number of occurrances."
   "Define function `run' which preserves point. Run BODY."
   (let ((point (make-symbol "--point--")))
     `(let ((,point (point)))
-       (flet ((run (func &rest args)
-                   (goto-char ,point)
-                   (apply func args)))
+       (cl-flet ((run (func &rest args)
+		      (goto-char ,point)
+		      (apply func args)))
          ,@body))))
 
 (put 'my-lint-with-result-buffer 'lisp-indent-function 2)
@@ -3925,11 +3925,11 @@ col
  "Remove all kind of comments from `point-min' or optional POINT forward."
  (or point
      (setq point (point-min)))
- (flet ((clean
-         (re)
-         (goto-char point)
-         (while (re-search-forward re nil t)
-           (replace-match ""))))
+ (cl-flet ((clean
+	    (re)
+	    (goto-char point)
+	    (while (re-search-forward re nil t)
+	      (replace-match ""))))
    (clean "[ \t]*#.*")   ;; MySQL hash comments
    (clean "[ \t]*--.*")  ;; Standard SQL comments
    (clean "[ \t]*/[*].*"))) ;; C-style comments /* .... */
@@ -4026,15 +4026,15 @@ LINE is added to current line number."
         match
         open
         close)
-    (flet ((test
-            (str)
-            (unless (string= "'" str)
-              (lint-layout-message
-               (format
-                "[sql] incorrect or missing single quotes around date [%s]"
-                match)
-               prefix
-               (+ (or line 0) (lint-layout-current-line-number))))))
+    (cl-flet ((test
+	       (str)
+	       (unless (string= "'" str)
+		 (lint-layout-message
+		  (format
+		   "[sql] incorrect or missing single quotes around date [%s]"
+		   match)
+		  prefix
+		  (+ (or line 0) (lint-layout-current-line-number))))))
       (while (re-search-forward re nil t)
         (setq match (match-string 0)
               open  (match-string 1)
