@@ -66,10 +66,6 @@ LC_ALL=C
 LANG=C
 unset DEBUG VERBOSE WHITESPACE_OPT TYPE
 
-# Prefer GNU programs
-
-PATH="/usr/local/bin/gnu:$PATH"
-
 # Temporary directories and files
 
 TMPDIR=${TMPDIR:-/tmp}
