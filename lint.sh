@@ -360,7 +360,6 @@ Main ()
                         ;;
                 esac
                 shift
-
                 ;;
             -w | --whitespace)
                 shift
