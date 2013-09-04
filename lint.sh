@@ -98,8 +98,8 @@ SYNOPSIS
     $PROGRAM [options] FILE ...
 
 DESCRIPTION
-    A static style checking Lint tool for programming languages: Java,
-    PHP, SQL and CSS.
+    A static style checking Lint tool for programming languages:
+    Java, PHP, SQL and CSS.
 
 OPTIONS
     -D, --debug [LEVEL]
