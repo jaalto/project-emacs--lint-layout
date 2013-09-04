@@ -4,7 +4,7 @@
 #
 #  Copyright
 #
-#       Copyright (C) 2009-2012 Jari Aalto
+#       Copyright (C) 2009-2013 Jari Aalto
 #
 #   License
 #
@@ -21,13 +21,24 @@
 #       You should have received a copy of the GNU General Public License
 #       along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+#   Install
+#
+#       Make symlinks to this program to use psecific Lint features by default
+#
+#           install -m 755 lint.sh /usr/local/bin
+#           cd /usr/local/bin
+#
+#           ln -s lint.sh javalint
+#           ln -s lint.sh sqllint
+#           ln -s lint.sh phplint
+#
 #   Call syntax
 #
 #       <program name> --help
 #
-#   Notes
+#   Requires
 #
-#       Need GNU binutils: grep, find etc.
+#       GNU binutils, grep, find etc and Emacs
 
 # Make sure this program is run under Bash becasue SunOS /bin/sh does
 # not support $()
@@ -46,7 +57,7 @@ EMACS_BIN=${EMACS_BIN:-emacs}
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2012.1207.1334"
+VERSION="2013.0904.0855"
 
 # Run in clean environment
 
