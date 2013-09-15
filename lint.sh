@@ -93,6 +93,12 @@ FIND_OPT="-iname *.php\
 
 Help ()
 {
+    local program="file"
+
+    case "$TYPE" in
+        java) file=Program ;;
+    esac
+
     echo "\
 SYNOPSIS
     $PROGRAM [options] FILE ...
@@ -111,7 +117,7 @@ OPTIONS
     -r, --recursive DIR
         Run style checks recursively for all files in DIR.
 
-    -t, --type
+    -t, --type TYPE
         Only used with --recursive option. Check only certain type
         of file extensions. Allowed values for TYPE: java, php, css
         and sql.
@@ -128,7 +134,7 @@ OPTIONS
 EXAMPLES
     Check style of a single file:
 
-        $PROGRAM file${TYPE:+.$TYPE}
+        $PROGRAM $file${TYPE:+.$TYPE}
 
     Check directory recursively for files
 
