@@ -131,7 +131,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2013.0904.0857"
+(defconst lint-layout-version-time "2013.0927.1554"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -662,6 +662,10 @@ See also `lint-layout-check-file-list'.")
 
 ;;; ....................................................... &utilities ...
 
+(defsubst lint-layout-buffer-string ()
+  "Return `buffer-string' without properties."
+  (buffer-substring-no-properties (point-min) (point-max)))
+
 (defsubst lint-layout-min ()
   "Move to `point-min'."
   (goto-char (point-min)))
@@ -889,7 +893,7 @@ Return nil or number of occurrances."
 
 (defsubst lint-layout-buffer-data-p ()
   "Check that buffer contains text."
-  (string-match "[^ \t\r\n]" (buffer-string)))
+  (string-match "[^ \t\r\n]" (lint-layout-buffer-string)))
 
 (defsubst lint-layout-count-lines-in-string (str)
   "Count lines in STR."
@@ -3939,7 +3943,7 @@ col
  (with-temp-buffer
    (insert string)
    (lint-layout-sql-clean-comments-buffer)
-   (buffer-string)))
+   (lint-layout-buffer-string)))
 
 (defun lint-layout-sql-check-element-indent-check
   (indent &optional prefix line)
@@ -5194,7 +5198,7 @@ The submatches are as follows: The point is at '!':
   (str line &optional prefix data type)
   "Check docstring in STR, at LINE number. PREFIX for messages.
 The DATA contains full function content as string."
-  (let* (;; FIXME: narrowed, so we can't see anywhere outsie comment
+  (let* (;; FIXME: narrowed, so we can't see anywhere outside comment
          ;;(class-p (lint-layout-with-save-point
          ;;  (lint-layout-search-backward-class-p)))
          (need-return-p
@@ -5694,17 +5698,18 @@ Return:
 Point must be at the beginning of function definition line."
   (save-excursion
     (lint-layout-bol)
-    (let ((re-beg
-          (cond
-           ((eq 'php-mode (lint-layout-code-type-p))
-            lint-layout-php-function-regexp)
-           ((eq 'java-mode (lint-layout-code-type-p))
-            lint-layout-java-function-regexp)))
-          re-end
-          indent
-          col
-          beg
-          end)
+    (let* ((type (lint-layout-code-type-p))
+	   (re-beg
+	    (cond
+	     ((eq type 'php-mode)
+	      lint-layout-php-function-regexp)
+	     ((eq type 'java-mode)
+	      lint-layout-java-function-regexp)))
+	   re-end
+	   indent
+	   col
+	   beg
+	   end)
     (when (and re-beg
                (looking-at re-beg))
       (setq beg (point))
@@ -5716,7 +5721,7 @@ Point must be at the beginning of function definition line."
         (list beg end))))))
 
 (defun lint-layout-generic-function-string-at-point ()
-  "Return function string if any at point."
+  "Return function string, if any, at point."
   (multiple-value-bind (beg end)
       (lint-layout-generic-function-region-at-point)
     (when beg
@@ -5737,7 +5742,7 @@ Point must be at the beginning of function definition line."
           (lint-layout-bol)
           (setq data (lint-layout-generic-function-string-at-point)))
         (narrow-to-region beg end)
-        (let ((str (buffer-string)))
+        (let ((str (lint-layout-buffer-string)))
           (cond
            ((memq 'var type)
             (lint-layout-php-doc-string-test-var-class str line prefix))
@@ -5787,7 +5792,7 @@ Use optional PREFIX for messages.
 	       "[doc] documentation block not before class definition"
 	       prefix line))))
         (narrow-to-region beg end)
-        (setq str (buffer-string))
+        (setq str (lint-layout-buffer-string))
 	(cond
 	 ((memq 'var type)
 	  (lint-layout-php-doc-string-test-var-class str line prefix))
@@ -6147,7 +6152,7 @@ See `lint-layout-check-generic-buffer'"
      (point-max))
     ;; to stderr. Hm.
     (unless (eq (point-min) (point-max))
-      (princ (buffer-string)))))
+      (princ (lint-layout-buffer-string)))))
 
 (defun lint-layout-check-file-list (list function-list)
   "Check LIST of files with FUNCTION-LIST."
