@@ -57,7 +57,7 @@ EMACS_BIN=${EMACS_BIN:-emacs}
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2013.0904.0855"
+VERSION="2013.0930.0404"
 
 # Run in clean environment
 
@@ -94,6 +94,7 @@ FIND_OPT="-iname *.php\
 Help ()
 {
     local program="file"
+    local languages=${TYPE:-"Java, PHP, SQL and CSS"}
 
     case "$TYPE" in
         java) file=Program ;;
@@ -105,7 +106,7 @@ SYNOPSIS
 
 DESCRIPTION
     A static style checking Lint tool for programming languages:
-    Java, PHP, SQL and CSS.
+    $languages
 
 OPTIONS
     -D, --debug [LEVEL]
