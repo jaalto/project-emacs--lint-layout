@@ -57,7 +57,7 @@ EMACS_BIN=${EMACS_BIN:-emacs}
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2013.0930.0404"
+VERSION="2013.0930.0410"
 
 # Run in clean environment
 
@@ -95,6 +95,15 @@ Help ()
 {
     local program="file"
     local languages=${TYPE:-"Java, PHP, SQL and CSS"}
+    local type="
+    -t, --type TYPE
+        Only used with --recursive option. Check only certain type
+        of file extensions. Allowed values for TYPE: java, php, css
+        and sql.
+
+"
+    [ "$TYPE" ] && type=""
+
 
     case "$TYPE" in
         java) file=Program ;;
@@ -117,12 +126,7 @@ OPTIONS
 
     -r, --recursive DIR
         Run style checks recursively for all files in DIR.
-
-    -t, --type TYPE
-        Only used with --recursive option. Check only certain type
-        of file extensions. Allowed values for TYPE: java, php, css
-        and sql.
-
+$type
     -w, --whitespace
         Run whitespace checks only.
 
