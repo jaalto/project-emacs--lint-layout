@@ -131,7 +131,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2013.0927.1554"
+(defconst lint-layout-version-time "2013.0930.0352"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -5599,8 +5599,10 @@ Write error at LINE with PREFIX."
     (forward-line 1)
     (lint-layout-generic-doc-examine-content-other--test-doc-comment
      line type prefix)
-    (lint-layout-generic-doc-examine-content-other--test-period
-     line type prefix)
+    ;; Skip class. Require first line checks only in methods
+    (unless (memq 'class type)
+      (lint-layout-generic-doc-examine-content-other--test-period
+       line type prefix))
     (unless (memq 'file type)
       (lint-layout-generic-doc-examine-content-other--first-sentence
        line type prefix))
