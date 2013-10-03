@@ -40,8 +40,8 @@
 #
 #       GNU binutils, grep, find etc and Emacs
 
-# Make sure this program is run under Bash becasue SunOS /bin/sh does
-# not support $()
+# Make sure this program is run under Bash because not all /bin/sh
+# support $()
 
 ( eval "[[ 1 ]]" 2> /dev/null ) || exec /bin/bash "$0" "$@"
 
@@ -57,7 +57,7 @@ EMACS_BIN=${EMACS_BIN:-emacs}
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2013.0930.0410"
+VERSION="2013.1003.0410"
 
 # Run in clean environment
 
@@ -122,10 +122,10 @@ OPTIONS
         Enable debug. If LEVEL is set, enable all (development option).
 
     -l, --libdir DIR
-        Define library dir (development option).
+        Define code check library directory (development option).
 
     -r, --recursive DIR
-        Run style checks recursively for all files in DIR.
+        Run style checks recursively for all files in DIR (slow).
 $type
     -w, --whitespace
         Run whitespace checks only.
