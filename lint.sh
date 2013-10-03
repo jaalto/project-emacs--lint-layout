@@ -49,10 +49,11 @@
 
 PROGRAM_DIR=$(cd $(dirname $0); pwd)
 
+EMACS_BIN=${EMACS_BIN:-emacs}
 EMACS_LIBDIR=${EMACS_LIBDIR:-/home/staff11/jaalto/public_html/bin}
 EMACS_PROGRAM=${EMACS_PROGRAM:-lint-layout}
-EMACS_OPTIONS="--batch -q --no-site-file"
-EMACS_BIN=${EMACS_BIN:-emacs}
+# Batch option implied -q (--no-init-file)
+EMACS_OPTIONS="--batch --no-site-file --no-site-lisp"
 
 # System variables
 
@@ -64,7 +65,7 @@ VERSION="2013.1003.0410"
 TZ=Europe/Helsinki
 LC_ALL=C
 LANG=C
-unset DEBUG VERBOSE WHITESPACE_OPT TYPE
+unset DEBUG VERBOSE WHITESPACE_OPT TYPE TEST
 
 # Temporary directories and files
 
@@ -127,6 +128,9 @@ OPTIONS
     -r, --recursive DIR
         Run style checks recursively for all files in DIR (slow).
 $type
+    -t, --test
+        Run in test mode. Do not actually do anything (development option).
+
     -w, --whitespace
         Run whitespace checks only.
 
@@ -248,7 +252,7 @@ EmacsCall ()
         esac
     fi
 
-    $EMACS_BIN \
+    ${TEST:+echo} $EMACS_BIN \
         $EMACS_OPTIONS \
         $opt \
         --eval "$debug" \
@@ -262,12 +266,23 @@ EmacsCall ()
 
 EmacsCallList ()
 {
+    local input="$1"
+
+    if [ ! "$input" ]; then
+        return 1
+    fi
+
+    if [ "$DEBUG" ]; then
+        echo "DEBUG: Check list of files one-by-one"
+        sed 's,^,DEBUG: ,' "$input"
+    fi
+
     local file
 
     while read file
     do
         EmacsCall "$file"
-    done < "${1:-/dev/null}"
+    done < "$input"
 }
 
 #######################################################################
@@ -378,6 +393,10 @@ Main ()
                 esac
                 shift
                 ;;
+            -T | --test)
+                shift
+                TEST=test
+                ;;
             -w | --whitespace)
                 shift
                 WHITESPACE_OPT=whitespace
@@ -401,11 +420,6 @@ Main ()
 
     if [ "$recursive" ]; then
 
-        # Not whitespace path safe
-
-        # find "$recursive" -iname "*.java" > $TMPBASE.files
-        # EmacsCall $(< $TMPBASE.files)
-
         local opt
 
         if [ "$TYPE" ]; then
@@ -414,11 +428,15 @@ Main ()
             find "$recursive" $FIND_OPT
         fi > $TMPBASE.files
 
-        EmacsCallList "$TMPBASE.files"
+        if [ -s "$TMPBASE.files" ]; then
+            EmacsCallList "$TMPBASE.files"
+        else
+            echo "No files found to check (recursive)"
+        fi
 
     else
         if [ ! "$1" ]; then
-            Die "ERROR: missing argument. See --help"
+            Die "ERROR: missing call argument. See --help"
         fi
 
         local file list space
@@ -446,9 +464,11 @@ Main ()
         done
 
         if [ "$space" ]; then
-            EmacsCallList "$@"
+            EmacsCallList "$TMPBASE.files"
+        elif [ ! "$list" ]; then
+            echo "Nothing to check."
         else
-            EmacsCall "$@"
+            EmacsCall $list
 
         fi
     fi
