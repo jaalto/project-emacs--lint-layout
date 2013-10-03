@@ -260,6 +260,16 @@ EmacsCall ()
     [ "$DEBUG" ] && set +x
 }
 
+EmacsCallList ()
+{
+    local file
+
+    while read file
+    do
+        EmacsCall "$file"
+    done < "${1:-/dev/null}"
+}
+
 #######################################################################
 #
 #   Main functionality
@@ -404,18 +414,43 @@ Main ()
             find "$recursive" $FIND_OPT
         fi > $TMPBASE.files
 
-        local file
+        EmacsCallList "$TMPBASE.files"
 
-        while read file
-        do
-            EmacsCall "$file"
-        done < $TMPBASE.files
     else
         if [ ! "$1" ]; then
             Die "ERROR: missing argument. See --help"
         fi
 
-        EmacsCall "$@"
+        local file list space
+
+        : > $TMPBASE.files
+
+        for file in "$@"
+        do
+            if [ ! -f "$file" ]; then
+                Warn "WARN: File does not exist: $file"
+                continue;
+            elif [ ! -r "$file" ]; then
+                Warn "WARN: File not readable: $file"
+                continue;
+            fi
+
+            echo "$file" >> $TMPBASE.files
+
+            case "$file" in
+                *\ *) space="$space"
+                    ;;
+            esac
+
+            list="$list $file"
+        done
+
+        if [ "$space" ]; then
+            EmacsCallList "$@"
+        else
+            EmacsCall "$@"
+
+        fi
     fi
 }
 
