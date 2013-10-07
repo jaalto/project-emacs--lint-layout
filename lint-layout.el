@@ -161,7 +161,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2013.1007.0820"
+(defconst lint-layout-version-time "2013.1007.0821"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -5172,11 +5172,14 @@ The submatches are as follows: The point is at '!':
   (lint-layout-with-point-min
     (lint-layout-css-check-batch-all prefix)))
 
-(defun lint-layout-css-check-buffer-interactive (&optional prefix)
+(defun lint-layout-css-check-buffer-interactive (&optional point prefix)
   "Run `lint-layout-css-check-buffer'."
   (interactive)
-  (my-lint-with-result-buffer 'erase 'display
-    (lint-layout-css-check-buffer prefix)))
+  (save-excursion
+    (if point
+        (goto-char point))
+    (my-lint-with-result-buffer 'erase 'display
+      (lint-layout-css-check-buffer prefix))))
 
 ;;; ........................................................ &lined-up ...
 
@@ -6148,7 +6151,7 @@ According to file extension: *.php, *.css, *.php."
      ((eq 'java-mode (lint-layout-code-type-p))
       (lint-layout-java-check-all-interactive (point-min) prefix))
      ((eq 'css-mode (lint-layout-code-type-p))
-      (lint-layout-css-check-buffer-interactive prefix))
+      (lint-layout-css-check-buffer-interactive (point-min) prefix))
      ((eq 'sql-mode (lint-layout-code-type-p))
       (lint-layout-sql-buffer-interactive prefix))
      (t
