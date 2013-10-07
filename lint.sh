@@ -23,14 +23,15 @@
 #
 #   Install
 #
-#       Make symlinks to this program to use psecific Lint features by default
+#       install -m 755 lint.sh /usr/local/bin
+#       cd /usr/local/bin
 #
-#           install -m 755 lint.sh /usr/local/bin
-#           cd /usr/local/bin
+#       # OPTIONAL: symlinks help to use specific Lint features:
+#       ln -s lint.sh javalint
+#       ln -s lint.sh sqllint
+#       ln -s lint.sh phplint
 #
-#           ln -s lint.sh javalint
-#           ln -s lint.sh sqllint
-#           ln -s lint.sh phplint
+#       export EMACS_LIBDIR=<directory location of *.el file>
 #
 #   Call syntax
 #
@@ -165,6 +166,7 @@ COPYRIGHT
 AtExit ()
 {
     rm -f "$TMPBASE"*
+    retun 0
 }
 
 Warn ()
