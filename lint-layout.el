@@ -1,4 +1,4 @@
-;;; lint-layout.el --- Coding layout lint utilities.
+;;; lint-layout.el --- Coding layout lint utilities
 
 ;;{{{ Id
 
@@ -162,7 +162,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2013.1007.0800"
+(defconst lint-layout-version-time "2013.1007.0802"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
