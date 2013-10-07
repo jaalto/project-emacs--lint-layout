@@ -161,7 +161,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2013.1007.0819"
+(defconst lint-layout-version-time "2013.1007.0820"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -6069,8 +6069,11 @@ This includes:
   (&optional point prefix erase)
   "Run `lint-layout-check-java-doc-functions' from current POINT forward."
   (interactive)
-  (my-lint-with-result-buffer 'erase 'display
-    (lint-layout-java-check-javadoc-run point prefix)))
+  (save-excursion
+    (if point
+	(goto-char point))
+    (my-lint-with-result-buffer 'erase 'display
+      (lint-layout-java-check-javadoc-run point prefix))))
 
 (defun lint-layout-java-check-all-interactive (&optional point prefix)
   "Run All JAVA checks."
