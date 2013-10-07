@@ -161,7 +161,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2013.1007.0822"
+(defconst lint-layout-version-time "2013.1007.0827"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -4922,7 +4922,7 @@ The submatches are as follows: The point is at '!':
   (save-excursion
     (if point
         (goto-char point))
-    (my-lint-with-result-buffer 'erase 'display
+    (my-lint-with-result-buffer 'display 'erase
       (lint-layout-sql-buffer prefix))))
 
 ;;; ............................................................. &css ...
@@ -5181,7 +5181,7 @@ The submatches are as follows: The point is at '!':
   (save-excursion
     (if point
         (goto-char point))
-    (my-lint-with-result-buffer 'erase 'display
+    (my-lint-with-result-buffer 'display 'erase
       (lint-layout-css-check-buffer prefix))))
 
 ;;; ........................................................ &lined-up ...
@@ -6062,7 +6062,7 @@ This includes:
   `lint-layout-check-java-code-functions'
   `lint-layout-check-generic-functions'"
   (interactive)
-  (my-lint-with-result-buffer 'erase 'display
+  (my-lint-with-result-buffer 'display 'erase
     (lint-layout-java-check-code-run) point prefix))
 
 (defun lint-layout-java-check-javadoc-run (&optional point prefix)
@@ -6078,7 +6078,7 @@ This includes:
   (save-excursion
     (if point
 	(goto-char point))
-    (my-lint-with-result-buffer 'erase 'display
+    (my-lint-with-result-buffer 'display 'erase
       (lint-layout-java-check-javadoc-run point prefix))))
 
 (defun lint-layout-java-check-all-interactive (&optional point prefix)
@@ -6087,8 +6087,8 @@ This includes:
   (save-excursion
     (if point
 	(goto-char point))
-    (my-lint-with-result-buffer 'erase 'display
-      (lint-layout-java-check-all-tests prefix))))
+    (my-lint-with-result-buffer 'display 'erase
+      (lint-layout-java-check-all-tests point prefix))))
 
 ;;; ................................................. &php-interactive ...
 
@@ -6111,7 +6111,7 @@ This includes:
   `lint-layout-check-php-code-functions'
   `lint-layout-check-generic-functions'"
   (interactive)
-  (my-lint-with-result-buffer 'erase 'display
+  (my-lint-with-result-buffer 'display 'erase
     (lint-layout-php-check-code-run) point prefix))
 
 (defun lint-layout-php-check-phpdoc-run (&optional point prefix)
@@ -6124,7 +6124,7 @@ This includes:
   (&optional point prefix erase)
   "Run `lint-layout-check-php-doc-functions' from current POINT forward."
   (interactive)
-  (my-lint-with-result-buffer 'erase 'display
+  (my-lint-with-result-buffer 'display 'erase
     (lint-layout-php-check-phpdoc-run point prefix)))
 
 (defun lint-layout-php-check-all-interactive (&optional point prefix)
@@ -6133,7 +6133,7 @@ This includes:
   (save-excursion
     (if point
 	(goto-char point))
-    (my-lint-with-result-buffer 'erase 'display
+    (my-lint-with-result-buffer 'display 'erase
       (lint-layout-php-check-all-tests prefix))))
 
 ;;; ............................................. &generic-interactive ...
