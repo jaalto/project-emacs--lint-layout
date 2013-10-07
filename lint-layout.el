@@ -59,17 +59,40 @@
 ;;      o   Maximum code column 80
 ;;      o   Extra whitespace at the end of lines (spaces and tabs)
 ;;      o   Mixed SPACE+TAB indentation
-;;      o   Brace placement (Allman lined-up; K&R)
+;;      o   Brace placement checks
 ;;      o   Indentation multiple of 4.
 ;;      o   Terminating semicolon checks: no loose "semicolons ;"
+;;      o   Exessive newline checks
 ;;
-;;      Some of the SQL checks include:
+;;      Some of the Java checks include:
 ;;
-;;      o   FIXME: todo
+;;      o   Brace-style K&R (at the end of lines):
 ;;
-;;      Some of the CSS checks include:
+;;              if (...) {
 ;;
-;;      o   FIXME: todo
+;;              } else  {
+;;
+;;              }
+;;
+;;      o   Keywords checks for if-for-while.
+;;          An example: "if(cond)" => "if (cond)" and
+;;          paragraph break check on logical places:
+;;
+;;              <code>      =>   <code>
+;;              <code>           <code>
+;;              if (...) {
+;;                               if (...) {
+;;              }
+;;              <code>           }
+;;              <code>
+;;                               <code>
+;;
+;;      o   Metod definitions and starting brace.
+;;          An example: "method (params)" => "method(params)"
+;;      o   Javadoc checks. Missing from method defintions, missing
+;;          or incorrect @tag, @return directive order. Javadoc
+;;          short one line description and long description checks
+;;          See http://en.wikipedia.org/wiki/Javadoc#Overview_of_Javadoc
 ;;
 ;;      Some of the PHP checks include:
 ;;
@@ -89,6 +112,14 @@
 ;;      o   Instead echo(), print() is suggested due to function to exist
 ;;          in all programming languages.
 ;;      o   Instead of date(), POSIX standard strftime() preferred.
+;;
+;;      Some of the SQL checks include:
+;;
+;;      o   FIXME: todo
+;;
+;;      Some of the CSS checks include:
+;;
+;;      o   FIXME: todo
 ;;
 ;; User callable functions (M-x):
 ;;
@@ -131,7 +162,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2013.0930.0352"
+(defconst lint-layout-version-time "2013.1007.0800"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -700,7 +731,7 @@ Return nil or number of occurrances."
   (let (count)
     (while (string-match regexp string)
       (setq count (1+ (or count 0))
-	    string (substring string (match-end 0))))
+            string (substring string (match-end 0))))
     count))
 
 (defsubst lint-layout-code-java-search ()
@@ -811,8 +842,8 @@ Return nil or number of occurrances."
   (let ((point (make-symbol "--point--")))
     `(let ((,point (point)))
        (cl-flet ((run (func &rest args)
-		      (goto-char ,point)
-		      (apply func args)))
+                      (goto-char ,point)
+                      (apply func args)))
          ,@body))))
 
 (put 'my-lint-with-result-buffer 'lisp-indent-function 2)
@@ -1515,8 +1546,8 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
      nil
      (lambda ()
        (let ((identifier (match-string 1))
-	     case-fold-search)
-	 (string-match "^[a-z]" identifier))))
+             case-fold-search)
+         (string-match "^[a-z]" identifier))))
 
    ;;  int var; String j;
    (list
@@ -2374,9 +2405,9 @@ Return variable content string."
         found
         point)
     (if (string= (format "%c"
-			 (or (char-after)
-			     ?\ ))  ;; there is no char-after at EOB
-		 brace) ; on brace, move a little
+                         (or (char-after)
+                             ?\ ))  ;; there is no char-after at EOB
+                 brace) ; on brace, move a little
         (forward-char 1))
     (while (and (null found)
                 (not (eobp))
@@ -2554,7 +2585,7 @@ Return variable content string."
   "Check that lines are indented correctly until next brace.
 Use BASE-INDENT, optional message PREFIX."
   (while (and (not (eobp))
-	      ;; Stop at brace
+              ;; Stop at brace
               (not (looking-at "^.*{\\|^[ \t]*}")))
     (cond
      ((lint-layout-looking-at-empty-line-p)) ; do nothing
@@ -2571,7 +2602,7 @@ Use BASE-INDENT, optional message PREFIX."
       ;;  Skip array initializations
       ;;  int[] values = { 1, -5, 10, -15, 0, 7 };
       (or (re-search-forward ";[ \t]*$" nil t)
-	  (re-search-forward "^[ \t][^ \t\r\n]")))
+          (re-search-forward "^[ \t][^ \t\r\n]")))
      ((looking-at
        "^[ \t]*\\(new[ \t]+\\)?[a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;]*$")
       ;; Only check starting line
@@ -2592,16 +2623,16 @@ Use BASE-INDENT, optional message PREFIX."
       (skip-chars-forward " \t")
       (lint-layout-generic-check-indent-current indent prefix)
       (when (and
-	     ;; ignore lines: while, for, if ...
-	     (not
-	      (looking-at
-	       (concat ".*" lint-layout-generic-control-statement-regexp)))
-	     (not (looking-at "[ \t]*[/#*]")) ; comment
-	     ;;   variable =
-	     ;;      value;
-	     (looking-at ".*=[^;]+\r?\n"))
-	;; Until statement end ";"
-	(lint-layout-code-statement-end-search))))
+             ;; ignore lines: while, for, if ...
+             (not
+              (looking-at
+               (concat ".*" lint-layout-generic-control-statement-regexp)))
+             (not (looking-at "[ \t]*[/#*]")) ; comment
+             ;;   variable =
+             ;;      value;
+             (looking-at ".*=[^;]+\r?\n"))
+        ;; Until statement end ";"
+        (lint-layout-code-statement-end-search))))
     (forward-line 1)))
 
 ;; lines: while, for, if ...
@@ -2612,86 +2643,86 @@ Use BASE-INDENT, optional message PREFIX."
   "Search if, for, while control statement backward."
   (lint-layout-bol)
   (let ((regexp
-	 `,(concat
-	    "^[ \t}]*"
-	    "\\("
-	        "\\<\\(try\\|while\\|for\\(each\\)?\\)[ \t]*(\\>"
-	        "\\|"
-		"\\<\\(else[ \t]+\\)?if\\>"
-	    "\\)")))
+         `,(concat
+            "^[ \t}]*"
+            "\\("
+                "\\<\\(try\\|while\\|for\\(each\\)?\\)[ \t]*(\\>"
+                "\\|"
+                "\\<\\(else[ \t]+\\)?if\\>"
+            "\\)")))
     (while (and
-	    (not (bobp))
-	    (not (looking-at regexp))
-	    (forward-line -1)))))
+            (not (bobp))
+            (not (looking-at regexp))
+            (forward-line -1)))))
 
 (defun lint-layout-generic-statement-brace-and-indent (&optional prefix)
   "Check that code is indented after each brace.
 If point is at `point-min' then check also ending brace placement.
 Optional message PREFIX."
   (let ((istep lint-layout-generic-indent-step)
-	(control-statement-re
-	 `,(concat
-	    "^[ \t}]*"
-	    lint-layout-generic-control-statement-regexp))
-	;; public static void main(String[] args)
-	(function-statement-re
-	 `,(concat
-	    "^[ \t]*"
-	    "\\("
-		lint-layout-generic-vartype-modifier-regexp
-		"\\|\\<void\\>"
-		"\\|\\<static\\>"
-		"\\|" lint-layout-generic-access-modifier-regexp
-	    "\\)"))
+        (control-statement-re
+         `,(concat
+            "^[ \t}]*"
+            lint-layout-generic-control-statement-regexp))
+        ;; public static void main(String[] args)
+        (function-statement-re
+         `,(concat
+            "^[ \t]*"
+            "\\("
+                lint-layout-generic-vartype-modifier-regexp
+                "\\|\\<void\\>"
+                "\\|\\<static\\>"
+                "\\|" lint-layout-generic-access-modifier-regexp
+            "\\)"))
         level
         expect-indent
-	brace-lined-up
-	point
+        brace-lined-up
+        point
         indent)
     ;; FIXME: start counting levels are we find starting braces.
     (if (eq (point) (point-min))
         (setq level 0))
     (while (lint-layout-generic-statement-brace-forward)
       (unless (save-excursion
-		(lint-layout-bol)
-		;; Determine current brace style
-		(if (looking-at "^[ \t]{[ \t]*$")
-		    (setq brace-lined-up t))
-		(or (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)") ;brace in comments
-		    ;;  int[] array = { 1, 2 }; // comment
-		    (looking-at "^.+=.+}[ \t]*;[ \t]*\\([/#].*\\)?$")))
+                (lint-layout-bol)
+                ;; Determine current brace style
+                (if (looking-at "^[ \t]{[ \t]*$")
+                    (setq brace-lined-up t))
+                (or (looking-at "^[ \t]*\\(/[/*]\\|[*#]\\)") ;brace in comments
+                    ;;  int[] array = { 1, 2 }; // comment
+                    (looking-at "^.+=.+}[ \t]*;[ \t]*\\([/#].*\\)?$")))
         ;; Check that the starting line is initially incorrect
-	(lint-layout-bol)
-	;; statements that span multiple lines. We must check previous lines
-	;;
-	;;  } else if (statement ||
-	;;             statement) {       // Cursor is *here*
-	(cond
-	 ((and (not brace-lined-up)
-	       (looking-at ".*)[ \t]*{")
-	       (not (looking-at control-statement-re))
-	       (not (looking-at function-statement-re)))
-	  ;; Search back until control statement start to read correct indent
-	  (save-excursion
-	    (lint-layout-control-statement-backward)
-	    (lint-layout-bol)
-	    (skip-chars-forward " \t")
-	    (setq expect-indent (+ (current-column) istep))))
-	 (t
-	  (skip-chars-forward " \t")
-	  (setq expect-indent (+ (current-column) istep))
-	  (lint-layout-generic-check-indent-current nil prefix)))
-	(forward-line 1)
-	(lint-layout-generic-check-indent-forward expect-indent prefix)
-	;; FIXME: only when we start counting.
-	;; End brace check
-	;; (when (and (looking-at "^[ \t]*}")
-	;;         (setq expect-indent (- expect-indent istep))
-	;;         (> expect-indent 0))
-	;;   (skip-chars-forward " \t")
-	;;   (lint-layout-generic-check-indent-current
-	;;    expect-indent prefix))
-	))))
+        (lint-layout-bol)
+        ;; statements that span multiple lines. We must check previous lines
+        ;;
+        ;;  } else if (statement ||
+        ;;             statement) {       // Cursor is *here*
+        (cond
+         ((and (not brace-lined-up)
+               (looking-at ".*)[ \t]*{")
+               (not (looking-at control-statement-re))
+               (not (looking-at function-statement-re)))
+          ;; Search back until control statement start to read correct indent
+          (save-excursion
+            (lint-layout-control-statement-backward)
+            (lint-layout-bol)
+            (skip-chars-forward " \t")
+            (setq expect-indent (+ (current-column) istep))))
+         (t
+          (skip-chars-forward " \t")
+          (setq expect-indent (+ (current-column) istep))
+          (lint-layout-generic-check-indent-current nil prefix)))
+        (forward-line 1)
+        (lint-layout-generic-check-indent-forward expect-indent prefix)
+        ;; FIXME: only when we start counting.
+        ;; End brace check
+        ;; (when (and (looking-at "^[ \t]*}")
+        ;;         (setq expect-indent (- expect-indent istep))
+        ;;         (> expect-indent 0))
+        ;;   (skip-chars-forward " \t")
+        ;;   (lint-layout-generic-check-indent-current
+        ;;    expect-indent prefix))
+        ))))
 
 (defun lint-layout-generic-statement-brace-and-indent-untabify
   (&optional prefix)
@@ -2860,7 +2891,7 @@ if ( check );
              (not (eq statement-start-col brace-start-col)))
         (lint-layout-message
          (format `,(concat "[code] brace { not directly under keyword '%s', "
-			   "expect col %d")
+                           "expect col %d")
                  (or keyword "")
                  statement-start-col)
          prefix))))))
@@ -3368,7 +3399,7 @@ Optional PREFIX is used add filename to the beginning of line."
         (lint-layout-word-tense
          word
          (format "[changelog] change marker, wrong tense of verb '%s'" word)
-	 prefix))
+         prefix))
       (when (looking-at "  ")
         (lint-layout-message
          (format
@@ -3419,7 +3450,7 @@ Optional PREFIX is used add filename to the beginning of line."
         (lint-layout-word-tense
          word
          (format "[changelog] at *, wrong tense of verb '%s'" word)
-	 prefix))
+         prefix))
       (when (and (string-match " " indent)
                  (not (string= " " indent)))
         (lint-layout-message
@@ -3496,7 +3527,7 @@ Optional PREFIX is used add filename to the beginning of line."
   "Move to first brace that contains problems."
   (let ((start (point))
         (point (point-max))
-	count
+        count
         ret-str
         str
         ret)
@@ -3930,10 +3961,10 @@ col
  (or point
      (setq point (point-min)))
  (cl-flet ((clean
-	    (re)
-	    (goto-char point)
-	    (while (re-search-forward re nil t)
-	      (replace-match ""))))
+            (re)
+            (goto-char point)
+            (while (re-search-forward re nil t)
+              (replace-match ""))))
    (clean "[ \t]*#.*")   ;; MySQL hash comments
    (clean "[ \t]*--.*")  ;; Standard SQL comments
    (clean "[ \t]*/[*].*"))) ;; C-style comments /* .... */
@@ -4031,14 +4062,14 @@ LINE is added to current line number."
         open
         close)
     (cl-flet ((test
-	       (str)
-	       (unless (string= "'" str)
-		 (lint-layout-message
-		  (format
-		   "[sql] incorrect or missing single quotes around date [%s]"
-		   match)
-		  prefix
-		  (+ (or line 0) (lint-layout-current-line-number))))))
+               (str)
+               (unless (string= "'" str)
+                 (lint-layout-message
+                  (format
+                   "[sql] incorrect or missing single quotes around date [%s]"
+                   match)
+                  prefix
+                  (+ (or line 0) (lint-layout-current-line-number))))))
       (while (re-search-forward re nil t)
         (setq match (match-string 0)
               open  (match-string 1)
@@ -4102,11 +4133,11 @@ The value of LINE is added to current line. PREFIX."
   "Check INSERT INTO statements. PREFIX."
   (let (point
         keyword
-	keyword-values
+        keyword-values
         table
         paren-beg
         paren-end
-	paren
+        paren
         line)
     (while (lint-layout-sql-insert-into-forward)
       (setq keyword   (match-string-no-properties 1)
@@ -5009,13 +5040,13 @@ The submatches are as follows: The point is at '!':
             (lint-layout-message
              (format
               `,(concat "[css] portability; no last resort font"
-			"sans-serif or serif listed: %s")
+                        "sans-serif or serif listed: %s")
               str)
              prefix))
           (unless (string-match lint-layout-css-web-safe-font-regexp str)
             (let ((fonts (mapconcat
                           (lambda (x)
-			    (capitalize x))
+                            (capitalize x))
                           lint-layout-css-web-safe-font-list
                           ",")))
               (lint-layout-message
@@ -5244,30 +5275,30 @@ The DATA contains full function content as string."
        "[doc] @param token is unnecessary"
        prefix line))
     (when (and need-param-p
-	       param)
+               param)
       (let ((commas (lint-layout-string-match-count "," need-param-p))
-	    (params (lint-layout-string-match-count "@param" str)))
-	(when (or (and (null commas)	; Just one param
-		       (not (eq 1 params)))
-		  (and commas
-		       params
-		       (not (eq (1+ commas) params)))) ; 2+ params
-	  (lint-layout-message
-	   "[doc] @param count does not match method parameter count"
-	   prefix line))))
+            (params (lint-layout-string-match-count "@param" str)))
+        (when (or (and (null commas)    ; Just one param
+                       (not (eq 1 params)))
+                  (and commas
+                       params
+                       (not (eq (1+ commas) params)))) ; 2+ params
+          (lint-layout-message
+           "[doc] @param count does not match method parameter count"
+           prefix line))))
     (when (and param
-	       return
-	       (< return param))
+               return
+               (< return param))
       (lint-layout-message
        "[doc] tags not in order @param @return"
        prefix line))
     (when (and return
-	       (not need-return-p))
+               (not need-return-p))
       (lint-layout-message
        "[doc] @return token is unnecessary"
        prefix line))
     (when (and (not return)
-	       need-return-p)
+               need-return-p)
       (lint-layout-message
        "[doc] @return token not found"
        prefix line))
@@ -5337,7 +5368,7 @@ DATA is the full function content."
                   ((and short-p
                         short-case-p)
                    (format "%s (possibly abbreviated and incorrect case)"
-			   match))
+                           match))
                   (short-p
                    (format "%s (possibly abbreviated)" match))
                   (t
@@ -5385,8 +5416,8 @@ DATA is the full function content."
   ;; See "order of tags" at
   ;; http://www.oracle.com/technetwork/java/javase/documentation/index-137868.html
   (let (author
-	version
-	since)
+        version
+        since)
     (unless (setq author (string-match "\\* @author[ \t]+[^ \t\r\n]" str))
       (lint-layout-message
        "[doc] @author token not found or recognized"
@@ -5400,11 +5431,11 @@ DATA is the full function content."
        "[doc] @since token not found or recognized"
        prefix line))
     (when (and author
-	       version
-	       since
-	       (or (not (< author version))
-		   (not (< author since))
-		   (not (< version since))))
+               version
+               since
+               (or (not (< author version))
+                   (not (< author since))
+                   (not (< version since))))
       (lint-layout-message
        "[doc] tags not in order @author @version @since"
        prefix line))))
@@ -5567,7 +5598,7 @@ Write error at LINE with PREFIX."
   (line &optional type prefix)
   "Check until `point-min' all lines."
   (let (point
-	text-indent
+        text-indent
         col-indent)
     (while (not (eobp))
       ;; *-line; Which column is the indent
@@ -5701,17 +5732,17 @@ Point must be at the beginning of function definition line."
   (save-excursion
     (lint-layout-bol)
     (let* ((type (lint-layout-code-type-p))
-	   (re-beg
-	    (cond
-	     ((eq type 'php-mode)
-	      lint-layout-php-function-regexp)
-	     ((eq type 'java-mode)
-	      lint-layout-java-function-regexp)))
-	   re-end
-	   indent
-	   col
-	   beg
-	   end)
+           (re-beg
+            (cond
+             ((eq type 'php-mode)
+              lint-layout-php-function-regexp)
+             ((eq type 'java-mode)
+              lint-layout-java-function-regexp)))
+           re-end
+           indent
+           col
+           beg
+           end)
     (when (and re-beg
                (looking-at re-beg))
       (setq beg (point))
@@ -5775,38 +5806,38 @@ Use optional PREFIX for messages.
   (save-restriction
     (save-excursion
       (let (data
-	    str)
+            str)
         (goto-char end)
         (unless (zerop (skip-chars-forward " \t\r\n"))
           (lint-layout-bol)
           (setq data (lint-layout-generic-function-string-at-point)))
-	;; Before we narrow and loose sight, check where
-	;; "class" statement and its comment is.
-	(when (memq 'class type)
-	  (let (point)
-	    (lint-layout-with-save-point
-	      (lint-layout-min)
-	      (if (re-search-forward "^[ \t]*\\(class\\)[ \t]" nil t)
-		  (setq point (match-beginning 1))))
-	    (when (and point
-		       (> beg point)) ;; comment *after* class definition
-	      (lint-layout-message
-	       "[doc] documentation block not before class definition"
-	       prefix line))))
+        ;; Before we narrow and loose sight, check where
+        ;; "class" statement and its comment is.
+        (when (memq 'class type)
+          (let (point)
+            (lint-layout-with-save-point
+              (lint-layout-min)
+              (if (re-search-forward "^[ \t]*\\(class\\)[ \t]" nil t)
+                  (setq point (match-beginning 1))))
+            (when (and point
+                       (> beg point)) ;; comment *after* class definition
+              (lint-layout-message
+               "[doc] documentation block not before class definition"
+               prefix line))))
         (narrow-to-region beg end)
         (setq str (lint-layout-buffer-string))
-	(cond
-	 ((memq 'var type)
-	  (lint-layout-php-doc-string-test-var-class str line prefix))
-	 ((memq 'var-global type)
-	  (lint-layout-php-doc-string-test-var-global str line prefix))
-	 ((memq 'class type)
-	  (lint-layout-java-doc-string-test-class str line prefix))
-	 ((memq 'function type)
-	  (lint-layout-generic-doc-string-test-function
-	   str line prefix data)))
-	(lint-layout-php-doc-examine-content-other
-	 str line type prefix)))))
+        (cond
+         ((memq 'var type)
+          (lint-layout-php-doc-string-test-var-class str line prefix))
+         ((memq 'var-global type)
+          (lint-layout-php-doc-string-test-var-global str line prefix))
+         ((memq 'class type)
+          (lint-layout-java-doc-string-test-class str line prefix))
+         ((memq 'function type)
+          (lint-layout-generic-doc-string-test-function
+           str line prefix data)))
+        (lint-layout-php-doc-examine-content-other
+         str line type prefix)))))
 
 (defun lint-layout-php-check-doc--test-empty-line-above (&optional prefix)
   "Check empty line before doc-block."
@@ -5882,23 +5913,23 @@ Use optional PREFIX for messages.
            prefix))
          (t
           (let ((top-level-p (lint-layout-doc-package-string-p str)))
-	    (cond
-	     ((lint-layout-code-java-p)
-	      (lint-layout-java-doc-examine-main
-	       beg
-	       end
-	       (if top-level-p
-		   '(class)
-		 type)
-	       (lint-layout-current-line-number)
-	       prefix))
-	     ((lint-layout-code-php-p)
-	      (lint-layout-php-doc-examine-main
-	       beg
-	       end
-	       type
-	       (lint-layout-current-line-number)
-	       prefix))))))))))
+            (cond
+             ((lint-layout-code-java-p)
+              (lint-layout-java-doc-examine-main
+               beg
+               end
+               (if top-level-p
+                   '(class)
+                 type)
+               (lint-layout-current-line-number)
+               prefix))
+             ((lint-layout-code-php-p)
+              (lint-layout-php-doc-examine-main
+               beg
+               end
+               type
+               (lint-layout-current-line-number)
+               prefix))))))))))
 
 ;;; ............................................................ &mode ...
 
