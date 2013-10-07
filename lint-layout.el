@@ -37,7 +37,7 @@
 ;;
 ;;   If you have any questions about this Emacs package:
 ;;
-;;      M-x mail send question, feedback, bugs
+;;      M-x mail     Send question, feedback, bugs
 
 ;;}}}
 ;;{{{ Documentation
@@ -53,8 +53,7 @@
 ;;      <http://en.wikipedia.org/wiki/Lint_programming_tool> for more
 ;;      about the static code checking methodology.
 ;;
-;;      The checks include typical code conventions, most of which are
-;;      configurable:
+;;      The checks include typical code conventions:
 ;;
 ;;      o   Maximum code column 80
 ;;      o   Extra whitespace at the end of lines (spaces and tabs)
@@ -124,7 +123,7 @@
 ;; User callable functions (M-x):
 ;;
 ;;      Normally functions start scanning from current point foward, unless
-;;      "buffer" is mentioned:
+;;      "buffer" command is used:
 ;;
 ;;          ;; Decides correct test set for a *.css, *.php, *.sql file
 ;;          lint-layout-check-generic-buffer
@@ -162,7 +161,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2013.1007.0802"
+(defconst lint-layout-version-time "2013.1007.0819"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -6038,8 +6037,8 @@ Runs `my-lint-output-mode-hook'."
 
 ;;; ................................................ &java-interactive ...
 
-(defun lint-layout-java-check-all-tests (&optional prefix)
-  "Run `lint-layout-check-java-generic-functions'."
+(defun lint-layout-java-check-all-tests (&optional point prefix)
+  "Run `lint-layout-check-java-generic-functions' at POINT using PREFIX."
   (lint-layout-generic-run-list
    lint-layout-check-java-generic-functions prefix))
 
@@ -6076,8 +6075,11 @@ This includes:
 (defun lint-layout-java-check-all-interactive (&optional point prefix)
   "Run All JAVA checks."
   (interactive)
-  (my-lint-with-result-buffer 'erase 'display
-    (lint-layout-java-check-all-tests prefix)))
+  (save-excursion
+    (if point
+	(goto-char point))
+    (my-lint-with-result-buffer 'erase 'display
+      (lint-layout-java-check-all-tests prefix))))
 
 ;;; ................................................. &php-interactive ...
 
@@ -6119,8 +6121,11 @@ This includes:
 (defun lint-layout-php-check-all-interactive (&optional point prefix)
   "Run All PHP checks."
   (interactive)
-  (my-lint-with-result-buffer 'erase 'display
-    (lint-layout-php-check-all-tests prefix)))
+  (save-excursion
+    (if point
+	(goto-char point))
+    (my-lint-with-result-buffer 'erase 'display
+      (lint-layout-php-check-all-tests prefix))))
 
 ;;; ............................................. &generic-interactive ...
 
