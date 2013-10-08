@@ -222,7 +222,7 @@ EmacsCall ()
     local lib=$(EmacsLib)
 
     if [ ! "$lib" ]; then
-        Die "Abort. Lint library is not currently available"
+        Die "Abort. Lint library not available. Define EMACS_LIBDIR"
     fi
 
     # lint-layout-check-whitespace
