@@ -150,6 +150,18 @@ EXAMPLES
 
         $PROGRAM -r directory/
 
+ENVIRONMENT
+    EMACS_BIN
+        Emacs program to use. Defaults to "emacs".
+
+    EMACS_LIBDIR
+        Directory location of the Emacs file lint-layout.el. If not
+        set, please use --libdir option to point to directory.
+
+    EMACS_PROGRAM
+        Lint library file name without the *.el extension in EMACS_LIBDIR.
+        Defaults to "lint-layout".
+
 STANDARDS
     For Java, see official Code Conventions for the Java Programming
     Language at <http://www.oracle.com/technetwork/java/codeconv-138413.html>.
