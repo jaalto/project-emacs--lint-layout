@@ -5239,7 +5239,7 @@ The DATA contains full function content as string."
          ;;  (lint-layout-search-backward-class-p)))
          (need-return-p
           (and data
-               (string-match "^[ \t]*return\\>[ \t]*[^; \t\r\n]" data)))
+               (string-match "^[ \t]*return\\>[ \t\r\n]*[^; \t\r\n]" data)))
          (need-param-p
           (and data
                (string-match
