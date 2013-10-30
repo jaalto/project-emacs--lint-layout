@@ -178,7 +178,7 @@ COPYRIGHT
 AtExit ()
 {
     rm -f "$TMPBASE"*
-    retun 0
+    exit 0
 }
 
 Warn ()
