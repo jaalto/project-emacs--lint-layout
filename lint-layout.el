@@ -2147,9 +2147,9 @@ Return variable content string."
     (skip-chars-backward "  \t\r\n") ;;  first non-whitespace
     (lint-layout-bol)
     (looking-at (concat "^[ \t]*"
-			(if str
-			    str
-			  "@")))))
+                        (if str
+                            str
+                          "@")))))
 
 (defsubst lint-layout-php-re-search-forward-doc-keyword ()
   "Search `lint-layout-php-doc-location-regexp'."
@@ -2351,7 +2351,7 @@ Return variable content string."
       ;;      }
       ;;
       (when (and (not (lint-layout-java-tag-above-p))
-		 (not (lint-layout-generic-doc-above-p)))
+                 (not (lint-layout-generic-doc-above-p)))
         (cond
          ;; ((lint-layout-type-import-string-p str)
          ;;  (lint-layout-message
@@ -6105,7 +6105,7 @@ This includes:
   (interactive)
   (save-excursion
     (if point
-	(goto-char point))
+        (goto-char point))
     (my-lint-with-result-buffer 'display 'erase
       (lint-layout-java-check-javadoc-run point prefix))))
 
@@ -6114,7 +6114,7 @@ This includes:
   (interactive)
   (save-excursion
     (if point
-	(goto-char point))
+        (goto-char point))
     (my-lint-with-result-buffer 'display 'erase
       (lint-layout-java-check-all-tests point prefix))))
 
@@ -6160,7 +6160,7 @@ This includes:
   (interactive)
   (save-excursion
     (if point
-	(goto-char point))
+        (goto-char point))
     (my-lint-with-result-buffer 'display 'erase
       (lint-layout-php-check-all-tests prefix))))
 
