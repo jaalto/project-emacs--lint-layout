@@ -2133,12 +2133,23 @@ Return variable content string."
          re str prefix))))))
 
 (defun lint-layout-generic-doc-above-p ()
-  "Check if phpdoc is in above line."
+  "Check if docblock is in above the current line."
   (save-excursion
     (lint-layout-bol)
-    (skip-chars-backward "  \t\r\n") ;;  At the end of "*/"
+    (skip-chars-backward "  \t\r\n") ;;  first non-whitespace
     (lint-layout-bol)
     (looking-at "^[ \t]*[*]/[ \t]*$")))
+
+(defun lint-layout-java-tag-above-p (&optional str)
+  "Check if @-tag or (@STR) is in above the current line."
+  (save-excursion
+    (lint-layout-bol)
+    (skip-chars-backward "  \t\r\n") ;;  first non-whitespace
+    (lint-layout-bol)
+    (looking-at (concat "^[ \t]*"
+			(if str
+			    str
+			  "@")))))
 
 (defsubst lint-layout-php-re-search-forward-doc-keyword ()
   "Search `lint-layout-php-doc-location-regexp'."
@@ -2323,7 +2334,24 @@ Return variable content string."
     ;;   (setq class-p (lint-layout-search-forward-class-p)))
     (while (lint-layout-generic-re-search-forward-doc-keyword)
       (setq str (lint-layout-current-line-string))
-      (unless (lint-layout-generic-doc-above-p)
+      ;;
+      ;; In abstract classes, the documentation is found in
+      ;; top level, so the code is usually marked with
+      ;; @override tag (Eclipse):
+      ;;
+      ;;      class Airplane implements Movable {
+      ;;
+      ;;          /* (non-Javadoc)
+      ;;           *  @see package1.package2.Movable#start()
+      ;;           */
+      ;;          @Override
+      ;;          public void start() {
+      ;;
+      ;;          }
+      ;;      }
+      ;;
+      (when (and (not (lint-layout-java-tag-above-p))
+		 (not (lint-layout-generic-doc-above-p)))
         (cond
          ;; ((lint-layout-type-import-string-p str)
          ;;  (lint-layout-message
