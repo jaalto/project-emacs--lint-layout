@@ -161,7 +161,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2013.1007.0827"
+(defconst lint-layout-version-time "2014.1120.1149"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -5284,7 +5284,11 @@ The DATA contains full function content as string."
                 data)
                (match-string 0 data)))
          (throw  (string-match "@throws[ \t]+[^ \t\r\n]+" str))
+	 ;; @param <variable> <description>
          (param  (string-match "@param[ \t]+[^ \t\r\n]+[ \t]+[^ \t\r\n]" str))
+	 ;; @param <variable> [no description]
+         (param-incomplete
+	  (string-match "@param[ \t]+[^ \t\r\n]+[ \t]*[\r\n]" str))
          (php-p  (lint-layout-code-php-p))
          (access (string-match "@access" str))
          (return (string-match "@return[ \t]+[^ \t\r\n]+" str)))
@@ -5297,11 +5301,15 @@ The DATA contains full function content as string."
       (lint-layout-message
        "[doc] @throws token not found or recognized"
        prefix line))
-    (when (and need-param-p
-               (not param))
-      (lint-layout-message
-       "[doc] @param token not found or recognized"
-       prefix line))
+    (when need-param-p
+      (if param-incomplete
+	  (lint-layout-message
+	   "[doc] @param token is probably missing variable description"
+	   prefix line))
+      (if (not param)
+	  (lint-layout-message
+	   "[doc] @param token not found or recognized"
+	   prefix line)))
     (when (and param
                (not need-param-p))
       (lint-layout-message
