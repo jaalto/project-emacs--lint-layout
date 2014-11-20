@@ -2,7 +2,7 @@
 
 ;;{{{ Id
 
-;; Copyright (C)    2006-2013 Jari Aalto <jari.aalto@cante.net>
+;; Copyright (C)    2006-2015 Jari Aalto <jari.aalto@cante.net>
 ;; Keywords:        extensions
 ;; Author:          Jari Aalto
 ;; Maintainer:      Jari Aalto
@@ -161,7 +161,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2014.1120.1149"
+(defconst lint-layout-version-time "2014.1120.1151"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
