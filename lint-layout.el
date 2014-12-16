@@ -161,7 +161,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2014.1120.1151"
+(defconst lint-layout-version-time "2014.1216.0859"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -597,12 +597,7 @@ An example:
     lint-layout-generic-check-brace-extra-newline
     lint-layout-java-check-regexp-occur-main
     lint-layout-generic-class-check-variables
-    ;; lint-layout-php-check-input-form-main
-    ;; lint-layout-php-check-sql-kwd-statements
-    ;; lint-layout-php-check-multiline-print
-    ;; lint-layout-php-check-multiline-sql
     lint-layout-generic-check-words
-    ;; lint-layout-php-check-keywords-main
     ;; lint-layout-check-whitespace
     ;; lint-layout-check-eof-marker
     lint-layout-check-line-length)
@@ -2908,12 +2903,18 @@ if ( check );
         (lint-layout-php-check-keywords-case keyword fullstr prefix))
       ;; Brace placement check
       (cond
-       ((and (eq lint-layout-generic-brace-style 'brace-end)
-             (not brace-end-p))
-        (lint-layout-message
-         (format "[code] brace { not at previous line of keyword '%s'"
-                 (or keyword ""))
-         prefix))
+       ((eq lint-layout-generic-brace-style 'brace-end)
+	(unless brace-end-p
+	  (lint-layout-message
+	   (format "[code] brace { not at previous line of keyword '%s'"
+		   (or keyword ""))
+	   prefix))
+	(when (and brace-end-p
+		   (string-match "){[ \t]*$" fullstr))
+	  (lint-layout-message
+	   (format "[code] no space before starting brace { near keyword '%s'"
+		   (or keyword ""))
+	   prefix)))
        ((and (not (eq lint-layout-generic-brace-style 'brace-end))
              (not (eq statement-start-col brace-start-col)))
         (lint-layout-message
