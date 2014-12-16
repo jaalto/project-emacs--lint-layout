@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2014.1216.1152"
+(defconst lint-layout-version-time "2014.1216.1156"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -5936,7 +5936,7 @@ Use optional PREFIX for messages.
 		(when (> count 1)
 		  (lint-layout-message
 		   (format
-		    "[doc] extra %d newlines above. Doc-block not attached."
+		    "[doc] extra %d newlines above, doc-block not attached."
 		    count)
 		   prefix)))
               (setq valid-p
