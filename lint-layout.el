@@ -1,7 +1,5 @@
 ;;; lint-layout.el --- Coding layout lint utilities
 
-;;{{{ Id
-
 ;; Copyright (C)    2006-2015 Jari Aalto <jari.aalto@cante.net>
 ;; Keywords:        extensions
 ;; Author:          Jari Aalto
@@ -26,9 +24,6 @@
 ;;
 ;; Visit <http://www.gnu.org/copyleft/gpl.html> for more information
 
-;;}}}
-;;{{{ Install
-
 ;; ........................................................ &t-install ...
 ;;   Put this file on your Emacs-Lisp `load-path', add following into your
 ;;   $HOME/.emacs startup file
@@ -38,9 +33,6 @@
 ;;   If you have any questions about this Emacs package:
 ;;
 ;;      M-x mail     Send question, feedback, bugs
-
-;;}}}
-;;{{{ Documentation
 
 ;; ..................................................... &t-commentary ...
 
@@ -161,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2014.1216.0904"
+(defconst lint-layout-version-time "2014.1216.1122"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
