@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2014.1216.1122"
+(defconst lint-layout-version-time "2014.1216.1148"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -879,15 +879,18 @@ Return nil or number of occurrances."
     (or (re-search-forward "^[ \t]*$" nil t)
         (point-max))))
 
-(defun lint-layout-count-char-in-string (c s)
-  "Count character C in string S ."
+(defun lint-layout-count-char-in-string (character string)
+  "Count CHARACTER in STRING ."
   (let ((count 0)
-        (pos   0))
+        (pos 0))
     (while (< pos (length s))
-      (if (char-equal (aref s pos) c)
-          (incf  count))
-      (incf  pos))
+      (if (char-equal (aref string pos) character)
+          (setq count (1+ count))
+	(setq pos (1+ pos))))
     count))
+
+(defsubst lint-layout-count-newlines-in-string (string)
+  (lint-layout-count-char-in-string ?\n string))
 
 (defun lint-layout-current-line-number-traditional ()
   "Return line number. Lines are counted from 1..x"
@@ -2261,7 +2264,7 @@ Return variable content string."
         ;; Where is the approximate ")" paren that terminates the INSERT
         (when (re-search-forward ")" (max (+ beg 1500) (point-max)) t)
           (setq str (buffer-substring-no-properties beg (point)))
-          (when (and (> (lint-layout-count-char-in-string ?\n str) 3)
+          (when (and (> (lint-layout-count-newlines-in-string str) 3)
                      (not (lint-layout-php-here-doc-nearby-p point)))
             (lint-layout-message
              "possible SQL maintenance problem, HERE doc recommended"
@@ -4568,7 +4571,7 @@ The submatches are as follows. The point is at '!':
 (defsubst lint-layout-sql-create-table-adjust-line-number (str line)
   "STR Could match extra newline and point is at
 wrong position. Match first non-LF up till last LF"
-  (- line  (lint-layout-count-char-in-string ?\n str)))
+  (- line  (lint-layout-count-newlines-in-string str)))
 
 (defun lint-layout-sql-create-table-adjust-line-maybe (string line)
   "Check STRING for embedded newlines at the end."
@@ -5912,6 +5915,7 @@ Use optional PREFIX for messages.
         str
         beg
         end
+	point
         type)
     (while (lint-layout-search-forward-doc-beginning)
       (setq point       (point)
@@ -5924,6 +5928,17 @@ Use optional PREFIX for messages.
               (setq next-line-valid-p (lint-layout-looking-at-doc-p))
               (setq end (lint-layout-search-forward-doc-end))
               (skip-chars-forward " \t\r\n")
+	      ;; Javadoc should be immediately next to the method/function block, no
+	      ;; extra newlines
+	      (let ((count
+		     (lint-layout-count-newlines-in-string
+		      (buffer-substring end (point)))))
+		(when (> count 1)
+		  (lint-layout-message
+		   (format
+		    "[doc] extra %d newlines above. Doc-block not attached."
+		    count)
+		   prefix)))
               (setq valid-p
                     (or top-level-p
                         (lint-layout-looking-at-doc-end-valid-p)
