@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2014.1216.1148"
+(defconst lint-layout-version-time "2014.1216.1152"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -879,14 +879,14 @@ Return nil or number of occurrances."
     (or (re-search-forward "^[ \t]*$" nil t)
         (point-max))))
 
-(defun lint-layout-count-char-in-string (character string)
-  "Count CHARACTER in STRING ."
+(defun lint-layout-count-char-in-string (char string)
+  "Count character CHAR in string STRING ."
   (let ((count 0)
         (pos 0))
-    (while (< pos (length s))
-      (if (char-equal (aref string pos) character)
-          (setq count (1+ count))
-	(setq pos (1+ pos))))
+    (while (< pos (length string))
+      (if (char-equal (aref string pos) char)
+          (setq count (1+ count)))
+      (setq pos (1+ pos)))
     count))
 
 (defsubst lint-layout-count-newlines-in-string (string)
