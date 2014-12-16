@@ -161,7 +161,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2014.1216.0859"
+(defconst lint-layout-version-time "2014.1216.0904"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1522,6 +1522,12 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
 (defconst lint-layout-java-check-regexp-occur-list
   (list
+   '("}while\\>"
+     "in statement, no space after closing brace near keyword WHILE")
+
+   '("^[ \t]*do{"
+     "in statement, no space before starting brace in keyword")
+
    '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)("
      "in statement, no space between keyword and starting paren")
 
