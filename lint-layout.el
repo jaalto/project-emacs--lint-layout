@@ -6311,7 +6311,8 @@ See:
   "Run correct check for each type of file on command line."
   (let ((debug-on-error t))
     (dolist (file command-line-args-left)
-      (lint-layout-check-generic-file file 'verbose))
-    (lint-layout-princ-results)))
+      (princ file)
+      (lint-layout-check-generic-file file 'verbose)
+      (lint-layout-princ-results))))
 
 ;; End of file
