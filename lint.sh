@@ -39,7 +39,8 @@
 #
 #   Requires
 #
-#       GNU binutils, grep, find etc and Emacs
+#       Emacs
+#       GNU binutils: grep, find etc.
 
 # Make sure this program is run under Bash because not all /bin/sh
 # support $()
