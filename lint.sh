@@ -41,6 +41,16 @@
 #
 #       Emacs
 #       GNU binutils: grep, find etc.
+#
+#   Notes
+#
+#       This program is not the actual Lint. It only serves as front-end
+#       to feed list files and selects specific options that are passed
+#       the the Emacs package lint-layout.el (Called through Emacs in
+#       batch mode).
+#
+#       All the logic, checks and messages are printed from the Emacs Lisp
+#       package that was called from here.
 
 # Make sure this program is run under Bash because not all /bin/sh
 # support $()
