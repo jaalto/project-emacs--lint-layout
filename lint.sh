@@ -59,7 +59,7 @@ EMACS_OPTIONS="--batch --no-site-file --no-site-lisp"
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2014.1216.1119"
+VERSION="2015.0908.1637"
 
 # Run in clean environment
 
@@ -127,8 +127,8 @@ OPTIONS
         Define code check library directory (development option).
 
     -r, --recursive DIR
-        Run style checks recursively for all files in DIR (slow).
-$type
+        Run style checks recursively for all files under DIR and below (slow).
+
     -t, --test
         Run in test mode. Do not actually do anything (development option).
 
