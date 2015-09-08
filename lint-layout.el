@@ -1557,7 +1557,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
     (concat
      "^[ \t]+"
      lint-layout-generic-vartype-modifier-regexp
-     "[ \t]+[^ ,*(){}\t\r\n]+,[^,;\r\n]+[,;]")
+     "[ \t]+[^ ,*(){}\t\r\n]+,[^,;\r\n]+[;]")
     "possible multiple variable definitions with comma")
 
    '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
