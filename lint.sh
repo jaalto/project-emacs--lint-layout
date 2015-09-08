@@ -44,10 +44,10 @@
 #
 #   Notes
 #
-#       This program is not the actual Lint. It only serves as front-end
-#       to feed list files and selects specific options that are passed
-#       the the Emacs package lint-layout.el (Called through Emacs in
-#       batch mode).
+#       This program is not the actual Lint. It only serves as a front-end
+#       to feed list files and to select specific options for passing
+#       to Emacs package lint-layout.el. The package is run by Emacs set in
+#       command line batch mode.
 #
 #       All the logic, checks and messages are printed from the Emacs Lisp
 #       package that was called from here.
