@@ -1572,7 +1572,9 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
      ;;
      ;;  ArrayList<StringBuilder>
      ;;
-     "@\\|^[ \t]*[/*]\\|<[a-zA-Z]+>")
+     ;; results = new LinkedList<>();
+     ;;
+     "@\\|^[ \t]*[/*]\\|<[a-zA-Z]+>\\|<>")
 
    '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
      "in statement, no space after operator"
