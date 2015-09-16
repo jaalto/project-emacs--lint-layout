@@ -5861,7 +5861,10 @@ Use optional PREFIX for messages.
         (when (memq 'class type)
           (let (point)
             (lint-layout-with-save-point
-              (lint-layout-min)
+	      ;; There *could* be multiple classes in a single file
+	      ;; for ad hoc simple code tests
+	      ;;
+              ;; (lint-layout-min)
               (if (re-search-forward "^[ \t]*\\(class\\)[ \t]" nil t)
                   (setq point (match-beginning 1))))
             (when (and point
