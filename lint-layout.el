@@ -1574,11 +1574,11 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
      ;;
      ;; results = new LinkedList<>();
      ;;
-     "@\\|^[ \t]*[/*]\\|<[a-zA-Z]+>\\|<>")
+     "@\\|^[ \t]*[/*]\\|<[a-zA-Z]+>\\|<>\\|[\"'][<>]")
 
    '("\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)[a-z0-9]"
      "in statement, no space after operator"
-     "@\\|^[ \t]*/?\\*\\|<[a-zA-Z]+>")
+     "@\\|^[ \t]*/?\\*\\|<[a-zA-Z]+>\\|[\"'][<>]")
 
    ;; '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)[ \t]*([^ \t\r\n]"
    ;;   "in statement, no space after starting paren")
