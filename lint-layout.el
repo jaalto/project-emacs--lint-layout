@@ -1500,7 +1500,16 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
      "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|return\\|assert\\)\\|^[ \t]/?*\\*")
 
    ;; funcall(arg,arg)
-   '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\r\n]+)[^{\r\n]*$"
+   '("[ \t]+\\<[_a-zA-Z][._a-zA-Z0-9]+[ \t]*([^;)\r\n]+,[^ ,;)\"\r\n]+)[^{\r\n]*$"
+     ;;=====================================
+     ;; function(
+     ;;
+     ;; Can't make it perfect. This is best we can do:
+     ;; test("1,2,3");          <= nok
+     ;; test("1,2,3",a);        <= nok
+     ;; test(a,"1,2,3");        <= ok
+     ;; test(1,"2",a);          <= nok
+     ;;
      "in method call, no space after comma"
      "\\<\\(if\\|for\\(?:each\\)?\\|while\\|catch\\|return\\|assert\\)")
 
