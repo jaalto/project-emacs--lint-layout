@@ -142,10 +142,10 @@
 ;;
 ;; Batch command line usage
 ;;
-;;      This lisp library canbe called from command line with list of files
-;;      to check:
+;;      This Emacs lisp library can be called from command line with
+;;      list of files to check:
 ;;
-;;          emacs -Q -q -l lint-layout.el -f <see function name above>
+;;          emacs -Q -q -l lint-layout.el -f <see function name above> <files>
 
 (require 'regexp-opt)
 
@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2015.1001.1622"
+(defconst lint-layout-version-time "2015.1001.1623"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout-debug nil
