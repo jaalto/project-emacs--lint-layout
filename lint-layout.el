@@ -53,11 +53,11 @@
 ;;      o   Brace placement checks
 ;;      o   Indentation multiple of 4.
 ;;      o   Terminating semicolon checks: no loose "semicolons ;"
-;;      o   Exessive newline checks
+;;      o   Excessive newline checks
 ;;
 ;;      Some of the Java checks include:
 ;;
-;;      o   Brace-style K&R (at the end of lines):
+;;      o   Brace-style K&R:
 ;;
 ;;              if (...) {
 ;;
@@ -66,8 +66,9 @@
 ;;              }
 ;;
 ;;      o   Keywords checks for if-for-while.
-;;          An example: "if(cond)" => "if (cond)" and
-;;          paragraph break check on logical places:
+;;          An example: "if(cond)" => "if (cond)".
+;;
+;;      o   Pparagraph break checks on logical places:
 ;;
 ;;              <code>      =>   <code>
 ;;              <code>           <code>
@@ -106,13 +107,13 @@
 ;;
 ;;      Some of the SQL checks include:
 ;;
-;;      o   FIXME: todo
+;;      o   FIXME: <not yet documented>
 ;;
 ;;      Some of the CSS checks include:
 ;;
-;;      o   FIXME: todo
+;;      o   FIXME: <not yet documented>
 ;;
-;; User callable functions (M-x):
+;; User callable functions with `M-x':
 ;;
 ;;      Normally functions start scanning from current point foward, unless
 ;;      "buffer" command is used:
@@ -153,7 +154,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2015.1001.1623"
+(defconst lint-layout-version-time "2015.1001.1626"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout-debug nil
