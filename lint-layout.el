@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2015.1001.1514"
+(defconst lint-layout-version-time "2015.1001.1607"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -2180,6 +2180,42 @@ Return variable content string."
     (skip-chars-backward "  \t\r\n") ;;  first non-whitespace
     (lint-layout-bol)
     (looking-at "^[ \t]*[*]/[ \t]*$")))
+
+(defun lint-layout-generic-put-text-property-invisible
+  (re &optional submatch value)
+  "Search RE for SUBMATCH and `put-text-property' with 'invisible VALUE.
+SUBMATCH defaults to 0."
+  (or submatch
+      (setq submatch 0))
+  (save-excursion
+    (while (re-search-forward re nil t)
+      (put-text-property
+       (match-beginning submatch)
+       (match-end submatch)
+       'invisible
+       value))))
+
+(defun lint-layout-generic-put-text-property-invisible-single-comment
+  (&optional value)
+  "Make all single comment lines invisible."
+  (let ((type (lint-layout-code-type-p)))
+    ;; java-mode, php-mode, css-mode, sql-mode
+    (cond
+     ((eq type 'java-mode)
+      ;; // comment
+      ;; code; // comment
+      (save-excursion
+	(goto-char (point-min))
+	(lint-layout-generic-put-text-property-invisible
+	 "^\\(?:[ \t]*\\|[^;\r\n]+;[ \t]*\\)\\(//.*\\)$"
+	 1 value)
+	;;  /* ... */
+	(goto-char (point-min))
+	(lint-layout-generic-put-text-property-invisible
+	 "/[*][^*\r\n].*[*]/[ \t]*$"
+	 0 value)))
+     ;; TODO other modes
+     )))
 
 (defun lint-layout-java-tag-above-p (&optional str)
   "Check if @-tag or (@STR) is in above the current line."
