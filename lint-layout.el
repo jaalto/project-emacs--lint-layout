@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2015.1001.1504"
+(defconst lint-layout-version-time "2015.1001.1514"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -613,7 +613,7 @@ An example:
 (defvar lint-layout-check-java-generic-functions
   (append lint-layout-check-java-doc-functions
           lint-layout-check-java-code-functions)
-  "List of all PHP check functions.")
+  "List of all Java check functions.")
 
 (defvar lint-layout-check-sql-functions
   '(lint-layout-sql-check-statement-create-table-main
