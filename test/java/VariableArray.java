@@ -13,6 +13,7 @@ class VariableArray {
      * @param args not used
      */
     public static void main(String [] args) {
+        String a;   // This is, a, comment
         String a,b;
         String a, b;
 
