@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2014.1216.1156"
+(defconst lint-layout-version-time "2015.1001.1405"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1566,8 +1566,32 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
     (concat
      "^[ \t]+"
      lint-layout-generic-vartype-modifier-regexp
-     "[ \t]+[^ ,*(){}\t\r\n]+,[^,;\r\n]+[;]")
+     "[ \t]+[^ \t,*(){}\t\r\n]+\\(,[ \t]*[^ \t,*(){}\t\r\n]+\\)+;")
     "possible multiple variable definitions with comma")
+
+   ;;  String [] args
+   (list
+    (concat
+     "^[ \t]+"
+     lint-layout-generic-vartype-modifier-regexp
+     "[ \t]+\\[\\]")
+    "in variable definition, possible extra space before array brackets")
+
+   ;;  String args[]
+   (list
+    (concat
+     lint-layout-generic-vartype-modifier-regexp
+     "[ \t]+[^ \t].*\\[\\]")
+    "in variable definition, possibly misplaced array brackets")
+
+   ;;  method(String [] args)
+   (list
+    (concat
+     lint-layout-java-function-regexp
+     "[ \t]+"
+     lint-layout-generic-vartype-modifier-regexp
+     "[ \t]+\\[\\]")
+    "in method variable definition, possible extra space before array brackets")
 
    '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
      "in statement, no space before operator"
