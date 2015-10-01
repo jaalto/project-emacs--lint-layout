@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2015.1001.1607"
+(defconst lint-layout-version-time "2015.1001.1619"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1566,7 +1566,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
     (concat
      "^[ \t]+"
      lint-layout-generic-vartype-modifier-regexp
-     "[ \t]+[^ \t,*(){}\t\r\n]+\\(,[ \t]*[^ \t,*(){}\t\r\n]+\\)+;")
+     "[ \t]+[^ ,;*(){}/\t\r\n]+\\(,[ \t]*[^ ,;*(){}/\t\r\n]+\\)+;")
     "possible multiple variable definitions with comma")
 
    ;;  String [] args
