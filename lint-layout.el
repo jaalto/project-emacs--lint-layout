@@ -145,7 +145,7 @@
 ;;      This lisp library canbe called from command line with list of files
 ;;      to check:
 ;;
-;;          emacs -Q -q -l lint-layout.el -f
+;;          emacs -Q -q -l lint-layout.el -f <see function name above>
 
 (require 'regexp-opt)
 
