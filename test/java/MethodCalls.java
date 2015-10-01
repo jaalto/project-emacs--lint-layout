@@ -5,7 +5,7 @@
  * @version 2015.1002
  * @since 1.7
  */
-class Methodcall1 {
+class Methodcalls {
 
     /**
      * Starts the application.
