@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2015.1001.1619"
+(defconst lint-layout-version-time "2015.1001.1621"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
