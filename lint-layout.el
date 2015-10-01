@@ -153,7 +153,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2015.1001.1449"
+(defconst lint-layout-version-time "2015.1001.1504"
   "*Version of last edit YYYY.MMDD")
 
 (defvar lint-layout-debug nil
@@ -1599,8 +1599,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
     (concat
      lint-layout-java-function-regexp
      "[ \t]*"
-     "[^] ;{}()\"\t\r\n[]+"
-     " +[ a-zA-Z0-0,]+"
+     "[ a-zA-Z0-0,]+, *[a-zA-Z0-9]+ +[a-zA-Z0-9]+"
      "\\[\\]")
    "in method variable definition, possible misplaced array brackets")
 
