@@ -38,6 +38,28 @@ class MethodArray {
     /**
      * Describes something.
      *
+     * @param one not used
+     * @param two not used
+     * @param three not used
+     */
+    public static void test1(int one, int[] two, int three) {
+        // Something
+    }
+
+    /**
+     * Describes something.
+     *
+     * @param one not used
+     * @param two not used
+     * @param three not used
+     */
+    public static void test1(int one, int two[], int three) {
+        // Something
+    }
+
+    /**
+     * Describes something.
+     *
      * @param args not used
      */
     public static void main(String[] args) {
