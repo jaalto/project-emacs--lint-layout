@@ -4,7 +4,7 @@
 #
 #  Copyright
 #
-#       Copyright (C) 2009-2015 Jari Aalto
+#       Copyright (C) 2009-2016 Jari Aalto
 #
 #   License
 #
@@ -70,7 +70,7 @@ EMACS_OPTIONS="--batch --no-site-file --no-site-lisp"
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2015.0908.1637"
+VERSION="2016.1125.1248"
 
 # Run in clean environment
 
