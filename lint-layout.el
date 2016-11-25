@@ -1,6 +1,6 @@
 ;;; lint-layout.el --- Coding layout lint utilities
 
-;; Copyright (C)    2006-2015 Jari Aalto <jari.aalto@cante.net>
+;; Copyright (C)    2006-2016 Jari Aalto <jari.aalto@cante.net>
 ;; Keywords:        extensions
 ;; Author:          Jari Aalto
 ;; Maintainer:      Jari Aalto
@@ -68,7 +68,7 @@
 ;;      o   Keywords checks for if-for-while.
 ;;          An example: "if(cond)" => "if (cond)".
 ;;
-;;      o   Pparagraph break checks on logical places:
+;;      o   Paragraph break checks on logical places:
 ;;
 ;;              <code>      =>   <code>
 ;;              <code>           <code>
@@ -154,7 +154,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2015.1001.1626"
+(defconst lint-layout-version-time "2016.1125.1248"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout-debug nil
