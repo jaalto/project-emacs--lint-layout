@@ -4,7 +4,7 @@
 #
 #  Copyright
 #
-#       Copyright (C) 2009-2016 Jari Aalto
+#       Copyright (C) 2009-2018 Jari Aalto
 #
 #   License
 #
@@ -21,17 +21,24 @@
 #       You should have received a copy of the GNU General Public License
 #       along with this program. If not, see <http://www.gnu.org/licenses/>.
 #
+#   Description
+#
+#       A static code analysis tool for use with programming
+#       languages: Java, PHP and SQL. The purpose of the tool is to warn
+#       the programmer about inadequate/incomplete coding conventions.
+#
 #   Install
 #
 #       install -m 755 lint.sh /usr/local/bin
 #       cd /usr/local/bin
 #
-#       # OPTIONAL: symlinks help to use specific Lint features:
+#       # make symlinks to use specific Lint features automatically:
+#
 #       ln -s lint.sh javalint
 #       ln -s lint.sh sqllint
 #       ln -s lint.sh phplint
 #
-#       export EMACS_LIBDIR=<directory location of *.el file>
+#       export EMACS_LIBDIR=<directory location of lint-layout.el>
 #
 #   Call syntax
 #
@@ -44,13 +51,13 @@
 #
 #   Notes
 #
-#       This program is not the actual Lint. It only serves as a front-end
-#       to feed list files and to select specific options for passing
-#       to Emacs package lint-layout.el. The package is run by Emacs set in
-#       command line batch mode.
+#       This program is not the actual Lint. It only serves as a
+#       front-end to collect list of files and to select specific
+#       options for passing them to Emacs package lint-layout.el.
+#       Emacs is the actual workhorse (run in command line batch mode).
 #
-#       All the logic, checks and messages are printed from the Emacs Lisp
-#       package that was called from here.
+#       All the logic, checks and messages are printed from the Emacs
+#       Lisp package lint-layout.el called from here.
 
 # Make sure this program is run under Bash because not all /bin/sh
 # support $()
@@ -62,15 +69,18 @@
 PROGRAM_DIR=$(cd $(dirname $0); pwd)
 
 EMACS_BIN=${EMACS_BIN:-emacs}
-EMACS_LIBDIR=${EMACS_LIBDIR:-/home/staff11/jaalto/public_html/bin}
+# EMACS_LIBDIR default is same as program location
+
+# with *.el or *.elc
 EMACS_PROGRAM=${EMACS_PROGRAM:-lint-layout}
+
 # Batch option implied -q (--no-init-file)
 EMACS_OPTIONS="--batch --no-site-file --no-site-lisp"
 
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2016.1125.1248"
+VERSION="2017.114.1336"
 
 # Run in clean environment
 
@@ -211,16 +221,22 @@ Die ()
 
 EmacsLib ()
 {
-    local base="$EMACS_LIBDIR/$EMACS_PROGRAM"
+    local base1="$EMACS_LIBDIR/$EMACS_PROGRAM"
     local base2="$PROGRAM_DIR/$EMACS_PROGRAM"
-    local lib try
+    local basetmp="/tmp/$EMACS_PROGRAM"
+    local base lib try ext
 
-    for try in "$base.elc" "$base.el" "$base2.elc" "$base2.el"
+    for base in "$base1" "$base2" "$basetmp"
     do
-        if [ -f "$try" ]; then
-            lib="$try"
-            break;
-        fi
+        for ext in elc el
+        do
+            try="$base.$ext"
+
+            if [ -f "$try" ]; then
+                lib="$try"
+                break 2;
+            fi
+        done
     done
 
     if [ "$lib" ]; then
@@ -245,12 +261,13 @@ EmacsCall ()
     local lib=$(EmacsLib)
 
     if [ ! "$lib" ]; then
-        Die "Abort. Lint library not available. Define EMACS_LIBDIR"
+        Die "Abort. Lint library not available. Define EMACS_LIBDIR or use option --libdir"
     fi
 
     # lint-layout-check-whitespace
     # lint-layout-check-batch-generic-command-line
     # lint-layout-java-check-all-tests
+
     local function=lint-layout-java-check-all-tests
     local eval="(lint-layout-check-batch-generic-command-line)"
 
@@ -343,10 +360,13 @@ Version ()
     lib=${lib%c}  # not compiled file
 
     if [ ! "$lib" ]; then
-        Die "Version information not available"
+        Die "Library version information not available"
     fi
 
-    awk '/def.*version-time/ { sub(/^[^0-9]+/,""); sub(/.$/,""); print; exit}' "$lib"
+    local prg=$(basename $0)
+    local libver=$(awk '/def.*version-time/ { sub(/^[^0-9]+/,""); sub(/.$/,""); print; exit}' "$lib")
+
+    echo "$prg $VERSION $EMACS_PROGRAM.el $libver"
 
     exit 0
 }
