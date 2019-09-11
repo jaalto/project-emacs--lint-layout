@@ -154,7 +154,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2016.1219.1135"
+(defconst lint-layout-version-time "2019.0911.0914"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout-debug nil
@@ -774,13 +774,13 @@ Return nil or number of occurrances."
    ((or (eq lint-layout-code-type 'java-mode)
         (lint-layout-code-java-p))
     'java-mode)
-   ((or (eq lint-layout-code-type 'java-mode)
+   ((or (eq lint-layout-code-type 'php-mode)
         (lint-layout-code-php-p))
     'php-mode)
-   ((or (eq lint-layout-code-type 'java-mode)
+   ((or (eq lint-layout-code-type 'sql-mode)
         (lint-layout-code-sql-p))
     'sql-mode)
-   ((or (eq lint-layout-code-type 'java-mode)
+   ((or (eq lint-layout-code-type 'css-mode)
         (lint-layout-code-css-p))
     'css-mode)))
 
