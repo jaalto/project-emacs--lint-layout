@@ -4,7 +4,7 @@
 #
 #  Copyright
 #
-#       Copyright (C) 2009-2018 Jari Aalto
+#       Copyright (C) 2009-2019 Jari Aalto
 #
 #   License
 #
@@ -54,10 +54,13 @@
 #       This program is not the actual Lint. It only serves as a
 #       front-end to collect list of files and to select specific
 #       options for passing them to Emacs package lint-layout.el.
-#       Emacs is the actual workhorse (run in command line batch mode).
+#       Emacs is the actual workhorse.
 #
 #       All the logic, checks and messages are printed from the Emacs
-#       Lisp package lint-layout.el called from here.
+#       Lisp package lint-layout.el called this script.
+
+AUTHOR="Jari Aalto <jari.aalto@cante.net>"
+LICENCE="GPL-2+"
 
 # Make sure this program is run under Bash because not all /bin/sh
 # support $()
@@ -80,11 +83,11 @@ EMACS_OPTIONS="--batch --no-site-file --no-site-lisp"
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2017.114.1336"
+VERSION="2019.0911.0904"   # YYYY.MMDD.HHMM of last edit
 
 # Run in clean environment
 
-TZ=Europe/Helsinki
+TZ=${TZ:-Europe/Helsinki}
 LC_ALL=C
 LANG=C
 unset DEBUG VERBOSE WHITESPACE_OPT TYPE TEST
@@ -110,14 +113,15 @@ FIND_OPT="-iname *.php\
 
 #######################################################################
 #
-#   Utilities: Help and Definitons
+#   Utilities: Help and Definitions
 #
 #######################################################################
 
 Help ()
 {
-    local program="file"
+    local file="file"
     local languages=${TYPE:-"Java, PHP, SQL and CSS"}
+
     local type="
     -t, --type TYPE
         Only used with --recursive option. Check only certain type
@@ -125,12 +129,20 @@ Help ()
         and sql.
 
 "
+
     [ "$TYPE" ] && type=""
 
+    local file
 
     case "$TYPE" in
         java) file=Program ;;
     esac
+
+    local example=$file${TYPE:+.$TYPE}
+
+    if [ ! "$TYPE" ]; then
+        example="$file.{java,php,sql,css}"
+    fi
 
     echo "\
 SYNOPSIS
@@ -165,7 +177,7 @@ OPTIONS
 EXAMPLES
     Check style of a single file:
 
-        $PROGRAM $file${TYPE:+.$TYPE}
+        $PROGRAM $example
 
     Check directory recursively for files
 
@@ -173,7 +185,7 @@ EXAMPLES
 
 ENVIRONMENT
     EMACS_BIN
-        Emacs program to use. Defaults to "emacs".
+        Emacs program to use. Defaults to 'emacs'.
 
     EMACS_LIBDIR
         Directory location of the Emacs file lint-layout.el. If not
@@ -181,7 +193,7 @@ ENVIRONMENT
 
     EMACS_PROGRAM
         Lint library file name without the *.el extension in EMACS_LIBDIR.
-        Defaults to "lint-layout".
+        Defaults to 'lint-layout'.
 
 STANDARDS
     For Java, see official Code Conventions for the Java Programming
