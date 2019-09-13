@@ -83,7 +83,7 @@ EMACS_OPTIONS="--batch --no-site-file --no-site-lisp"
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2019.0911.0904"   # YYYY.MMDD.HHMM of last edit
+VERSION="2019.0913.0505"   # YYYY.MMDD.HHMM of last edit
 
 # Run in clean environment
 
@@ -290,9 +290,15 @@ EmacsCall ()
 
     local java="(progn (setq lint-layout-check-java-generic-functions (append '(lint-layout-java-check-doc-missing lint-layout-generic-check-doc-main lint-layout-whitespace-multiple-newlines lint-layout-whitespace-at-eob) lint-layout-check-java-code-functions)) (lint-layout-check-batch-generic-command-line))"
 
+    # lint-layout-check-sql-functions
+    local sql="(progn (lint-layout-check-batch-generic-command-line))"
+
     case "$TYPE" in
         *java*)
             eval="$java"
+            ;;
+        *sql*)
+            eval="$sql"
             ;;
     esac
 
