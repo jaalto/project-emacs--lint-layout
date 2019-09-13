@@ -154,7 +154,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2019.0911.0914"
+(defconst lint-layout-version-time "2019.0913.0512"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout-debug nil
@@ -771,16 +771,20 @@ Return nil or number of occurrances."
 (defsubst lint-layout-code-type-p (&optional filenam)
   "Return java-mode, php-mode, css-mode, sql-mode"
   (cond
-   ((or (eq lint-layout-code-type 'java-mode)
+   ((or (eq major-mode 'java-mode)
+	(eq lint-layout-code-type 'java-mode)
         (lint-layout-code-java-p))
     'java-mode)
-   ((or (eq lint-layout-code-type 'php-mode)
+   ((or (eq major-mode 'php-mode)
+	(eq lint-layout-code-type 'php-mode)
         (lint-layout-code-php-p))
     'php-mode)
-   ((or (eq lint-layout-code-type 'sql-mode)
+   ((or (eq major-mode 'sql-mode)
+	(eq lint-layout-code-type 'sql-mode)
         (lint-layout-code-sql-p))
     'sql-mode)
-   ((or (eq lint-layout-code-type 'css-mode)
+   ((or (eq major-mode 'css-mode)
+	(eq lint-layout-code-type 'css-mode)
         (lint-layout-code-css-p))
     'css-mode)))
 
@@ -6278,7 +6282,7 @@ This includes:
 (defun lint-layout-check-generic-buffer
   (&optional prefix verb)
   "Run checks. PREFIX is displayed at the beginning of line. VERB.
-According to file extension: *.php, *.css, *.php."
+According to file type: *.php, *.css, *.php."
   (interactive
    (list nil 'verbose))
   (let ((name (buffer-name)))
