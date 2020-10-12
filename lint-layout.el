@@ -154,7 +154,7 @@
   ;; Need incf
   (require 'cl))
 
-(defconst lint-layout-version-time "2019.0913.0512"
+(defconst lint-layout-version-time "2019.0916.0718"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout-debug nil
@@ -770,23 +770,32 @@ Return nil or number of occurrances."
 
 (defsubst lint-layout-code-type-p (&optional filenam)
   "Return java-mode, php-mode, css-mode, sql-mode"
-  (cond
-   ((or (eq major-mode 'java-mode)
-	(eq lint-layout-code-type 'java-mode)
-        (lint-layout-code-java-p))
-    'java-mode)
-   ((or (eq major-mode 'php-mode)
-	(eq lint-layout-code-type 'php-mode)
-        (lint-layout-code-php-p))
-    'php-mode)
-   ((or (eq major-mode 'sql-mode)
-	(eq lint-layout-code-type 'sql-mode)
-        (lint-layout-code-sql-p))
-    'sql-mode)
-   ((or (eq major-mode 'css-mode)
-	(eq lint-layout-code-type 'css-mode)
-        (lint-layout-code-css-p))
-    'css-mode)))
+  (let ((file (buffer-file-name))
+	type)
+    (setq type
+	  (cond
+	   ((or (eq major-mode 'java-mode)
+		(eq lint-layout-code-type 'java-mode)
+		(and (null file)
+		     (lint-layout-code-java-p)))
+	    'java-mode)
+	   ((or (eq major-mode 'php-mode)
+		(eq lint-layout-code-type 'php-mode)
+		(and (null file)
+		     (lint-layout-code-php-p)))
+	    'php-mode)
+	   ((or (eq major-mode 'sql-mode)
+		(eq lint-layout-code-type 'sql-mode)
+		(and (null file)
+		     (lint-layout-code-sql-p)))
+	    'sql-mode)
+	   ((or (eq major-mode 'css-mode)
+		(eq lint-layout-code-type 'css-mode)
+		(and (null file)
+		     (lint-layout-code-css-p)))
+	    'css-mode)))
+    (lint-layout-debug-message "debug layout: type: %s" type)
+    type))
 
 (defsubst lint-layout-code-type-set-local-variable ()
   "Set `lint-layout-code-type' local to buffer."
@@ -6279,16 +6288,18 @@ This includes:
 
 ;;; ............................................. &generic-interactive ...
 
-(defun lint-layout-check-generic-buffer
-  (&optional prefix verb)
+(defun lint-layout-check-generic-buffer (&optional prefix verb)
   "Run checks. PREFIX is displayed at the beginning of line. VERB.
 According to file type: *.php, *.css, *.php."
   (interactive
    (list nil 'verbose))
-  (let ((name (buffer-name)))
+  (let ((name (buffer-name))
+	type)
     (or prefix
         (setq prefix name))
-    (lint-layout-code-type-set-local-variable) ; Makes things faster
+    (setq type (lint-layout-code-type-set-local-variable))
+    (lint-layout-debug-message
+     (format "lint-layout: generic type: %s name: %s" type name))
     (cond
      ((eq 'php-mode (lint-layout-code-type-p))
       (lint-layout-php-check-all-interactive (point-min) prefix))
