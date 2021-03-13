@@ -114,7 +114,7 @@ Main ()
         return 1
     fi
 
-    if [ ! -d "$dest"]; then
+    if [ ! -d "$dest" ]; then
         Die "ERROR: Not a directory: $dest"
     fi
 
