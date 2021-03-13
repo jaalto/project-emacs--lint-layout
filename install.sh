@@ -69,7 +69,7 @@ Main ()
     while :
     do
         case "$1" in
-            --dest)
+            -d | --dest)
                 [ "$2" ] || Die "ERROR: Missing dir"
                 dest=$2
                 shift 2
