@@ -39,7 +39,7 @@
 #       ln -s lint.sh sqllint
 #       ln -s lint.sh phplint
 #
-#       export EMACS_LIBDIR=<directory location of lint-layout.el>
+#       export EMACS_LINT_LIBDIR=<directory location of lint-layout.el>
 #
 #   Call syntax
 #
@@ -72,19 +72,19 @@ LICENCE="GPL-2+"
 
 PROGRAM_DIR=$(cd $(dirname $0); pwd)
 
-EMACS_BIN=${EMACS_BIN:-emacs}
-# EMACS_LIBDIR default is same as program location
+EMACS_LINT_BIN=${EMACS_BIN:-emacs}
+# EMACS_LINT_LIBDIR default is same as program location
 
 # with *.el or *.elc
-EMACS_PROGRAM=${EMACS_PROGRAM:-lint-layout}
+EMACS_LINT_PROGRAM=${EMACS_PROGRAM:-lint-layout}
 
 # Batch option implied -q (--no-init-file)
-EMACS_OPTIONS="--batch --no-site-file --no-site-lisp"
+EMACS_LINT_OPTIONS="--batch --no-site-file --no-site-lisp"
 
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2021.0313.1034"   # YYYY.MMDD.HHMM of last edit
+VERSION="2021.0313.1141"   # YYYY.MMDD.HHMM of last edit
 
 # Run in clean environment
 
@@ -185,15 +185,15 @@ EXAMPLES
         $PROGRAM -r directory/
 
 ENVIRONMENT
-    EMACS_BIN
+    EMACS_LINT_BIN
         Emacs program to use. Defaults to 'emacs'.
 
-    EMACS_LIBDIR
+    EMACS_LINT_LIBDIR
         Directory location of the Emacs file lint-layout.el. If not
         set, please use --libdir option to point to directory.
 
-    EMACS_PROGRAM
-        Lint library file name without the *.el extension in EMACS_LIBDIR.
+    EMACS_LINT_PROGRAM
+        Lint library file name without the *.el extension in EMACS_LINT_LIBDIR.
         Defaults to 'lint-layout'.
 
 STANDARDS
@@ -226,6 +226,51 @@ Die ()
     exit 1
 }
 
+OsType ()
+{
+    local str=$(uname -s)
+
+    case "$str" in
+        Darwin)
+            echo "macos"
+            ;;
+        Linux)
+            echo "linux"
+            ;;
+        *CYGWIN*)
+            echo "cygwin"
+            ;;
+        *MINGW*)
+            echo "mingw"
+            ;;
+        *) echo "$str"
+           ;;
+    esac
+}
+
+IsMacOs()
+{
+    [ "$(OsType)" = "macos" ]
+}
+
+ResolveSymlink ()
+{
+    local file=$1
+
+    if type realpath > /dev/null; then
+        realpath "$file"
+    elif type readlink > /dev/null; then
+        if IsMacOs ; then
+            readlink -f "$file"
+        else
+            readlink "$file"
+        fi
+    else
+        # Very simple way to read symlink
+        ls -l "$file" | awk '{print $(NF)}'
+    fi
+}
+
 #######################################################################
 #
 #   Emacs lint library
@@ -234,12 +279,20 @@ Die ()
 
 EmacsLib ()
 {
-    local base1="$EMACS_LIBDIR/$EMACS_PROGRAM"
-    local base2="$PROGRAM_DIR/$EMACS_PROGRAM"
-    local basetmp="/tmp/$EMACS_PROGRAM"
+    local base1="$EMACS_LINT_LIBDIR/$EMACS_LINT_PROGRAM"
+    local base2="$PROGRAM_DIR/$EMACS_LINT_PROGRAM"
+    local basetmp="/tmp/$EMACS_LINT_PROGRAM"
     local base lib try ext
 
-    for base in "$base1" "$base2" "$basetmp"
+    local real=$(ResolveSymlink $0)
+
+    local base3
+
+    if [ "$real" ] && [ ! "$real" = "$0" ] ; then
+        base3="$(dirname $real)/$EMACS_LINT_PROGRAM"
+    fi
+
+    for base in "$base1" "$base2" $base3 "$basetmp"
     do
         for ext in elc el
         do
@@ -274,7 +327,7 @@ EmacsCall ()
     local lib=$(EmacsLib)
 
     if [ ! "$lib" ]; then
-        Die "Abort. Lint library not available. Define EMACS_LIBDIR or use option --libdir"
+        Die "Abort. Lint library not available. Define EMACS_LINT_LIBDIR or use option --libdir"
     fi
 
     # lint-layout-check-whitespace
@@ -313,8 +366,8 @@ EmacsCall ()
         esac
     fi
 
-    ${TEST:+echo} $EMACS_BIN \
-        $EMACS_OPTIONS \
+    ${TEST:+echo} $EMACS_LINT_BIN \
+        $EMACS_LINT_OPTIONS \
         $opt \
         --eval "$debug" \
         -l "$lib" \
@@ -385,7 +438,7 @@ Version ()
     local prg=$(basename $0)
     local libver=$(awk '/def.*version-time/ { sub(/^[^0-9]+/,""); sub(/.$/,""); print; exit}' "$lib")
 
-    echo "$prg $VERSION $EMACS_PROGRAM.el $libver"
+    echo "$prg $VERSION $EMACS_LINT_PROGRAM.el $libver"
 
     exit 0
 }
@@ -422,7 +475,7 @@ Main ()
                 elif [ ! -d "$1" ]; then
                     Die "ERROR: Not a directory: $1"
                 else
-                    EMACS_LIBDIR="$1"
+                    EMACS_LINT_LIBDIR="$1"
                 fi
                 shift
                 ;;
@@ -500,7 +553,7 @@ Main ()
 
     else
         if [ ! "$1" ]; then
-            Die "ERROR: missing call argument. See --help"
+            Die "ERROR: missing file argument. See --help"
         fi
 
         local file list space
