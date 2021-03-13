@@ -4,7 +4,7 @@
 #
 #  Copyright
 #
-#       Copyright (C) 2009-2019 Jari Aalto
+#       Copyright (C) 2009-2021 Jari Aalto
 #
 #   License
 #
@@ -30,6 +30,7 @@
 #   Install
 #
 #       install -m 755 lint.sh /usr/local/bin
+#       install -m 644 lint-layout.el /usr/local/bin
 #       cd /usr/local/bin
 #
 #       # make symlinks to use specific Lint features automatically:
@@ -83,7 +84,7 @@ EMACS_OPTIONS="--batch --no-site-file --no-site-lisp"
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2019.0913.0505"   # YYYY.MMDD.HHMM of last edit
+VERSION="2021.0313.1034"   # YYYY.MMDD.HHMM of last edit
 
 # Run in clean environment
 
