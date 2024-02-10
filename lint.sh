@@ -84,7 +84,7 @@ EMACS_LINT_OPTIONS="--batch --no-site-file --no-site-lisp"
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2024.0210.1228"   # YYYY.MMDD.HHMM of last edit
+VERSION="2024.0210.1454"   # YYYY.MMDD.HHMM of last edit
 
 # Run in clean environment
 
@@ -315,8 +315,6 @@ EmacsLib ()
     fi
 }
 
-EMACS_LIB=""
-
 EmacsCall ()
 {
     local args="$*"  # For debug only
@@ -334,7 +332,7 @@ EmacsCall ()
     if [ ! "$lib" ]; then
         lib=$(EmacsLib)
 
-        [ "$lib" ] && EMACS_LIB=$lib
+        [ "$lib" ] && EMACS_LIB=$lib   # save to global
     fi
 
     if [ ! "$lib" ]; then
@@ -381,14 +379,26 @@ EmacsCall ()
         esac
     fi
 
-    ${TEST:+echo} $EMACS_LINT_BIN \
+    if [ "$TEST" ]; then
+        head --verbose --lines=3000 "$@"
+
+        echo $EMACS_LINT_BIN \
+        $EMACS_LINT_OPTIONS \
+        $opt \
+        --eval "'$debug'" \
+        -l "$lib" \
+        --eval "'$eval'" \
+        "$@"
+    else
+        $EMACS_LINT_BIN \
         $EMACS_LINT_OPTIONS \
         $opt \
         --eval "$debug" \
         -l "$lib" \
         --eval "$eval" \
         "$@" 2>&1 |
-        egrep -v 'byte-compiled|Loading'
+        grep --extended --invert 'byte-compiled|Loading'
+    fi
 
     [ "$DEBUG" ] && set +x
 }
@@ -411,7 +421,7 @@ EmacsCallList ()
 
 #######################################################################
 #
-#   Main functionality
+#   Major functionality
 #
 #######################################################################
 
@@ -439,14 +449,14 @@ CheckFile ()
 Version ()
 {
     lib=$(EmacsLib)
-    lib=${lib%c}  # not compiled file
+    lib=${lib%c}  # no compiled files
 
     if [ ! "$lib" ]; then
         Die "Library version information not available"
     fi
 
     local prg=$(basename $0)
-    local libver=$(awk '/def.*version-time/ { sub(/^[^0-9]+/,""); sub(/.$/,""); print; exit}' "$lib")
+    local libver=$(awk '/def.*version-time/ {sub(/^[^0-9]+/,""); sub(/.$/,""); print; exit}' "$lib")
 
     echo "$prg $VERSION $EMACS_LINT_PROGRAM.el $libver"
 
@@ -455,6 +465,8 @@ Version ()
 
 Main ()
 {
+    # Turn on mode based on call name: javalint ...
+
     case "$0" in
         *java*) TYPE=java ;;
         *php*) TYPE=php ;;
@@ -552,7 +564,7 @@ Main ()
     if [ "$recursive" ]; then
 
         local opt
-        local files="TMPBASE.files.lst"
+        local files="$TMPBASE.files.lst"
 
         if [ "$TYPE" ]; then
             find "$recursive" -iname "*.$TYPE"
