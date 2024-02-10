@@ -151,10 +151,9 @@
 (require 'regexp-opt)
 
 (eval-when-compile
-  ;; Need incf
-  (require 'cl))
+  (require 'cl-lib))
 
-(defconst lint-layout-version-time "2019.0916.0718"
+(defconst lint-layout-version-time "2024.0210.1227"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout-debug nil
@@ -232,7 +231,7 @@ tokens could be lined up.")
                "\\>[ \t]*\\)?"))
          regexp)
     (while (< i len)
-      (incf i)
+      (cl-incf i)
       (setq regexp
             (concat
              (or regexp "")
@@ -915,7 +914,7 @@ Return nil or number of occurrances."
         (point (point)))
     (lint-layout-min)
     (while (search-forward "\n" beg t)
-      (incf i))
+      (cl-incf i))
     (goto-char point)
     i))
 
@@ -1312,7 +1311,7 @@ Return:
 
   If there are problems return comment region BEG END and
   POINT of problematic line."
-  (multiple-value-bind (beg end)
+  (cl-multiple-value-bind (beg end)
       (lint-layout-generic-comment-multiline-forward)
     (when beg
       (save-excursion
@@ -1409,7 +1408,7 @@ displayed."
   "Check LIST of regexps."
   (let (line point)
     (dolist (elt list)
-      (multiple-value-bind (re msg not-re case func) elt
+      (cl-multiple-value-bind (re msg not-re case func) elt
         (save-excursion
           (let ((case-fold-search (if case
                                       nil
@@ -1937,7 +1936,7 @@ See `lint-layout-generic-run-occur-list'.")
     (while (lint-layout-generic-class-forward)
       (unless (looking-at ".*PHPUnit\\|Exception")
         (if count
-            (incf count)
+            (cl-incf count)
           (setq count 1))))
       (when (and count
                (> count 1))
@@ -3662,7 +3661,7 @@ Optional PREFIX is used add filename to the beginning of line."
                     lint-layout-generic-brace-forward-3
                     lint-layout-generic-brace-forward-4))
       (goto-char start)
-      (multiple-value-bind (found type)
+      (cl-multiple-value-bind (found type)
           (funcall func)
         (when (and
                found
@@ -3693,7 +3692,7 @@ Optional PREFIX is used add filename to the beginning of line."
             "[whitespace] empty brace block")))
         elt)
     (when (setq elt (assoc type list))
-      (multiple-value-bind (dummy format) elt
+      (cl-multiple-value-bind (dummy format) elt
         (if (string-match "%" format)
             (setq format (format format count)))
         (lint-layout-message format prefix line)))))
@@ -3704,7 +3703,7 @@ Optional PREFIX is used add filename to the beginning of line."
         line
         str)
     (while (setq status (lint-layout-php-brace-forward-main))
-      (multiple-value-bind (type str) status
+      (cl-multiple-value-bind (type str) status
         (setq line (lint-layout-current-line-number))
         (lint-layout-generic-brace-message
          type
@@ -4841,7 +4840,7 @@ An example:
         curline)
     (while (setq info
                  (lint-layout-sql-check-create-table-segment-forward))
-      (multiple-value-bind (beg end str m1b m1e match) info
+      (cl-multiple-value-bind (beg end str m1b m1e match) info
         (setq curline (if line
                           (+ line (1- (lint-layout-current-line-number)))
                         (lint-layout-current-line-number)))
@@ -5260,7 +5259,7 @@ The submatches are as follows: The point is at '!':
   "Check multiline comments from point forward."
   (let (list)
     (while (setq list (lint-layout-generic-comment-multiline-stars))
-      (multiple-value-bind (beg end point) list
+      (cl-multiple-value-bind (beg end point) list
         (lint-layout-generic-check-comment-multiline-stars
          beg end prefix)))))
 
@@ -5895,7 +5894,7 @@ Point must be at the beginning of function definition line."
 
 (defun lint-layout-generic-function-string-at-point ()
   "Return function string, if any, at point."
-  (multiple-value-bind (beg end)
+  (cl-multiple-value-bind (beg end)
       (lint-layout-generic-function-region-at-point)
     (when beg
       (buffer-substring beg end))))
@@ -6135,7 +6134,7 @@ Use optional PREFIX for messages.
 (defun my-lint-output-mode-goto-line-key ()
   "Go to file or dir at point."
   (interactive)
-  (multiple-value-bind (file line)
+  (cl-multiple-value-bind (file line)
       (my-lint-output-mode-error-info)
     (if (not file)
         (message "no file information found at current line.")
@@ -6409,10 +6408,36 @@ See:
    command-line-args-left function)
   (lint-layout-princ-results))
 
-(defun lint-layout-check-batch-generic-command-line ()
-  "Run correct check for each type of file on command line."
-  (let ((debug-on-error t))
+(defun lint-layout-check-batch-generic-command-line-list-from-file (file)
+  "Return list of file from FILE."
+  (let ((buffer (get-buffer-create "*tmp-file*"))
+	(list))
+    (with-current-buffer buffer
+      (erase-buffer)
+      (insert-file-contents file)
+      (split-string
+       (replace-regexp-in-string
+	"[ \t\r\n]+$"
+	""
+	(buffer-string))
+       "\n"))))
+
+(defun lint-layout-check-batch-generic-command-line-list-of-files ()
+  "Return list of files to check."
+  (let (list)
     (dolist (file command-line-args-left)
+      (cond
+       ((string-match "\\.lst$" file)
+	(dolist (elt (lint-layout-check-batch-generic-command-line-list-from-file file))
+	  (push elt list)))
+       (push file list)))
+    (nreverse list)))
+
+(defun lint-layout-check-batch-generic-command-line ()
+  "Run correct check for each type of file on command line.
+NOTE: If the file ends to *.lst, then readlist of files from there."
+  (let ((debug-on-error t))
+    (dolist (file (lint-layout-check-batch-generic-command-line-list-of-files))
       (lint-layout-check-generic-file file 'verbose)
       (lint-layout-princ-results))))
 
