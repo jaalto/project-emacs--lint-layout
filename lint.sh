@@ -24,8 +24,8 @@
 #   Description
 #
 #       A static code analysis tool for use with programming
-#       languages: Java, PHP and SQL. The purpose of the tool is to warn
-#       the programmer about inadequate/incomplete coding conventions.
+#       languages: Java, PHP and SQL. The purpose of the tool is to find
+#       inadequate or incomplete coding conventions.
 #
 #   Install
 #
@@ -58,7 +58,7 @@
 #       Emacs is the actual workhorse.
 #
 #       All the logic, checks and messages are printed from the Emacs
-#       Lisp package lint-layout.el called this script.
+#       Lisp package lint-layout.el
 
 AUTHOR="Jari Aalto <jari.aalto@cante.net>"
 LICENCE="GPL-2+"
@@ -84,7 +84,7 @@ EMACS_LINT_OPTIONS="--batch --no-site-file --no-site-lisp"
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2021.0313.1141"   # YYYY.MMDD.HHMM of last edit
+VERSION="2024.0210.1228"   # YYYY.MMDD.HHMM of last edit
 
 # Run in clean environment
 
@@ -125,7 +125,7 @@ Help ()
 
     local type="
     -t, --type TYPE
-        Only used with --recursive option. Check only certain type
+        Only used with --recursive option. Check certain type
         of file extensions. Allowed values for TYPE: java, php, css
         and sql.
 
@@ -154,6 +154,9 @@ DESCRIPTION
     $languages
 
 OPTIONS
+    --check-doc
+        Enable oly docblock check. In Java, this is Javadoc.
+
     -D, --debug [LEVEL]
         Enable debug. If LEVEL is set, enable all (development option).
 
@@ -284,7 +287,7 @@ EmacsLib ()
     local basetmp="/tmp/$EMACS_LINT_PROGRAM"
     local base lib try ext
 
-    local real=$(ResolveSymlink $0)
+    local real=$(ResolveSymlink $(command -v $0))
 
     local base3
 
@@ -312,6 +315,8 @@ EmacsLib ()
     fi
 }
 
+EMACS_LIB=""
+
 EmacsCall ()
 {
     local args="$*"  # For debug only
@@ -324,7 +329,13 @@ EmacsCall ()
         set -x
     fi
 
-    local lib=$(EmacsLib)
+    local lib=$EMACS_LIB
+
+    if [ ! "$lib" ]; then
+        lib=$(EmacsLib)
+
+        [ "$lib" ] && EMACS_LIB=$lib
+    fi
 
     if [ ! "$lib" ]; then
         Die "Abort. Lint library not available. Define EMACS_LINT_LIBDIR or use option --libdir"
@@ -343,6 +354,10 @@ EmacsCall ()
     fi
 
     local java="(progn (setq lint-layout-check-java-generic-functions (append '(lint-layout-java-check-doc-missing lint-layout-generic-check-doc-main lint-layout-whitespace-multiple-newlines lint-layout-whitespace-at-eob) lint-layout-check-java-code-functions)) (lint-layout-check-batch-generic-command-line))"
+
+    if [ "$OPT_DOC" ]; then
+        java="(progn (setq lint-layout-check-java-code-functions '(lint-layout-generic-class-check-variables lint-layout-generic-check-statement-end)) (setq lint-layout-check-java-generic-functions (append '(lint-layout-java-check-doc-missing lint-layout-generic-check-doc-main) lint-layout-check-java-code-functions)) (lint-layout-check-batch-generic-command-line))"
+    fi
 
     # lint-layout-check-sql-functions
     local sql="(progn (lint-layout-check-batch-generic-command-line))"
@@ -391,12 +406,7 @@ EmacsCallList ()
         sed 's,^,DEBUG: ,' "$input"
     fi
 
-    local file
-
-    while read file
-    do
-        EmacsCall "$file"
-    done < "$input"
+    EmacsCall "$input"
 }
 
 #######################################################################
@@ -455,6 +465,11 @@ Main ()
     while :
     do
         case "$1" in
+            --check-doc)
+                shift
+                OPT_DOC="opt-doc-check"
+                ;;
+
             -D | --debug)
                 shift
                 DEBUG=debug
@@ -464,9 +479,6 @@ Main ()
                         shift
                         ;;
                 esac
-                ;;
-            -h | --help)
-                Help
                 ;;
             -l | --libdir)
                 shift
@@ -480,15 +492,14 @@ Main ()
                 shift
                 ;;
             -r | --recursive)
-                shift
-                recursive=$1
-                shift
+                recursive=$2
+                shift 2
                 if [ ! "$recursive" ]; then
                     Die "ERROR: missing --recursive ARG. See --help."
                 fi
 
                 case "$resursive" in
-                    -* ) Die "ERROR: Invalid --recursive $recursive." \
+                    -* ) Die "ERROR: Invalid --recursive option $recursive." \
                              "See --help."
                         ;;
                 esac
@@ -522,6 +533,9 @@ Main ()
                 VERBOSE="verbose"
                 shift
                 ;;
+            -h | --help)
+                Help
+                ;;
             -V | --version)
                 Version
                 ;;
@@ -538,15 +552,16 @@ Main ()
     if [ "$recursive" ]; then
 
         local opt
+        local files="TMPBASE.files.lst"
 
         if [ "$TYPE" ]; then
             find "$recursive" -iname "*.$TYPE"
         else
             find "$recursive" $FIND_OPT
-        fi > $TMPBASE.files
+        fi > "$files"
 
-        if [ -s "$TMPBASE.files" ]; then
-            EmacsCallList "$TMPBASE.files"
+        if [ -s "$files" ]; then
+            EmacsCallList "$files"
         else
             echo "No files found to check (recursive)"
         fi
