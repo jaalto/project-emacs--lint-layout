@@ -139,7 +139,7 @@
 ;;          lint-layout-sql-buffer-interactive
 ;;
 ;;      Look at results in `lint-layout-changelog-check-main' buffer which
-;;      by default is `lint-layout-buffer-name'.
+;;      by default is `lint--layout-buffer-name'.
 ;;
 ;; Batch command line usage
 ;;
@@ -153,25 +153,25 @@
 (eval-when-compile
   (require 'cl-lib))
 
-(defconst lint-layout-version-time "2024.0211.1448"
+(defconst lint--layout-version-time "2024.0211.1502"
   "*Version of last edit YYYY.MMDD.HHMM")
 
-(defvar lint-layout-debug nil
+(defvar lint--layout-debug nil
   "Non-nil to turn on debug messages.")
 
-(defconst lint-layout-buffer-name "*Lint checks*"
+(defconst lint--layout-buffer-name "*Lint checks*"
   "*Buffer name for results.")
 
-(defconst lint-layout-generic-line-length-max 80
+(defconst lint--layout-generic-line-length-max 80
   "*Maximum line length.")
 
-(defconst lint-layout-generic-indent-step 4
+(defconst lint--layout-generic-indent-step 4
   "*Indent step.")
 
-(defconst lint-layout-generic-brace-style 'brace-end
+(defconst lint--layout-generic-brace-style 'brace-end
   "*Brace style. A symbol of lined-up or brace-end.")
 
-(defconst lint-layout-generic-assignment-line-up-treshold 5
+(defconst lint--layout-generic-assignment-line-up-treshold 5
   "Number of characters apart, that assignments should be lined up.
 If value is nil, line up is always checked.
 
@@ -183,7 +183,7 @@ An example:
 With threshold value 5, the assignments are within it and the '='
 tokens could be lined up.")
 
-(defconst lint-layout-generic-access-modifier-regexp
+(defconst lint--layout-generic-access-modifier-regexp
   (concat
    "\\<"
    (regexp-opt
@@ -194,7 +194,7 @@ tokens could be lined up.")
    "\\>")
   "Access modifiers.")
 
-(defconst lint-layout-generic-vartype-modifier-regexp
+(defconst lint--layout-generic-vartype-modifier-regexp
   (concat
    "\\<"
    (regexp-opt
@@ -210,7 +210,7 @@ tokens could be lined up.")
    "\\>")
   "Variable type modifiers.")
 
-(defconst lint-layout-generic-other-modifier-list
+(defconst lint--layout-generic-other-modifier-list
   '("abstract"
     "static"
     "final"
@@ -238,23 +238,23 @@ tokens could be lined up.")
              re)))
     regexp)))
 
-(defconst lint-layout-generic-other-modifier-regexp
+(defconst lint--layout-generic-other-modifier-regexp
   (lint-layout-make-word-sequence-regexp
-   lint-layout-generic-other-modifier-list)
-  "Regexp of `lint-layout-generic-other-modifier-list'.
+   lint--layout-generic-other-modifier-list)
+  "Regexp of `lint--layout-generic-other-modifier-list'.
 Notice that this is combination regexp, that does not require the
 type modifiers to be present:
 
   <regexp>?name()")
 
-(defconst lint-layout-generic-class-statement
+(defconst lint--layout-generic-class-statement
   (regexp-opt
    '("\\(?:\\<abstract[ \t]+\\)?class"
      "interface")
    'words)
   "Class statement keyword regexp.")
 
-(defconst lint-layout-generic-control-statement-start-regexp
+(defconst lint--layout-generic-control-statement-start-regexp
   (regexp-opt
    '("if"
      "while"
@@ -266,7 +266,7 @@ type modifiers to be present:
    'words)
   "Control statement keyword regexp.")
 
-(defconst lint-layout-generic-control-statement-continue-regexp
+(defconst lint--layout-generic-control-statement-continue-regexp
   (regexp-opt
    '("else"
      "elsif"
@@ -277,11 +277,11 @@ type modifiers to be present:
    'words)
   "Control statement continue keyword regexp.")
 
-(defconst lint-layout-generic-control-statement-regexp
+(defconst lint--layout-generic-control-statement-regexp
   (concat
-   lint-layout-generic-control-statement-start-regexp
+   lint--layout-generic-control-statement-start-regexp
    "\\|"
-   lint-layout-generic-control-statement-continue-regexp)
+   lint--layout-generic-control-statement-continue-regexp)
   "Control statement keyword.")
 
 ;; Todo: multiline IF
@@ -291,42 +291,42 @@ type modifiers to be present:
 ;;                   OR $_POST['passwd'] == "") )
 ;;        {
 ;;
-(defconst lint-layout-generic-statement-regexp-brace
+(defconst lint--layout-generic-statement-regexp-brace
   (concat
    "^"
    "\\([ \t]*\\)"  ;; Indent, submatch 1
    "\\("
-       lint-layout-generic-class-statement
+       lint--layout-generic-class-statement
        "\\|"
-       lint-layout-generic-control-statement-regexp
+       lint--layout-generic-control-statement-regexp
        "\\|"
-       "\\(?:" lint-layout-generic-access-modifier-regexp
+       "\\(?:" lint--layout-generic-access-modifier-regexp
                "[ \t]+\\)[^(;]*("
    "\\)"
    ".*"
    "\\([ \t\r\n]*{\\|[ \t].*(.*)[ \t\r\n]*{\\)")
   "Left anchored statement with brace.")
 
-(defconst lint-layout-generic-statement-regexp-line
+(defconst lint--layout-generic-statement-regexp-line
   (concat
    "^"
    "\\([ \t]*\\)"
    "\\("
-        lint-layout-generic-control-statement-regexp
+        lint--layout-generic-control-statement-regexp
         "\\|function" ;; PHP
    "\\)"
    "\\([ \t].*(.*)[ \t\r\n]*\\|[ \t\r\n]*\\)")
   "Left anchored statement.
-Same `lint-layout-generic-statement-regexp-brace' but
+Same `lint--layout-generic-statement-regexp-brace' but
 without brace requirement.")
 
-(defconst lint-layout-generic-xml-tag-regexp
+(defconst lint--layout-generic-xml-tag-regexp
   "^[ \t]*<[?]\\|[?]>"
   "xml tag: starting, closing.")
 
 ;;; .................................................. &java-variables ...
 
-(defvar lint-layout-java-variable-literals
+(defvar lint--layout-java-variable-literals
   (concat
    "\\<"
    (regexp-opt
@@ -338,7 +338,7 @@ without brace requirement.")
 
 ;;; ................................................... &cpp-variables ...
 
-(defvar lint-layout-cpp-variable-literals
+(defvar lint--layout-cpp-variable-literals
   (concat
    "\\<"
    (regexp-opt
@@ -350,7 +350,7 @@ without brace requirement.")
 
 ;;; ................................................... &php-variables ...
 
-(defvar lint-layout-php-variable-literals
+(defvar lint--layout-php-variable-literals
   (concat
    "\\<"
    (regexp-opt
@@ -360,7 +360,7 @@ without brace requirement.")
    "\\>")
   "PHP symbolic literals.")
 
-(defconst lint-layout-php-function-call-keywords-no-paren
+(defconst lint--layout-php-function-call-keywords-no-paren
    (regexp-opt
     '("include"
       "include_once"
@@ -374,7 +374,7 @@ without brace requirement.")
   print('this');
   print 'this';")
 
-(defconst lint-layout-php-function-call-keywords-generic
+(defconst lint--layout-php-function-call-keywords-generic
   (concat
    "[^a-zA-Z0-9$_-]\\("
    (mapconcat
@@ -398,49 +398,49 @@ without brace requirement.")
    "\\)\\>")
   "Typical PHP functions.")
 
-(defconst lint-layout-php-function-regexp
+(defconst lint--layout-php-function-regexp
   (concat
    "^\\([ \t]*\\)"  ;; subatch 1
    "\\(?:"
             ;; <other modifier>?<access modifier>?function ()
-            lint-layout-generic-other-modifier-regexp
-            "\\(?:" lint-layout-generic-access-modifier-regexp "\\)?"
+            lint--layout-generic-other-modifier-regexp
+            "\\(?:" lint--layout-generic-access-modifier-regexp "\\)?"
 
             "\\|"
 
             ;; <access modifier>?<other modifier>?function ()
-            "\\(?:" lint-layout-generic-access-modifier-regexp "\\)?"
-            lint-layout-generic-other-modifier-regexp
+            "\\(?:" lint--layout-generic-access-modifier-regexp "\\)?"
+            lint--layout-generic-other-modifier-regexp
    "\\)?"
    "[ \t]*"
    ;; function name ()
    "\\<function\\>[ \t\r\n]+[^(]+(")
  "Function regexp. Submatch 1: Indent")
 
-(defconst lint-layout-java-function-regexp
+(defconst lint--layout-java-function-regexp
   (concat
    "^\\([ \t]*\\)"  ;; subatch 1
    "\\(?:"
             ;; <other modifier>?<access modifier>?function ()
-            lint-layout-generic-other-modifier-regexp
-            "\\(?:" lint-layout-generic-access-modifier-regexp "\\)"
+            lint--layout-generic-other-modifier-regexp
+            "\\(?:" lint--layout-generic-access-modifier-regexp "\\)"
 
             "\\|"
 
             ;; <access modifier>?<other modifier>?function ()
-            "\\(?:" lint-layout-generic-access-modifier-regexp "\\)"
-            lint-layout-generic-other-modifier-regexp
+            "\\(?:" lint--layout-generic-access-modifier-regexp "\\)"
+            lint--layout-generic-other-modifier-regexp
    "\\)"
    "[ \t]*"
    ;; name ()
    "[^().+;=]+(")
  "Method regexp. Submatch 1: Indent")
 
-(defconst lint-layout-php-variable-regexp
+(defconst lint--layout-php-variable-regexp
   (concat
    "^[ \t]*"
    "\\(?:"
-       lint-layout-generic-access-modifier-regexp
+       lint--layout-generic-access-modifier-regexp
        "[ \t]+"
        "\\|\\<var\\>[ \t]+"
        "\\)?"
@@ -448,38 +448,38 @@ without brace requirement.")
   "Class variable regexp.")
 
 ;; public [static] int <variable>
-(defconst lint-layout-java-modifier-regexp
+(defconst lint--layout-java-modifier-regexp
   (concat
    "^[ \t]+"  ;; Every variable in Java is intended
    "\\("
-       lint-layout-generic-access-modifier-regexp
+       lint--layout-generic-access-modifier-regexp
        "[ \t]+"
        "\\)"
    "\\("
        "\\(?:"
-           lint-layout-generic-other-modifier-regexp
+           lint--layout-generic-other-modifier-regexp
            "[ \t]+"
        "\\)?"
-       lint-layout-generic-vartype-modifier-regexp
+       lint--layout-generic-vartype-modifier-regexp
        "[ \t]+"
        "\\)")
   "Java access modified for methods and class variables.")
 
-(defconst lint-layout-java-variable-regexp
+(defconst lint--layout-java-variable-regexp
   (concat
-   lint-layout-java-modifier-regexp
+   lint--layout-java-modifier-regexp
    "[a-zA-Z0-9_$]+[ \t]*[;=]")
   "Class variable regexp.")
 
-(defconst lint-layout-php-doc-location-regexp
+(defconst lint--layout-php-doc-location-regexp
    (concat
     "^\\(?:[ \t]*"
          "\\|[<][?][a-z]*[ \t]*\\)"
     ;; Keywords
     "\\(" ;; static public ...
         "\\(?:"
-                lint-layout-generic-other-modifier-regexp
-                lint-layout-generic-access-modifier-regexp
+                lint--layout-generic-other-modifier-regexp
+                lint--layout-generic-access-modifier-regexp
                 "\\)"
         "\\|\\<"
         (regexp-opt
@@ -493,19 +493,19 @@ without brace requirement.")
     "\\)")
   "Regexp to match location where PHPDoc blocks should exist.")
 
-(defconst lint-layout-java-doc-location-regexp
+(defconst lint--layout-java-doc-location-regexp
    (concat
     ;; Keywords
     "^[ \t]*"
     "\\("
         "\\(?:"
-                lint-layout-generic-access-modifier-regexp
-                lint-layout-generic-other-modifier-regexp
+                lint--layout-generic-access-modifier-regexp
+                lint--layout-generic-other-modifier-regexp
         "\\)"
     "\\)")
   "Regexp to match location where javadoc blocks should exist.")
 
-(defconst lint-layout-php-data-type-regexp
+(defconst lint--layout-php-data-type-regexp
   (concat
    "\\<"
    (regexp-opt
@@ -520,7 +520,7 @@ without brace requirement.")
    "\\>")
   "Valid datatypes.")
 
-(defconst lint-layout-php-data-type-short-regexp
+(defconst lint--layout-php-data-type-short-regexp
   (concat
    "\\<"
    (regexp-opt
@@ -531,15 +531,15 @@ without brace requirement.")
    "\\>")
   "Valid short datatypes.")
 
-(defconst lint-layout-generic-doc-1st-line-ignore-regexp
+(defconst lint--layout-generic-doc-1st-line-ignore-regexp
   "constructor\\|destructor"
   "*Ignore first line wording check if regexp matches.")
 
-(defconst lint-layout-generic-doc-line-regexp
+(defconst lint--layout-generic-doc-line-regexp
   "^\\([ \t]*/[*][*]\\|[ \t]+[*]\\)"
   "Documentation comment line regexp.")
 
-(defconst lint-layout-generic-brace-and-code-regexp
+(defconst lint--layout-generic-brace-and-code-regexp
   "[}][ \t]*\r?\n[ \t]*\\([^{} \t\r\n]+\\)"
   "Match brace end } followed by immediate code.
 An example:
@@ -547,12 +547,12 @@ An example:
   }
   immediate-code-line")
 
-(defvar lint-layout-check-generic-functions
+(defvar lint--layout-check-generic-functions
   '(lint-layout-check-whitespace
     lint-layout-check-line-length)
   "*List of generic lint functions.")
 
-(defconst lint-layout-check-php-code-functions
+(defconst lint--layout-check-php-code-functions
   '(lint-layout-generic-class-count
     lint-layout-generic-xml-tags-check-main
     lint-layout-php-check-xml-tags-lazy
@@ -578,7 +578,7 @@ An example:
     lint-layout-check-line-length)
   "*List of PHP code check functions")
 
-(defconst lint-layout-check-java-code-functions
+(defconst lint--layout-check-java-code-functions
   '(lint-layout-generic-class-count
     lint-layout-generic-check-statement-end
     lint-layout-generic-check-statement-start-brace-end
@@ -614,27 +614,27 @@ Possible symbols:
     doc-description-has-paragraph-break
     doc-has-empty-line-before-token")
 
-(defvar lint-layout-check-php-doc-functions
+(defvar lint--layout-check-php-doc-functions
   '(lint-layout-php-check-doc-missing
     lint-layout-generic-check-doc-main)
   "*List of functions for PHPDoc.")
 
-(defvar lint-layout-check-php-generic-functions
-  (append lint-layout-check-php-doc-functions
-          lint-layout-check-php-code-functions)
+(defvar lint--layout-check-php-generic-functions
+  (append lint--layout-check-php-doc-functions
+          lint--layout-check-php-code-functions)
   "List of all PHP check functions.")
 
-(defvar lint-layout-check-java-doc-functions
+(defvar lint--layout-check-java-doc-functions
   '(lint-layout-java-check-doc-missing
     lint-layout-generic-check-doc-main)
   "*List of functions for Javaoc.")
 
-(defvar lint-layout-check-java-generic-functions
-  (append lint-layout-check-java-doc-functions
-          lint-layout-check-java-code-functions)
+(defvar lint--layout-check-java-generic-functions
+  (append lint--layout-check-java-doc-functions
+          lint--layout-check-java-code-functions)
   "List of all Java check functions.")
 
-(defvar lint-layout-check-sql-functions
+(defvar lint--layout-check-sql-functions
   '(lint-layout-sql-check-statement-create-table-main
     lint-layout-sql-check-statement-select-main
     lint-layout-sql-check-statement-insert-into-main
@@ -642,7 +642,7 @@ Possible symbols:
     lint-layout-sql-check-comments)
   "*List of functions for SQL.")
 
-(defvar lint-layout-check-whitespace-functions
+(defvar lint--layout-check-whitespace-functions
   '(lint-layout-whitespace-multiple-newlines
     lint-layout-whitespace-indent-space-only
     lint-layout-whitespace-indent-mixed
@@ -651,14 +651,14 @@ Possible symbols:
     lint-layout-whitespace-at-eob)
   "*List of whitespace check functions.")
 
-(defvar lint-layout-check-css-functions
+(defvar lint--layout-check-css-functions
   '(lint-layout-check-comment-javadoc-invalid
     lint-layout-css-check-generic
     lint-layout-css-comment-multiline-buffer
     lint-layout-css-check-regexp-occur-main)
   "*List of functions for CSS.")
 
-(defconst lint-layout-css-web-safe-font-list
+(defconst lint--layout-css-web-safe-font-list
   '(;;  Courier is not defined in all Windows OSes by default
     "courier new"
     "arial"
@@ -681,19 +681,19 @@ Related articles:
     Fonts on the web and a list of web safe fonts
     http://dustinbrewer.com/fonts-on-the-web-and-a-list-of-web-safe-fonts")
 
-(defconst lint-layout-css-web-safe-font-regexp
+(defconst lint--layout-css-web-safe-font-regexp
   (concat
    "\\<\\(?:"
    (regexp-opt
-    lint-layout-css-web-safe-font-list)
+    lint--layout-css-web-safe-font-list)
    "\\)\\>")
-  "*Regexp of `lint-layout-css-web-safe-font-list'.")
+  "*Regexp of `lint--layout-css-web-safe-font-list'.")
 
-(defvar lint-layout-code-type nil
-  "Variable set to a values of `lint-layout-code-type-p'.
+(defvar lint--layout-code-type nil
+  "Variable set to a values of `lint--layout-code-type-p'.
 Internal variable, not meant ot be set by use.
 
-Set locally to a buffer in `lint-layout-code-type-set-local-variable'.
+Set locally to a buffer in `lint--layout-code-type-set-local-variable'.
 See also `lint-layout-check-file-list'.")
 
 ;;; ....................................................... &utilities ...
@@ -715,18 +715,18 @@ See also `lint-layout-check-file-list'.")
   (goto-char (point-min))
   (forward-line (1- line)))
 
-(put 'lint-layout-debug-message 'lint-layout-debug-message 0)
-(put 'lint-layout-debug-message 'edebug-form-spec '(body))
-(defmacro lint-layout-debug-message (&rest body)
+(put 'lint--layout-debug-message 'lint--layout-debug-message 0)
+(put 'lint--layout-debug-message 'edebug-form-spec '(body))
+(defmacro lint--layout-debug-message (&rest body)
   "Display debug @body using `message' function."
-  `(when lint-layout-debug
+  `(when lint--layout-debug
      (message ,@body)))
 
 (put 'lint-layout-with-result-buffer 'lisp-indent-function 0)
 (put 'lint-layout-with-result-buffer 'edebug-form-spec '(body))
 (defmacro lint-layout-with-result-buffer (&rest body)
-  "Run body in `lint-layout-buffer-name'."
-  `(let ((buffer (get-buffer-create lint-layout-buffer-name)))
+  "Run body in `lint--layout-buffer-name'."
+  `(let ((buffer (get-buffer-create lint--layout-buffer-name)))
      (with-current-buffer buffer
        ,@body)))
 
@@ -786,43 +786,43 @@ Return nil or number of occurrances."
   (or (memq major-mode '(css-mode))
       (string-match (buffer-name) "\\.css")))
 
-(defsubst lint-layout-code-type-p (&optional filenam)
+(defsubst lint--layout-code-type-p (&optional filenam)
   "Return java-mode, php-mode, css-mode, sql-mode"
   (let ((file (buffer-file-name))
 	type)
     (setq type
 	  (cond
 	   ((or (eq major-mode 'java-mode)
-		(eq lint-layout-code-type 'java-mode)
+		(eq lint--layout-code-type 'java-mode)
 		(and (null file)
 		     (lint-layout-code-java-p)))
 	    'java-mode)
 	   ((or (eq major-mode 'php-mode)
-		(eq lint-layout-code-type 'php-mode)
+		(eq lint--layout-code-type 'php-mode)
 		(and (null file)
 		     (lint-layout-code-php-p)))
 	    'php-mode)
 	   ((or (eq major-mode 'sql-mode)
-		(eq lint-layout-code-type 'sql-mode)
+		(eq lint--layout-code-type 'sql-mode)
 		(and (null file)
 		     (lint-layout-code-sql-p)))
 	    'sql-mode)
 	   ((or (eq major-mode 'css-mode)
-		(eq lint-layout-code-type 'css-mode)
+		(eq lint--layout-code-type 'css-mode)
 		(and (null file)
 		     (lint-layout-code-css-p)))
 	    'css-mode)))
-    (lint-layout-debug-message "debug layout: type: %s" type)
+    (lint--layout-debug-message "debug layout: type: %s" type)
     type))
 
-(defsubst lint-layout-code-type-set-local-variable ()
-  "Set `lint-layout-code-type' local to buffer."
-  (make-local-variable 'lint-layout-code-type)
-  (setq lint-layout-code-type
-        (lint-layout-code-type-p)))
+(defsubst lint--layout-code-type-set-local-variable ()
+  "Set `lint--layout-code-type' local to buffer."
+  (make-local-variable 'lint--layout-code-type)
+  (setq lint--layout-code-type
+        (lint--layout-code-type-p)))
 
 (defsubst lint-layout-result-erase-buffer ()
-  "Create and clear `lint-layout-buffer-name'."
+  "Create and clear `lint--layout-buffer-name'."
   (lint-layout-with-result-buffer
     (setq buffer-read-only nil)
     (erase-buffer)))
@@ -874,22 +874,22 @@ Return nil or number of occurrances."
      ,@body
      (lint-layout-result-sort-lines)
      (when ,display
-       (display-buffer lint-layout-buffer-name)
-       (with-current-buffer lint-layout-buffer-name
-         (my-lint-output-mode)))))
+       (display-buffer lint--layout-buffer-name)
+       (with-current-buffer lint--layout-buffer-name
+         (lint-layout-output-mode)))))
 
 (put 'lint-layout-with-interactive 'lisp-indent-function 0)
 (put 'lint-layout-with-interactive 'edebug-form-spec '(body))
 (defmacro lint-layout-with-interactive (&rest body)
-  "Run BODY from `point-min' and show `lint-layout-buffer-name'."
+  "Run BODY from `point-min' and show `lint--layout-buffer-name'."
   `(progn
      (lint-layout-result-erase-buffer)
      (save-excursion
        (lint-layout-min)
        ,@body)
-     (with-current-buffer lint-layout-buffer-name
+     (with-current-buffer lint--layout-buffer-name
        (sort-lines nil (point-min) (point-max)))
-     (display-buffer lint-layout-buffer-name)))
+     (display-buffer lint--layout-buffer-name)))
 
 (defsubst lint-layout-prefix (prefix)
   "If PREFIX, add it as filename to the beginning."
@@ -968,7 +968,7 @@ Return nil or number of occurrances."
   (string-match "@var" str))
 
 (defsubst lint-layout-looking-at-doc-p ()
-  (and (looking-at lint-layout-generic-doc-line-regexp)
+  (and (looking-at lint--layout-generic-doc-line-regexp)
        (match-beginning 0)))
 
 (defsubst lint-layout-search-backward-doc-beginning ()
@@ -985,10 +985,10 @@ Return nil or number of occurrances."
 
 (defsubst lint-layout-generic-search-forward-function-beginning ()
   (cond
-   ((eq 'php-mode (lint-layout-code-type-p))
-    (re-search-forward lint-layout-php-function-regexp nil t))
-   ((eq 'java-mode (lint-layout-code-type-p))
-    (re-search-forward lint-layout-java-function-regexp nil t))
+   ((eq 'php-mode (lint--layout-code-type-p))
+    (re-search-forward lint--layout-php-function-regexp nil t))
+   ((eq 'java-mode (lint--layout-code-type-p))
+    (re-search-forward lint--layout-java-function-regexp nil t))
    (t
     (error "Unkown file type for buffer %s" (buffer-name)))))
 
@@ -1040,10 +1040,10 @@ The comment marker, if any, is in (match-string 2)."
 (defsubst lint-layout-search-forward-variable-beginning (&optional max)
   (re-search-forward
    (cond
-    ((eq 'php-mode (lint-layout-code-type-p))
-     lint-layout-php-variable-regexp)
-    ((eq 'java-mode (lint-layout-code-type-p))
-     lint-layout-java-variable-regexp)
+    ((eq 'php-mode (lint--layout-code-type-p))
+     lint--layout-php-variable-regexp)
+    ((eq 'java-mode (lint--layout-code-type-p))
+     lint--layout-java-variable-regexp)
     (t
      (error "Error: Unknown file type for buffer %s" (buffer-name))))
     max t))
@@ -1057,16 +1057,16 @@ The comment marker, if any, is in (match-string 2)."
   (string-match
    `,(concat
       ".*"
-      lint-layout-generic-access-modifier-regexp
+      lint--layout-generic-access-modifier-regexp
       ".*[$].*;[ \t]*$")
    str))
 
 (defsubst lint-layout-generic-function-regexp ()
   (cond
-   ((eq 'php-mode (lint-layout-code-type-p))
-    lint-layout-php-function-regexp)
-   ((eq 'java-mode (lint-layout-code-type-p))
-    lint-layout-java-function-regexp)
+   ((eq 'php-mode (lint--layout-code-type-p))
+    lint--layout-php-function-regexp)
+   ((eq 'java-mode (lint--layout-code-type-p))
+    lint--layout-java-function-regexp)
    (t
     (error "Unkown file type for buffer %s" (buffer-name)))))
 
@@ -1092,7 +1092,7 @@ The comment marker, if any, is in (match-string 2)."
    `,(concat
       "^[ \t]*"
       "\\(?:"
-      lint-layout-generic-access-modifier-regexp
+      lint--layout-generic-access-modifier-regexp
       "\\)?"
       "[ \t]*[$][a-z].*[ \t];"  ;; $var = value;
       "[ \t]*$")
@@ -1161,7 +1161,7 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
   (when (looking-at
          `,(concat
            "^[ \t]*"
-           lint-layout-generic-access-modifier-regexp
+           lint--layout-generic-access-modifier-regexp
            "?[ \t]*"
            "[$a-z0-9_->]+[^=\r\n]*=[^=]"
            ))
@@ -1231,13 +1231,13 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
   "If `looking-at' conditional statement."
   (looking-at (concat
                "^[ \t]*"
-               lint-layout-generic-control-statement-start-regexp)))
+               lint--layout-generic-control-statement-start-regexp)))
 
 (defsubst lint-layout-looking-at-continue-statement-p ()
   "If `looking-at' continued statement, like 'else'."
   (looking-at (concat
                "^[ \t]*"
-               lint-layout-generic-control-statement-continue-regexp)))
+               lint--layout-generic-control-statement-continue-regexp)))
 
 (defsubst lint-layout-looking-at-control-statement-p ()
   "if..else."
@@ -1269,7 +1269,7 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
 
 (defun lint-layout-message (msg &optional prefix line)
   "Write MSG with LINE numnber using PREFIX.
-See `lint-layout-buffer-name'."
+See `lint--layout-buffer-name'."
   (or line
       (setq line (lint-layout-current-line-number)))
   (lint-layout-with-result-buffer
@@ -1378,13 +1378,13 @@ displayed."
     (lint-layout-with-save-point
       (if point
           (goto-char point))
-      (lint-layout-debug-message
+      (lint--layout-debug-message
        "debug layout: run %s %s %s" function prefix (buffer-name))
       (funcall function prefix))))
 
 ;;; ........................................................... &occur ...
 
-(defconst lint-layout-generic-check-regexp-occur-line-up-style-list
+(defconst lint--layout-generic-check-regexp-occur-line-up-style-list
   (list
    ;; Starting brace
    '("[a-z].*{[ \t\r\n]*$"
@@ -1395,7 +1395,7 @@ displayed."
      "possibly K&R brace style, expect line-up"))
   "*K&R Brace placement checks.")
 
-(defconst lint-layout-php-check-regexp-occur-global-uppercase
+(defconst lint--layout-php-check-regexp-occur-global-uppercase
   (list
    '("^[ \t]*global[ \t]+\\([$].*[a-z].*\\);"
      "global variable name not all uppercase"
@@ -1403,7 +1403,7 @@ displayed."
      'case))
   "*CamelCase variable checks.")
 
-(defconst lint-layout-php-check-regexp-occur-camelcase-style-list
+(defconst lint--layout-php-check-regexp-occur-camelcase-style-list
   (list
    '("^[ \t]*[$]?[a-z0-9]+_[a-z0-9_]+[ \t\r\n]*="
      "variable name not camelCase"
@@ -1411,11 +1411,11 @@ displayed."
     'case))
   "*CamelCase variable checks.")
 
-(defconst lint-layout-java-check-regexp-occur-camelcase-style-list
+(defconst lint--layout-java-check-regexp-occur-camelcase-style-list
   (list
    (list
     `,(concat
-       lint-layout-java-modifier-regexp
+       lint--layout-java-modifier-regexp
        "[a-zA-Z]+_[a-zA-Z0-9_]+[ \t\r\n]*[=;]")
     "variable name not camelCase"
     ;;  Ignore GLOBAL_VARIABLES
@@ -1467,13 +1467,13 @@ displayed."
 
 ;;; ...................................................... &occur-java ...
 
-(defconst lint-layout-java-check-regexp-occur-funcdef-style-list
+(defconst lint--layout-java-check-regexp-occur-funcdef-style-list
   (list
    ;; function Capitalized()
    (list
     (concat
      "^[ \t]+"
-     "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "\\(?:" lint--layout-generic-access-modifier-regexp "\\)[ \t]+"
      "[^(=\r\n]*[ \t]+\\([A-Z][^ (=\t\r\n]*\\)[ \t]*(")
     "in method definition, identifier does not start lowercase"
     nil
@@ -1483,7 +1483,7 @@ displayed."
    (list
     (concat
      "^[ \t]+"
-     "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "\\(?:" lint--layout-generic-access-modifier-regexp "\\)[ \t]+"
      "[^(=\r\n]+[ \t]+(")
     "in method definition, whitespace before starting paren")
 
@@ -1491,7 +1491,7 @@ displayed."
    (list
     (concat
      "^[ \t]+"
-     "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "\\(?:" lint--layout-generic-access-modifier-regexp "\\)[ \t]+"
      "[^(=\r\n]*[ \t]+\\([a-zA-Z][^ (=\t\r\n]*\\)_[^ (=\t\r\n]*[ \t]*(")
     "in method definition, identifier not camelCase")
 
@@ -1499,7 +1499,7 @@ displayed."
    (list
     (concat
      "^[ \t]+"
-     "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "\\(?:" lint--layout-generic-access-modifier-regexp "\\)[ \t]+"
      "[^(=\r\n]*[ \t]+[^ (=\t\r\n]*[ \t]*([ \t]")
      "in method definition, extra whitespace after opening paren")
 
@@ -1507,13 +1507,13 @@ displayed."
    (list
     (concat
      "^[ \t]+"
-     "\\(?:" lint-layout-generic-access-modifier-regexp "\\)[ \t]+"
+     "\\(?:" lint--layout-generic-access-modifier-regexp "\\)[ \t]+"
      "[^(=\r\n]*[ \t]+[^ (=\t\r\n]*[ \t]*([^=()]+[ \t])")
      "in method definition, extra whitespace before closing paren"))
   "Checks for method definitions.
 Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
-(defconst lint-layout-java-check-method-call-occur-list
+(defconst lint--layout-java-check-method-call-occur-list
   (list
    ;; funcall(...arg )
    '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)[^{\r\n]*$"
@@ -1556,7 +1556,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
   "Checks for method calls.
 Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
-(defconst lint-layout-java-check-regexp-occur-list
+(defconst lint--layout-java-check-regexp-occur-list
   (list
    '("}while\\>"
      "in statement, no space after closing brace near keyword WHILE")
@@ -1589,7 +1589,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
    (list
     (concat
      "^[ \t]+"
-     lint-layout-generic-vartype-modifier-regexp
+     lint--layout-generic-vartype-modifier-regexp
      "[ \t]+[^ *()\t\r\n]+.*;[^;\r\n]+;")
     "possible multiple variable statements")
 
@@ -1597,7 +1597,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
    (list
     (concat
      "^[ \t]+"
-     lint-layout-generic-vartype-modifier-regexp
+     lint--layout-generic-vartype-modifier-regexp
      "[ \t]+[^ ,;*(){}/\t\r\n]+\\(,[ \t]*[^ ,;*(){}/\t\r\n]+\\)+;")
     "possible multiple variable definitions with comma")
 
@@ -1605,7 +1605,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
    (list
     (concat
      "^[ \t]+"
-     lint-layout-generic-vartype-modifier-regexp
+     lint--layout-generic-vartype-modifier-regexp
      "[ \t]+\\[\\]")
     "in variable definition, possible extra space before array brackets")
 
@@ -1613,23 +1613,23 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
    (list
     (concat
      "^[ \t]+"
-     lint-layout-generic-vartype-modifier-regexp
+     lint--layout-generic-vartype-modifier-regexp
      "[ \t]+[^ \t;{}()\"]+\\[\\]")
     "in variable definition, possibly misplaced array brackets")
 
    ;;  method(String [] args)
    (list
     (concat
-     lint-layout-java-function-regexp
+     lint--layout-java-function-regexp
      "[ \t]*"
-     lint-layout-generic-vartype-modifier-regexp
+     lint--layout-generic-vartype-modifier-regexp
      "[ \t]+\\[\\]")
     "in method variable definition, possible extra space before array brackets")
 
    ;; method (...String var[], var)
    (list
     (concat
-     lint-layout-java-function-regexp
+     lint--layout-java-function-regexp
      "[ \t]*"
      "[ a-zA-Z0-0,]+, *[a-zA-Z0-9]+ +[a-zA-Z0-9]+"
      "\\[\\]")
@@ -1678,17 +1678,17 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
 See `lint-layout-generic-run-occur-list'.")
 
-(defvar lint-layout-java-check-regexp-occur-variable
-  '(lint-layout-java-check-regexp-occur-funcdef-style-list
-    lint-layout-java-check-method-call-occur-list
-    lint-layout-java-check-regexp-occur-list
-    lint-layout-java-check-regexp-occur-camelcase-style-list)
+(defvar lint--layout-java-check-regexp-occur-variable
+  '(lint--layout-java-check-regexp-occur-funcdef-style-list
+    lint--layout-java-check-method-call-occur-list
+    lint--layout-java-check-regexp-occur-list
+    lint--layout-java-check-regexp-occur-camelcase-style-list)
   "*List of occur variable names.")
 
 (defun lint-layout-java-check-regexp-occur-main (&optional prefix)
   "Run all occur checks."
   (lint-layout-generic-run-occur-variable-list
-   lint-layout-java-check-regexp-occur-variable prefix))
+   lint--layout-java-check-regexp-occur-variable prefix))
 
 (defun lint-layout-java-check-regexp-occur-buffer (&optional prefix)
   "Check from `point-min' with `lint-layout-java-check-regexp-occur-main'."
@@ -1703,7 +1703,7 @@ See `lint-layout-generic-run-occur-list'.")
 
 ;;; ....................................................... &occur-php ...
 
-(defconst lint-layout-php-check-regexp-occur-modern-style-list
+(defconst lint--layout-php-check-regexp-occur-modern-style-list
   (list
    '("^[ \t]*function[ \t]+[a-z0-9_]+("
      "in funcdef, no space before starting paren")
@@ -1718,8 +1718,8 @@ See `lint-layout-generic-run-occur-list'.")
 ;;  $this->conn = @mysql_connect(DBHOST, DBUSER, DBPASS);
 ;;  if ( ! $this->conn )
 ;;
-;;  (lint-layout-generic-run-occur-list lint-layout-php-check-regexp-occur-list)
-(defconst lint-layout-php-check-regexp-occur-list
+;;  (lint-layout-generic-run-occur-list lint--layout-php-check-regexp-occur-list)
+(defconst lint--layout-php-check-regexp-occur-list
   (list
 
    ;; See PHP manual Security => Using Register Globals
@@ -1839,7 +1839,7 @@ See `lint-layout-generic-run-occur-list'.")
    (list
     (concat
      "^[ \t\r\n]*"
-     lint-layout-generic-access-modifier-regexp "?[ \t\r\n]*"
+     lint--layout-generic-access-modifier-regexp "?[ \t\r\n]*"
      "function[ \t]+"
      ".*([ \t]")
      "in funcdef, extra space after opening paren")
@@ -1848,7 +1848,7 @@ See `lint-layout-generic-run-occur-list'.")
    (list
     (concat
      "^[ \t\r\n]*"
-     lint-layout-generic-access-modifier-regexp "?[ \t\r\n]*"
+     lint--layout-generic-access-modifier-regexp "?[ \t\r\n]*"
      "function[ \t]+"
      ".*([^)\r\n]*[ \t])")
     "in funcdef, extra space before closing paren")
@@ -1912,18 +1912,18 @@ See `lint-layout-generic-run-occur-list'.")
 
 See `lint-layout-generic-run-occur-list'.")
 
-(defvar lint-layout-php-check-regexp-occur-variable
-  '(lint-layout-php-check-regexp-occur-modern-style-list
-    lint-layout-php-check-regexp-occur-list
-    lint-layout-php-check-regexp-occur-camelcase-style-list
-    lint-layout-php-check-regexp-occur-global-uppercase
-    lint-layout-generic-check-regexp-occur-line-up-style-list)
+(defvar lint--layout-php-check-regexp-occur-variable
+  '(lint--layout-php-check-regexp-occur-modern-style-list
+    lint--layout-php-check-regexp-occur-list
+    lint--layout-php-check-regexp-occur-camelcase-style-list
+    lint--layout-php-check-regexp-occur-global-uppercase
+    lint--layout-generic-check-regexp-occur-line-up-style-list)
   "*List of occur variable names.")
 
 (defun lint-layout-php-check-regexp-occur-main (&optional prefix)
   "Run all occur checks."
   (lint-layout-generic-run-occur-variable-list
-   lint-layout-php-check-regexp-occur-variable prefix))
+   lint--layout-php-check-regexp-occur-variable prefix))
 
 (defun lint-layout-php-check-regexp-occur-buffer (&optional prefix)
   "Check from `point-min' with `lint-layout-php-check-regexp-occur-main'."
@@ -2090,7 +2090,7 @@ Return variable content string."
 (defun lint-layout-check-xml-tags-lazy (tag &optional prefix)
   "Check lazy `<?' when it should read `<?TAG'."
   (let (str)
-    (while (re-search-forward lint-layout-generic-xml-tag-regexp nil t)
+    (while (re-search-forward lint--layout-generic-xml-tag-regexp nil t)
       (setq str (match-string 0))
       (when (string= str "<?")
         (unless (looking-at tag)
@@ -2122,7 +2122,7 @@ Return variable content string."
     (while (re-search-forward
             `,(concat
                "\n[ \t]*\\([^ \t\r\n{]\\).*\n[ \t]*"
-               lint-layout-generic-control-statement-start-regexp
+               lint--layout-generic-control-statement-start-regexp
                "[ \t]*(.*)")
             nil t)
       ;; Ignore comments, xml-tags, starting brace
@@ -2145,15 +2145,15 @@ Return variable content string."
   (let (line
         str)
     (while (re-search-forward
-            lint-layout-generic-brace-and-code-regexp nil t)
+            lint--layout-generic-brace-and-code-regexp nil t)
       (setq str (buffer-substring (match-beginning 1) (match-end 1)))
       (when (and
              (not (lint-layout-string-comment-p str))
              (not (string-match
                    (concat
-                    lint-layout-generic-control-statement-regexp
+                    lint--layout-generic-control-statement-regexp
                     "\\|"
-                    lint-layout-generic-xml-tag-regexp)
+                    lint--layout-generic-xml-tag-regexp)
                    str)))
         (setq line (lint-layout-current-line-number))
         (lint-layout-message
@@ -2232,7 +2232,7 @@ SUBMATCH defaults to 0."
 (defun lint-layout-generic-put-text-property-invisible-single-comment
   (&optional value)
   "Make all single comment lines invisible."
-  (let ((type (lint-layout-code-type-p)))
+  (let ((type (lint--layout-code-type-p)))
     ;; java-mode, php-mode, css-mode, sql-mode
     (cond
      ((eq type 'java-mode)
@@ -2263,23 +2263,23 @@ SUBMATCH defaults to 0."
                           "@")))))
 
 (defsubst lint-layout-php-re-search-forward-doc-keyword ()
-  "Search `lint-layout-php-doc-location-regexp'."
+  "Search `lint--layout-php-doc-location-regexp'."
   (re-search-forward
-   lint-layout-php-doc-location-regexp
+   lint--layout-php-doc-location-regexp
    nil t))
 
 (defsubst lint-layout-java-re-search-forward-doc-keyword ()
-  "Search `lint-layout-php-doc-location-regexp'."
+  "Search `lint--layout-php-doc-location-regexp'."
   (re-search-forward
-   lint-layout-java-doc-location-regexp
+   lint--layout-java-doc-location-regexp
    nil t))
 
 (defsubst lint-layout-generic-re-search-forward-doc-keyword ()
-  "Search `lint-layout-php-doc-location-regexp'."
+  "Search `lint--layout-php-doc-location-regexp'."
   (cond
-   ((eq 'php-mode (lint-layout-code-type-p))
+   ((eq 'php-mode (lint--layout-code-type-p))
     (lint-layout-php-re-search-forward-doc-keyword))
-   ((eq 'java-mode (lint-layout-code-type-p))
+   ((eq 'java-mode (lint--layout-code-type-p))
     (lint-layout-java-re-search-forward-doc-keyword))))
 
 (defsubst lint-layout-xml-element-beginning (tag &optional end)
@@ -2427,7 +2427,7 @@ SUBMATCH defaults to 0."
               "private, public etc. access modifiers")
              prefix))
            ((string-match
-             lint-layout-generic-access-modifier-regexp
+             lint--layout-generic-access-modifier-regexp
              str)) ;; OK, do nothing
            (t
             (lint-layout-message
@@ -2580,7 +2580,7 @@ SUBMATCH defaults to 0."
   (str line &optional prefix base-indent match-str)
   "Check STR for correct indent and report LINE as error."
   (let ((i (lint-layout-php-indent-level str))
-        (istep lint-layout-generic-indent-step))
+        (istep lint--layout-generic-indent-step))
     (when (numberp i)
       (cond
        ((and (or (null base-indent)
@@ -2657,7 +2657,7 @@ SUBMATCH defaults to 0."
 (defun lint-layout-generic-check-indent-current
   (indent &optional prefix)
   "Check current point for INDENT. Optional message PREFIX."
-  (let* ((istep lint-layout-generic-indent-step)
+  (let* ((istep lint--layout-generic-indent-step)
          (i (current-column))
          (even-p (zerop (mod i istep)))
          ;; (eight-p
@@ -2764,7 +2764,7 @@ Use BASE-INDENT, optional message PREFIX."
              ;; ignore lines: while, for, if ...
              (not
               (looking-at
-               (concat ".*" lint-layout-generic-control-statement-regexp)))
+               (concat ".*" lint--layout-generic-control-statement-regexp)))
              (not (looking-at "[ \t]*[/#*]")) ; comment
              ;;   variable =
              ;;      value;
@@ -2797,20 +2797,20 @@ Use BASE-INDENT, optional message PREFIX."
   "Check that code is indented after each brace.
 If point is at `point-min' then check also ending brace placement.
 Optional message PREFIX."
-  (let ((istep lint-layout-generic-indent-step)
+  (let ((istep lint--layout-generic-indent-step)
         (control-statement-re
          `,(concat
             "^[ \t}]*"
-            lint-layout-generic-control-statement-regexp))
+            lint--layout-generic-control-statement-regexp))
         ;; public static void main(String[] args)
         (function-statement-re
          `,(concat
             "^[ \t]*"
             "\\("
-                lint-layout-generic-vartype-modifier-regexp
+                lint--layout-generic-vartype-modifier-regexp
                 "\\|\\<void\\>"
                 "\\|\\<static\\>"
-                "\\|" lint-layout-generic-access-modifier-regexp
+                "\\|" lint--layout-generic-access-modifier-regexp
             "\\)"))
         level
         expect-indent
@@ -2920,13 +2920,13 @@ KEYWORD
 (defsubst lint-layout-generic-check-statement-continue-p (string)
   "Check STRING against statement continue keywords."
   (string-match
-   lint-layout-generic-control-statement-continue-regexp
+   lint--layout-generic-control-statement-continue-regexp
    string))
 
 (defsubst lint-layout-generic-statement-forward ()
   "Search control statement forward."
   (re-search-forward
-   lint-layout-generic-statement-regexp-line
+   lint--layout-generic-statement-regexp-line
    nil
    t))
 
@@ -2948,7 +2948,7 @@ if ( check );
 (defsubst lint-layout-generic-brace-statement-forward (&optional max)
   "Search statement with brace forward."
   (re-search-forward
-   lint-layout-generic-statement-regexp-brace
+   lint--layout-generic-statement-regexp-brace
    max
    t))
 
@@ -2964,8 +2964,8 @@ if ( check );
          prefix)))))
 
 (defun lint-layout-generic-check-statement-start (&optional prefix)
-  "Check lines beyond `lint-layout-generic-line-length-max'."
-  (let* ((col lint-layout-generic-line-length-max)
+  "Check lines beyond `lint--layout-generic-line-length-max'."
+  (let* ((col lint--layout-generic-line-length-max)
          (php-p (lint-layout-code-php-p))
          keyword
          fullstr
@@ -3019,7 +3019,7 @@ if ( check );
         (lint-layout-php-check-keywords-case keyword fullstr prefix))
       ;; Brace placement check
       (cond
-       ((eq lint-layout-generic-brace-style 'brace-end)
+       ((eq lint--layout-generic-brace-style 'brace-end)
 	(unless brace-end-p
 	  (lint-layout-message
 	   (format "[code] brace { not at previous line of keyword '%s'"
@@ -3031,7 +3031,7 @@ if ( check );
 	   (format "[code] no space before starting brace { near keyword '%s'"
 		   (or keyword ""))
 	   prefix)))
-       ((and (not (eq lint-layout-generic-brace-style 'brace-end))
+       ((and (not (eq lint--layout-generic-brace-style 'brace-end))
              (not (eq statement-start-col brace-start-col)))
         (lint-layout-message
          (format `,(concat "[code] brace { not directly under keyword '%s', "
@@ -3042,14 +3042,14 @@ if ( check );
 
 (defun lint-layout-generic-check-statement-start-brace-end
   (&optional prefix)
-  "Set `lint-layout-generic-brace-style'."
-  (let ((lint-layout-generic-brace-style 'brace-end))
+  "Set `lint--layout-generic-brace-style'."
+  (let ((lint--layout-generic-brace-style 'brace-end))
     (lint-layout-generic-check-statement-start prefix)))
 
 (defun lint-layout-generic-check-statement-start-lined-up
   (&optional prefix)
-  "Set `lint-layout-generic-brace-style'."
-  (let ((lint-layout-generic-brace-style))
+  "Set `lint--layout-generic-brace-style'."
+  (let ((lint--layout-generic-brace-style))
     (lint-layout-generic-check-statement-start prefix)))
 
 ;;; ........................................................ &conflict ...
@@ -3062,7 +3062,7 @@ if ( check );
 ;;     exit(!!nerr);
 ;; >>>>>>> 1.6
 ;;
-(defconst lint-layout-vc-conflict-marker-regexp
+(defconst lint--layout-vc-conflict-marker-regexp
   "^\\(<<<<<<<\\|>>>>>>>\\) [a-zA-Z0-9]\\|^=======$"
   "Version control conflict marker.")
 
@@ -3070,7 +3070,7 @@ if ( check );
   "Check version control conflict markers marker."
   (save-excursion
     (while (re-search-forward
-            lint-layout-vc-conflict-marker-regexp
+            lint--layout-vc-conflict-marker-regexp
             nil t)
       (lint-layout-message
        (format "[misc] possible unresolved conflict: %s"
@@ -3114,13 +3114,13 @@ if ( check );
 
 (defun lint-layout-php-check-keywords-main (&optional prefix)
   "Check correct lowercase spelling.
-See `lint-layout-php-function-call-keywords-generic'
-and `lint-layout-php-function-call-keywords-no-paren'."
+See `lint--layout-php-function-call-keywords-generic'
+and `lint--layout-php-function-call-keywords-no-paren'."
   (let* ((re-paren
-          (concat lint-layout-php-function-call-keywords-generic
+          (concat lint--layout-php-function-call-keywords-generic
                   "\\([ \t]*\\)("))
          (re-noparen
-          (concat lint-layout-php-function-call-keywords-no-paren
+          (concat lint--layout-php-function-call-keywords-no-paren
                   "\\([ \t]*\\)[('\"$]"))
          (re (concat re-paren "\\|" re-noparen))
          keyword
@@ -3151,7 +3151,7 @@ and `lint-layout-php-function-call-keywords-no-paren'."
 
 ;;; ........................................................ &spelling ...
 
-(defconst lint-layout-word-search-regexp
+(defconst lint--layout-word-search-regexp
   "Licence\\|Lisen[cs]e\
 \\|This file is part of <program>\
 \\|<program> is free software\
@@ -3162,7 +3162,7 @@ and `lint-layout-php-function-call-keywords-no-paren'."
   "Check words."
   (let (str)
     (while (re-search-forward
-            lint-layout-word-search-regexp
+            lint--layout-word-search-regexp
             nil
             t)
       (setq str (match-string 0))
@@ -3185,7 +3185,7 @@ and `lint-layout-php-function-call-keywords-no-paren'."
 
 ;;; ............................................................. &eof ...
 
-(defvar lint-layout-eof-regexp
+(defvar lint--layout-eof-regexp
   (regexp-quote "End of file")
   "End of file marker text.")
 
@@ -3195,16 +3195,16 @@ and `lint-layout-php-function-call-keywords-no-paren'."
     (goto-char (point-max))
     (lint-layout-with-case
       (unless (re-search-backward
-               lint-layout-eof-regexp
+               lint--layout-eof-regexp
                (min (point-min) (* 4 80))
                t)
         (lint-layout-message
          (format "[misc] no exact EOF marker found: '%s'"
-                 lint-layout-eof-regexp)
+                 lint--layout-eof-regexp)
          prefix)))))
 
 (defun lint-layout-check-eof-marker-interactive ()
-  "Near the last line of file find text `lint-layout-eof-regexp'."
+  "Near the last line of file find text `lint--layout-eof-regexp'."
   (interactive)
   (lint-layout-check-eof-marker))
 
@@ -3289,7 +3289,7 @@ and `lint-layout-php-function-call-keywords-no-paren'."
 (defun lint-layout-check-whitespace (&optional prefix)
   "Check whitespace problems: eol, bob, eob from current point."
   (lint-layout-generic-run-list
-   lint-layout-check-whitespace-functions prefix))
+   lint--layout-check-whitespace-functions prefix))
 
 (defun lint-layout-check-whitespace-buffer (&optional prefix)
   "Check from `point-min' with `lint-layout-check-whitespace'."
@@ -3327,8 +3327,8 @@ and `lint-layout-php-function-call-keywords-no-paren'."
 ;;; .......................................................... &length ...
 
 (defun lint-layout-check-line-length (&optional prefix)
-  "Check lines beyond `lint-layout-generic-line-length-max'."
-  (let* ((col lint-layout-generic-line-length-max)
+  "Check lines beyond `lint--layout-generic-line-length-max'."
+  (let* ((col lint--layout-generic-line-length-max)
          (re (concat "^"
                      (make-string col ?\.)
                      "\\(.+\\)")))
@@ -3508,10 +3508,10 @@ Optional PREFIX is used add filename to the beginning of line."
 
 ;;; ....................................................... &changelog ...
 
-(defconst lint-layout-changelog-item-regexp
+(defconst lint--layout-changelog-item-regexp
   "^[ \t][*]\\( *\\)\\([^ :()\t\r\n]+\\)")
 
-(defconst lint-layout-changelog-wordlist-regexp
+(defconst lint--layout-changelog-wordlist-regexp
   "\\(\
 \\<[a-z]+ed\\>\
 \\|<[a-z]+ing\\>\
@@ -3525,7 +3525,7 @@ Optional PREFIX is used add filename to the beginning of line."
 
 (defun lint-layout-changelog-wording (&optional prefix)
   "Search for words in non-active tense."
-  (while (re-search-forward lint-layout-changelog-wordlist-regexp nil t)
+  (while (re-search-forward lint--layout-changelog-wordlist-regexp nil t)
     (lint-layout-message
      (format "[changelog] word possibly in wrong tense '%s'"
              (match-string 0))
@@ -3566,7 +3566,7 @@ Optional PREFIX is used add filename to the beginning of line."
   (let (indent
         word
         file)
-    (while (re-search-forward lint-layout-changelog-item-regexp nil t)
+    (while (re-search-forward lint--layout-changelog-item-regexp nil t)
       (setq indent (match-string 1)
             file   (match-string 2)
             word   (or (and (looking-at
@@ -3637,7 +3637,7 @@ Optional PREFIX is used add filename to the beginning of line."
                `,(concat
                   "/"                   ; comment start
                   "\\|"
-                  lint-layout-generic-control-statement-regexp)))
+                  lint--layout-generic-control-statement-regexp)))
          (list point 'beg))))
 
 (defun lint-layout-generic-brace-forward-2 ()
@@ -3735,7 +3735,7 @@ Optional PREFIX is used add filename to the beginning of line."
 
 ;; sql.el::sql-mode-ansi-font-lock-keywords
 
-(defconst lint-layout-sql-keywords-reserved
+(defconst lint--layout-sql-keywords-reserved
   (concat
    "\\<"
    (regexp-opt
@@ -3754,7 +3754,7 @@ Optional PREFIX is used add filename to the beginning of line."
       t) "\\>")
   "SQL standard reserved keywords.")
 
-(defconst lint-layout-sql-keywords-function-list
+(defconst lint--layout-sql-keywords-function-list
   '(
     "avg"
     "bit_length"
@@ -3794,15 +3794,15 @@ Optional PREFIX is used add filename to the beginning of line."
     )
   "SQL standard reserved keywords for functions, list.")
 
-(defconst lint-layout-sql-keywords-function-regexp
+(defconst lint--layout-sql-keywords-function-regexp
   (concat
    "\\<\\(?:"
    (regexp-opt
-    lint-layout-sql-keywords-function-list)
+    lint--layout-sql-keywords-function-list)
    "\\)\\>")
   "SQL standard reserved keywords for functions, OR regexp.")
 
-(defconst lint-layout-sql-keywords-column-mysql
+(defconst lint--layout-sql-keywords-column-mysql
   (concat
    "\\<"
    (regexp-opt
@@ -3814,7 +3814,7 @@ Optional PREFIX is used add filename to the beginning of line."
       ) t) "\\>")
   "MySQL column keywords.")
 
-(defconst lint-layout-sql-keywords-create-table-other
+(defconst lint--layout-sql-keywords-create-table-other
   (concat
    "\\<"
    (regexp-opt
@@ -3824,7 +3824,7 @@ Optional PREFIX is used add filename to the beginning of line."
       ) t) "\\>")
   "Non-standard SQL keywords in create table.")
 
-(defconst lint-layout-sql-keywords-sql92-for-column-word-re
+(defconst lint--layout-sql-keywords-sql92-for-column-word-re
   '("not[ \t\r\n]+null"
     "primary[ \t\r\n]+key"
     "references"
@@ -3834,18 +3834,18 @@ Optional PREFIX is used add filename to the beginning of line."
   "SQL-92 column definition keywords in CREATE TABLE statement.
 List of word regexps.")
 
-(defconst lint-layout-sql-keywords-sql92-for-column
+(defconst lint--layout-sql-keywords-sql92-for-column
   (concat
    "\\<\\(?:"
    (mapconcat
     'concat
-    lint-layout-sql-keywords-sql92-for-column-word-re
+    lint--layout-sql-keywords-sql92-for-column-word-re
     "\\|")
    "\\)\\>")
   "SQL-92 column definition keywords in CREATE TABLE statement.
 One ORing regexp.")
 
-(defconst lint-layout-sql-keywords-from-statement
+(defconst lint--layout-sql-keywords-from-statement
   (list
    (concat
     "\\(?:\\<natural[ \t\r\n]+\\)?"     ;optional "natural"
@@ -3916,17 +3916,17 @@ One ORing regexp.")
     )
   "List of regexp keywords appearing in FROM part of SELECT.")
 
-(defconst lint-layout-sql-keywords-from-statement-regexp
+(defconst lint--layout-sql-keywords-from-statement-regexp
   (concat
    "\\<\\(?:"
    (mapconcat
     'concat
-    lint-layout-sql-keywords-from-statement
+    lint--layout-sql-keywords-from-statement
     "\\|")
    "\\)\\>")
-  "OR regexp of `lint-layout-sql-keywords-from-statement'.")
+  "OR regexp of `lint--layout-sql-keywords-from-statement'.")
 
-(defconst lint-layout-sql-keywords-sql92-data-types
+(defconst lint--layout-sql-keywords-sql92-data-types
   (concat
    "\\<\\(?:"
    (regexp-opt
@@ -3970,7 +3970,7 @@ One ORing regexp.")
 ;; SMALLINT is virtually same as INTEGER, but maximum precision can be
 ;; smaller than that for INTEGER.
 
-(defconst lint-layout-sql-keywords-sql99-data-types
+(defconst lint--layout-sql-keywords-sql99-data-types
   (concat
    "\\<\\(?:"
    (regexp-opt
@@ -3990,16 +3990,16 @@ One ORing regexp.")
    "\\)\\>")
   "SQL reserved keywords.")
 
-(defconst lint-layout-sql-keywords-sql-types
+(defconst lint--layout-sql-keywords-sql-types
   (concat
    "\\(?:"
-   lint-layout-sql-keywords-sql92-data-types
+   lint--layout-sql-keywords-sql92-data-types
    "\\|"
-   lint-layout-sql-keywords-sql99-data-types
+   lint--layout-sql-keywords-sql99-data-types
    "\\)")
   "SQL standard reserved keywords for data types.")
 
-(defconst lint-layout-sql-keywords-sql-type-abbreviations
+(defconst lint--layout-sql-keywords-sql-type-abbreviations
   (concat
    "\\<\\(?:"
    (regexp-opt
@@ -4134,18 +4134,18 @@ col
       indent)
      prefix
      (+ (or line 0) (lint-layout-current-line-number))))
-   ((not (zerop (% indent lint-layout-generic-indent-step)))
+   ((not (zerop (% indent lint--layout-generic-indent-step)))
     (lint-layout-message
      (format
       "[sql] possibly incorrect at col %d where multiple of %d expected"
-      indent lint-layout-generic-indent-step)
+      indent lint--layout-generic-indent-step)
      prefix
      (+ (or line 0) (lint-layout-current-line-number))))))
 
 (defun lint-layout-sql-check-element-indentation (&optional prefix line table)
   "Check left margin indentation of every line from current point.
 LINE is added to current line number."
-  (let ((step  lint-layout-generic-indent-step)
+  (let ((step  lint--layout-generic-indent-step)
         indent)
     (save-excursion
       (lint-layout-bol)
@@ -4428,8 +4428,8 @@ The submatches are as follows. The point is at '!':
   "Check SELECT ... FROM <from part> for known keywords."
   (lint-layout-with-case
     (dolist (re (list
-                 lint-layout-sql-keywords-from-statement-regexp
-                 lint-layout-sql-keywords-function-regexp))
+                 lint--layout-sql-keywords-from-statement-regexp
+                 lint--layout-sql-keywords-function-regexp))
       (when (stringp re)
         (let ((regexp (concat "\\(" re "\\)")))
           (while (re-search-forward regexp nil t)
@@ -4596,8 +4596,8 @@ The submatches are as follows. The point is at '!':
   "Check STRING keyword. E.g against lowercase and abbreviations."
   (lint-layout-with-case
     (dolist (re (list
-                 lint-layout-sql-keywords-sql92-for-column
-                 lint-layout-sql-keywords-sql-types))
+                 lint--layout-sql-keywords-sql92-for-column
+                 lint--layout-sql-keywords-sql-types))
       (let ((regexp (concat "\\(" re "\\)")))
         (when (string-match regexp string)
           (lint-layout-sql-create-table-error-data-type-lower
@@ -4606,7 +4606,7 @@ The submatches are as follows. The point is at '!':
            (or line
                (lint-layout-current-line-number))))
         (when (string-match
-               lint-layout-sql-keywords-sql-type-abbreviations
+               lint--layout-sql-keywords-sql-type-abbreviations
                string)
           (lint-layout-sql-create-table-error-data-type-abbrev
            (match-string 0 string)
@@ -4645,7 +4645,7 @@ The submatches are as follows. The point is at '!':
   (let ((clean
          (replace-regexp-in-string
           ;; Remove known keywords
-          lint-layout-sql-keywords-sql92-for-column
+          lint--layout-sql-keywords-sql92-for-column
           ""
           (lint-layout-sql-clean-comments-string string))))
     (dolist (word (split-string clean))
@@ -4760,18 +4760,18 @@ wrong position. Match first non-LF up till last LF"
            name string line prefix))
          ((string-match
            (concat "^[ \t\r\n]*"
-                   lint-layout-sql-keywords-sql92-for-column)
+                   lint--layout-sql-keywords-sql92-for-column)
            match)
           (lint-layout-sql-check-create-table-non-column-name
            match (match-string 0 match) line prefix)))
         (lint-layout-sql-check-create-table-table-prefix
          name table line prefix)
-        (lint-layout-debug-message
+        (lint--layout-debug-message
          "debug layout: CREATE A col part %d <<%s>>" line string)
         (setq line
               (lint-layout-sql-create-table-adjust-line-maybe
                string line))
-        (lint-layout-debug-message
+        (lint--layout-debug-message
          "debug layout: CREATE col part %d [[%s]]" line string)
         (lint-layout-sql-check-mixed-case
          name
@@ -4790,7 +4790,7 @@ wrong position. Match first non-LF up till last LF"
             (lint-layout-sql-check-create-table-col-part-lower
              fulltype prefix line))
           (unless (string-match
-                   lint-layout-sql-keywords-sql-types
+                   lint--layout-sql-keywords-sql-types
                    type)
             (lint-layout-message
              (format
@@ -4863,7 +4863,7 @@ An example:
         (setq curline (if line
                           (+ line (1- (lint-layout-current-line-number)))
                         (lint-layout-current-line-number)))
-        (lint-layout-debug-message
+        (lint--layout-debug-message
          "debug layout: multiple-col-defs %d '%s'" curline match)
         ;; Multiple, definitions, in line
         ;; FIXME: Does not handle comments
@@ -4887,7 +4887,7 @@ CREATE TABLE table
           line up"
   (let ((re (concat
              "[ \t\r\n]\\("
-             lint-layout-sql-keywords-sql-types
+             lint--layout-sql-keywords-sql-types
              "\\)[ ,(\t\r\n]"
              ))
         orig-col
@@ -4926,7 +4926,7 @@ CREATE TABLE table
                  lint-layout-sql-check-statement-create-tables-no-semicolon
                  lint-layout-sql-check-create-table-multiple-col-defs))
         (lint-layout-min)
-        (lint-layout-debug-message
+        (lint--layout-debug-message
          "debug layout: %s prefix %s line %s" function prefix (or line 0))
         (funcall function prefix line table)))))
 
@@ -4988,7 +4988,7 @@ The submatches are as follows: The point is at '!':
                       (goto-char point)
                       (lint-layout-current-line-number)))
       (when (string-match
-             lint-layout-sql-keywords-create-table-other
+             lint--layout-sql-keywords-create-table-other
              match)
         (lint-layout-sql-create-table-error-unknown-keyword
          (match-string 1 match)
@@ -5054,7 +5054,7 @@ The submatches are as follows: The point is at '!':
 (defun lint-layout-sql-check-batch-all (&optional prefix)
   "Check SQL"
   (lint-layout-generic-run-list
-   lint-layout-check-sql-functions prefix))
+   lint--layout-check-sql-functions prefix))
 
 (defun lint-layout-sql-buffer (&optional prefix)
   "Check from `point-min' with `lint-layout-sql-check-batch-all'."
@@ -5082,7 +5082,7 @@ The submatches are as follows: The point is at '!':
   (let ((statement-p (when (looking-at "[ \t]*[a-z]")
                        (skip-chars-forward " \t")
                        t))
-        (step lint-layout-generic-indent-step)
+        (step lint--layout-generic-indent-step)
         col)
     (when (and statement-p
                (setq col (current-column))
@@ -5155,7 +5155,7 @@ The submatches are as follows: The point is at '!':
         (goto-char val-beg)
         (setq col (current-column))
         (goto-char point)
-        (lint-layout-debug-message
+        (lint--layout-debug-message
          "%s" match)
         (cond
          ((not orig-col)
@@ -5190,11 +5190,11 @@ The submatches are as follows: The point is at '!':
                         "sans-serif or serif listed: %s")
               str)
              prefix))
-          (unless (string-match lint-layout-css-web-safe-font-regexp str)
+          (unless (string-match lint--layout-css-web-safe-font-regexp str)
             (let ((fonts (mapconcat
                           (lambda (x)
                             (capitalize x))
-                          lint-layout-css-web-safe-font-list
+                          lint--layout-css-web-safe-font-list
                           ",")))
               (lint-layout-message
                (format
@@ -5221,7 +5221,7 @@ The submatches are as follows: The point is at '!':
       (setq beg (point)))
   (let ((end (lint-layout-css-body-end)))
     (when (and beg end)
-      (lint-layout-debug-message
+      (lint--layout-debug-message
        "lint-layout-css-body: check region %d %d" beg end)
       (lint-layout-css-attribute-body-region beg end prefix))))
 
@@ -5265,7 +5265,7 @@ The submatches are as follows: The point is at '!':
       (when (eq col 0)
         (lint-layout-message
          (format "[css] not indented (by %d)"
-                 lint-layout-generic-indent-step)
+                 lint--layout-generic-indent-step)
          prefix))
       ;;   background-color: #F8F8F8; border: 1px;
       (lint-layout-php-check-multiple-statements
@@ -5299,21 +5299,21 @@ The submatches are as follows: The point is at '!':
                    (lint-layout-current-line-string))
            prefix))))))
 
-(defvar lint-layout-css-check-regexp-occur-variable
-  '(lint-layout-generic-check-regexp-occur-line-up-style-list)
+(defvar lint--layout-css-check-regexp-occur-variable
+  '(lint--layout-generic-check-regexp-occur-line-up-style-list)
   "*List of occur variable names.")
 
 (defun lint-layout-css-check-regexp-occur-main (&optional prefix)
   "Run all occur checks."
   (lint-layout-generic-run-occur-variable-list
-   lint-layout-css-check-regexp-occur-variable prefix))
+   lint--layout-css-check-regexp-occur-variable prefix))
 
-;; lint-layout-php-check-regexp-occur-variable prefix))
+;; lint--layout-php-check-regexp-occur-variable prefix))
 
 (defun lint-layout-css-check-batch-all (&optional prefix)
   "Check Css"
   (lint-layout-generic-run-list
-   lint-layout-check-css-functions prefix))
+   lint--layout-check-css-functions prefix))
 
 (defun lint-layout-css-check-buffer (&optional prefix)
   "Check from `point-min'."
@@ -5333,7 +5333,7 @@ The submatches are as follows: The point is at '!':
 
 (defun lint-layout-php-test-line-up-p (&optional col)
   "Check current `current-column' or COL for '=' and next line."
-  (let ((treshold lint-layout-generic-assignment-line-up-treshold)
+  (let ((treshold lint--layout-generic-assignment-line-up-treshold)
         (ret t)
         next)
     (or col
@@ -5498,17 +5498,17 @@ DATA is the full function content."
         (setq str  (match-string 0)
               word (match-string 1))
         (unless (lint-layout-with-case
-                  (string-match lint-layout-php-data-type-regexp
+                  (string-match lint--layout-php-data-type-regexp
                                 word))
           (let* ((case-p (string-match
-                          lint-layout-php-data-type-regexp word))
+                          lint--layout-php-data-type-regexp word))
                  (short-p (string-match
-                           lint-layout-php-data-type-short-regexp word))
+                           lint--layout-php-data-type-short-regexp word))
                  (short-case-p
                   (and short-p
                        (not (lint-layout-with-case
                               (string-match
-                               lint-layout-php-data-type-short-regexp
+                               lint--layout-php-data-type-short-regexp
                                word)))))
                  (match (and case-p
                              (match-string 1 word))))
@@ -5636,7 +5636,7 @@ DATA is the full function content."
              (not (memq 'class type))
              (not (looking-at
                    (concat "^.*"
-                           lint-layout-generic-doc-1st-line-ignore-regexp))))
+                           lint--layout-generic-doc-1st-line-ignore-regexp))))
     (when (looking-at
            "^[ \t]+[*][ \t]*\\([^ \t\r\n]+\\)")
       (let ((word (match-string 1)))
@@ -5661,7 +5661,7 @@ DATA is the full function content."
 	       (not
                 (looking-at
                  (concat "^.*"
-                         lint-layout-generic-doc-1st-line-ignore-regexp)))
+                         lint--layout-generic-doc-1st-line-ignore-regexp)))
                ;; Search at least two words.
                (not (looking-at
                      "^[ \t]+[*][ \t]*[^ \t\r\n]+[ \t][^ \t\r\n]+")))
@@ -5852,9 +5852,9 @@ Write error at LINE with PREFIX."
 (defun lint-layout-generic-doc-examine-typeof (str)
   "Examine what type of docstring."
   (cond
-   ((eq 'php-mode (lint-layout-code-type-p))
+   ((eq 'php-mode (lint--layout-code-type-p))
     (lint-layout-php-doc-examine-typeof str))
-   ((eq 'java-mode (lint-layout-code-type-p))
+   ((eq 'java-mode (lint--layout-code-type-p))
     (lint-layout-java-doc-examine-typeof str))))
 
 (defun lint-layout-generic-function-end (&optional column indent)
@@ -5902,13 +5902,13 @@ Return:
 Point must be at the beginning of function definition line."
   (save-excursion
     (lint-layout-bol)
-    (let* ((type (lint-layout-code-type-p))
+    (let* ((type (lint--layout-code-type-p))
            (re-beg
             (cond
              ((eq type 'php-mode)
-              lint-layout-php-function-regexp)
+              lint--layout-php-function-regexp)
              ((eq type 'java-mode)
-              lint-layout-java-function-regexp)))
+              lint--layout-java-function-regexp)))
            re-end
            indent
            col
@@ -6119,14 +6119,14 @@ Use optional PREFIX for messages.
 
 ;;; ............................................................ &mode ...
 
-(defvar my-lint-output-mode-hook nil
-  "*Hook run when `my-lint-output-mode' is called.")
+(defvar lint-layout-output-mode-hook nil
+  "*Hook run when `lint-layout-output-mode' is called.")
 
-(defvar my-lint-output-mode-map (make-sparse-keymap)
+(defvar lint-layout-output-mode-map (make-sparse-keymap)
   "*Keymap")
 
 ;; font-lock-constant-face
-(defvar my-lint-output-mode-font-lock-keywords
+(defvar lint--layout-output-mode-font-lock-keywords
   (list
    (list
     (list
@@ -6146,31 +6146,31 @@ Use optional PREFIX for messages.
     ))
   "*Fontification.")
 
-(defun my-lint-output-mode-error-at-point-p ()
+(defun lint-layout-output-mode-error-at-point-p ()
   "Check current line for errors."
   (if (looking-at "^\\([^:]+\\):+\\([0-9]+\\)")
       (list (match-string 1)
             (string-to-number (match-string 2)))))
 
-(defun my-lint-output-mode-error-info ()
+(defun lint-layout-output-mode-error-info ()
   "Return filename and line at point."
   (save-excursion
     (lint-layout-bol)
-    (my-lint-output-mode-error-at-point-p)))
+    (lint-layout-output-mode-error-at-point-p)))
 
-(defsubst my-lint-output-mode-find-buffer (name)
+(defsubst lint-layout-output-mode-find-buffer (name)
   "Return bufer pointer for buffer NAME."
   (or (get-buffer name)
       (find-buffer-visiting name)))
 
-(defun my-lint-output-mode-goto-line-key ()
+(defun lint-layout-output-mode-goto-line-key ()
   "Go to file or dir at point."
   (interactive)
   (cl-multiple-value-bind (file line)
-      (my-lint-output-mode-error-info)
+      (lint-layout-output-mode-error-info)
     (if (not file)
         (message "no file information found at current line.")
-      (let ((buffer (my-lint-output-mode-find-buffer file)))
+      (let ((buffer (lint-layout-output-mode-find-buffer file)))
         (if (not buffer)
             (message "can't find buffer for '%s'" file)
           (pop-to-buffer buffer)
@@ -6178,7 +6178,7 @@ Use optional PREFIX for messages.
           (if line
               (lint-layout-goto-line line)))))))
 
-(defun my-lint-output-mode-goto-line-mouse (event)
+(defun lint-layout-output-mode-goto-line-mouse (event)
   (interactive "e")
   (let* ((epoint (event-start event))
          (win    (or (and epoint
@@ -6189,35 +6189,35 @@ Use optional PREFIX for messages.
                      (point))))
     (select-window win)
     (goto-char point)
-    (my-lint-output-mode-goto-line-key)))
+    (lint-layout-output-mode-goto-line-key)))
 
-(defun my-lint-output-mode-map-define ()
+(defun lint-layout-output-mode-map-define ()
   "Define keymap."
-  (define-key my-lint-output-mode-map
+  (define-key lint-layout-output-mode-map
     "\C-c\C-c"
-    'my-lint-output-mode-goto-line-key)
-  (define-key my-lint-output-mode-map
-    "\C-m" 'my-lint-output-mode-goto-line-key)
-  (define-key my-lint-output-mode-map
-    [(mouse-2)]'my-lint-output-mode-goto-line-mouse)
+    'lint-layout-output-mode-goto-line-key)
+  (define-key lint-layout-output-mode-map
+    "\C-m" 'lint-layout-output-mode-goto-line-key)
+  (define-key lint-layout-output-mode-map
+    [(mouse-2)]'lint-layout-output-mode-goto-line-mouse)
   ;; Set up the menu-bar
-  (define-key my-lint-output-mode-map [menu-bar](make-sparse-keymap))
-  (define-key my-lint-output-mode-map [menu-bar lint-layout]
+  (define-key lint-layout-output-mode-map [menu-bar](make-sparse-keymap))
+  (define-key lint-layout-output-mode-map [menu-bar lint-layout]
     (cons "Lint" (make-sparse-keymap "Lint")))
   ;; '("----" . nil)
   ;; Bottom up order
-  (define-key my-lint-output-mode-map
-    [menu-bar lint-layout my-lint-output-mode-goto-line-mouse]
-    '("Goto error at point" . my-lint-output-mode-goto-line-mouse)))
+  (define-key lint-layout-output-mode-map
+    [menu-bar lint-layout lint-layout-output-mode-goto-line-mouse]
+    '("Goto error at point" . lint-layout-output-mode-goto-line-mouse)))
 
 ;;;###autoload
-(define-derived-mode my-lint-output-mode fundamental-mode "Lint"
+(define-derived-mode lint-layout-output-mode fundamental-mode "Lint"
   "Major mode for Lint output.
-Runs `my-lint-output-mode-hook'."
+Runs `lint-layout-output-mode-hook'."
   ;; (setq buffer-read-only t)
-  (my-lint-output-mode-map-define)
+  (lint-layout-output-mode-map-define)
   (setq font-lock-defaults
-        my-lint-output-mode-font-lock-keywords)
+        lint--layout-output-mode-font-lock-keywords)
   (if (or font-lock-mode
           global-font-lock-mode)
       (font-lock-fontify-buffer)))
@@ -6225,36 +6225,36 @@ Runs `my-lint-output-mode-hook'."
 ;;; ................................................ &java-interactive ...
 
 (defun lint-layout-java-check-all-tests (&optional point prefix)
-  "Run `lint-layout-check-java-generic-functions' at POINT using PREFIX."
+  "Run `lint--layout-check-java-generic-functions' at POINT using PREFIX."
   (lint-layout-generic-run-list
-   lint-layout-check-java-generic-functions prefix))
+   lint--layout-check-java-generic-functions prefix))
 
 (defun lint-layout-java-check-code-run (&optional point prefix)
   (lint-layout-generic-run-list
    (append
-    lint-layout-check-java-code-functions
-    lint-layout-check-generic-functions)
+    lint--layout-check-java-code-functions
+    lint--layout-check-generic-functions)
    prefix
    point))
 
 (defun lint-layout-java-check-code-interactive (&optional point prefix)
   "Run code checks from current POINT forward.
 This includes:
-  `lint-layout-check-java-code-functions'
-  `lint-layout-check-generic-functions'"
+  `lint--layout-check-java-code-functions'
+  `lint--layout-check-generic-functions'"
   (interactive)
   (my-lint-with-result-buffer 'display 'erase
     (lint-layout-java-check-code-run) point prefix))
 
 (defun lint-layout-java-check-javadoc-run (&optional point prefix)
   (lint-layout-generic-run-list
-   lint-layout-check-java-doc-functions
+   lint--layout-check-java-doc-functions
    prefix
    point))
 
 (defun lint-layout-java-check-javadoc-interactive
   (&optional point prefix erase)
-  "Run `lint-layout-check-java-doc-functions' from current POINT forward."
+  "Run `lint--layout-check-java-doc-functions' from current POINT forward."
   (interactive)
   (save-excursion
     (if point
@@ -6274,36 +6274,36 @@ This includes:
 ;;; ................................................. &php-interactive ...
 
 (defun lint-layout-php-check-all-tests (&optional prefix)
-  "Run `lint-layout-check-php-generic-functions'."
+  "Run `lint--layout-check-php-generic-functions'."
   (lint-layout-generic-run-list
-   lint-layout-check-php-generic-functions prefix))
+   lint--layout-check-php-generic-functions prefix))
 
 (defun lint-layout-php-check-code-run (&optional point prefix)
   (lint-layout-generic-run-list
    (append
-    lint-layout-check-php-code-functions
-    lint-layout-check-generic-functions)
+    lint--layout-check-php-code-functions
+    lint--layout-check-generic-functions)
    prefix
    point))
 
 (defun lint-layout-php-check-code-interactive (&optional point prefix)
   "Run code checks from current POINT forward.
 This includes:
-  `lint-layout-check-php-code-functions'
-  `lint-layout-check-generic-functions'"
+  `lint--layout-check-php-code-functions'
+  `lint--layout-check-generic-functions'"
   (interactive)
   (my-lint-with-result-buffer 'display 'erase
     (lint-layout-php-check-code-run) point prefix))
 
 (defun lint-layout-php-check-phpdoc-run (&optional point prefix)
   (lint-layout-generic-run-list
-   lint-layout-check-php-doc-functions
+   lint--layout-check-php-doc-functions
    prefix
    point))
 
 (defun lint-layout-php-check-phpdoc-interactive
   (&optional point prefix erase)
-  "Run `lint-layout-check-php-doc-functions' from current POINT forward."
+  "Run `lint--layout-check-php-doc-functions' from current POINT forward."
   (interactive)
   (my-lint-with-result-buffer 'display 'erase
     (lint-layout-php-check-phpdoc-run point prefix)))
@@ -6328,17 +6328,17 @@ According to file type: *.php, *.css, *.php."
 	type)
     (or prefix
         (setq prefix name))
-    (setq type (lint-layout-code-type-set-local-variable))
-    (lint-layout-debug-message
+    (setq type (lint--layout-code-type-set-local-variable))
+    (lint--layout-debug-message
      (format "lint-layout: generic type: %s name: %s" type name))
     (cond
-     ((eq 'php-mode (lint-layout-code-type-p))
+     ((eq 'php-mode (lint--layout-code-type-p))
       (lint-layout-php-check-all-interactive (point-min) prefix))
-     ((eq 'java-mode (lint-layout-code-type-p))
+     ((eq 'java-mode (lint--layout-code-type-p))
       (lint-layout-java-check-all-interactive (point-min) prefix))
-     ((eq 'css-mode (lint-layout-code-type-p))
+     ((eq 'css-mode (lint--layout-code-type-p))
       (lint-layout-css-check-buffer-interactive (point-min) prefix))
-     ((eq 'sql-mode (lint-layout-code-type-p))
+     ((eq 'sql-mode (lint--layout-code-type-p))
       (lint-layout-sql-buffer-interactive (point-min) prefix))
      (t
       (if verb
@@ -6349,7 +6349,7 @@ According to file type: *.php, *.css, *.php."
   (interactive
    (list (read-file-name "File to check:")
          'verbose))
-  (lint-layout-debug-message "debug layout: Generic file: %s" file)
+  (lint--layout-debug-message "debug layout: Generic file: %s" file)
   (let (find-file-hook)
     (with-current-buffer (find-file file)
       (lint-layout-min)
@@ -6364,7 +6364,7 @@ See `lint-layout-check-generic-buffer'"
   (interactive
    (list (read-directory-name "Directory to check: ")
          'verb))
-  (lint-layout-debug-message "debug layout: Generic dir: %s" dir)
+  (lint--layout-debug-message "debug layout: Generic dir: %s" dir)
   (dolist (file (directory-files dir 'fullpath))
     (when (and (not (file-directory-p file))
                (file-exists-p file))
@@ -6376,7 +6376,7 @@ See `lint-layout-check-generic-buffer'"
   "Write results."
   (lint-layout-with-result-buffer
     (lint-layout-result-sort-lines)
-    (lint-layout-debug-message
+    (lint--layout-debug-message
      "debug layout: Batch results %s %d"
      (buffer-name)
      (point-max))
@@ -6393,7 +6393,7 @@ See `lint-layout-check-generic-buffer'"
            (not (listp function-list)))
       (setq function-list (list function-list)))
   (dolist (file list)
-    (lint-layout-debug-message
+    (lint--layout-debug-message
      "debug layout: Batch running %s %s"
      (file-exists-p file)
      file)
@@ -6402,10 +6402,10 @@ See `lint-layout-check-generic-buffer'"
       (let (find-file-hook)
         (with-temp-buffer
           (insert-file-contents file)
-          (lint-layout-code-type-set-local-variable)
-          (lint-layout-debug-message
+          (lint--layout-code-type-set-local-variable)
+          (lint--layout-debug-message
            "debug layout: type %s"
-           lint-layout-code-type)
+           lint--layout-code-type)
           (lint-layout-generic-run-list
            function-list
            file
@@ -6420,7 +6420,7 @@ See `lint-layout-check-generic-buffer'"
     (if (and function
              (not (listp function)))
         (setq function (list function)))
-    (lint-layout-debug-message
+    (lint--layout-debug-message
      "debug layout: Batch cmdline %s; files %s" function files)
     (lint-layout-check-file-list files function)))
 
