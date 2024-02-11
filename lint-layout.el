@@ -153,7 +153,7 @@
 (eval-when-compile
   (require 'cl-lib))
 
-(defconst lint-layout-version-time "2024.0210.1227"
+(defconst lint-layout-version-time "2024.0211.1448"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout-debug nil
@@ -594,6 +594,25 @@ An example:
     ;; lint-layout-check-eof-marker
     lint-layout-check-line-length)
   "*List of Java code check functions")
+
+(defvar lint--layout-check-doc-feature-list
+  '(doc-sentence-starts-with-verb-s
+    doc-sentence-starts-with-capital-letter
+    doc-sentence-ends-in-period
+    doc-content-is-not-empty
+    doc-description-has-paragraph-break
+    doc-has-empty-line-before-token)
+  "*List of documentation features to check.
+Feature 'all enables all checks.
+
+Possible symbols:
+
+    doc-sentence-starts-with-verb-s
+    doc-sentence-starts-with-capital-letter
+    doc-sentence-ends-in-period
+    doc-content-is-not-empty
+    doc-description-has-paragraph-break
+    doc-has-empty-line-before-token")
 
 (defvar lint-layout-check-php-doc-functions
   '(lint-layout-php-check-doc-missing
@@ -5351,6 +5370,11 @@ The submatches are as follows: The point is at '!':
 
 ;;; ............................................................. &doc ...
 
+(defsubst lint-layout-check-doc-feature-p (feature)
+  "Check if FEATURE is in `lint--layout-check-feature-list'."
+  (or (memq 'all lint--layout-check-doc-feature-list)
+      (memq feature lint--layout-check-doc-feature-list)))
+
 (defsubst lint-layout-php-doc-string-narrowed-current-line-number (line)
   "Return correct LINE number in narrowed doc-block."
   ;;  Because of narrowing, the first line is not 1, but 0.
@@ -5592,7 +5616,8 @@ DATA is the full function content."
   (line &optional type prefix)
   "Check that line ends to a period."
   ;;  Complete sentence ends to period.
-  (when (and (not (looking-at "^[ \t]+[*][ \t]*@")) ;; Std, not token line
+  (when (and (lint-layout-check-doc-feature-p 'doc-sentence-ends-in-period)
+	     (not (looking-at "^[ \t]+[*][ \t]*@")) ;; Std, not token line
              (not (looking-at "^[ \t]+[*].*\\.")))
     (lint-layout-message
      (format
@@ -5615,12 +5640,16 @@ DATA is the full function content."
     (when (looking-at
            "^[ \t]+[*][ \t]*\\([^ \t\r\n]+\\)")
       (let ((word (match-string 1)))
-        (unless (string-match "s$" word)
+        (when (and (lint-layout-check-doc-feature-p
+		    'doc-sentence-starts-with-verb-s)
+		   (not (string-match "s$" word)))
           (lint-layout-message
            "[doc] line does not start with a 3rd person verb ending to 's'"
            prefix
            (1+ line)))
-        (unless (lint-layout-with-case (string-match "[A-Z]" word))
+        (when (and (lint-layout-check-doc-feature-p
+		    'doc-sentence-starts-with-capital-letter)
+		   (not (lint-layout-with-case (string-match "[A-Z]" word))))
           (lint-layout-message
            (format "[doc] line does not start with a capital letter%s"
                    (if (memq 'include type)
@@ -5628,14 +5657,14 @@ DATA is the full function content."
                      ""))
            prefix
            (1+ line)))))
-    (when (and (not
+    (when (and (lint-layout-check-doc-feature-p 'doc-content-is-not-empty)
+	       (not
                 (looking-at
                  (concat "^.*"
                          lint-layout-generic-doc-1st-line-ignore-regexp)))
                ;; Search at least two words.
                (not (looking-at
                      "^[ \t]+[*][ \t]*[^ \t\r\n]+[ \t][^ \t\r\n]+")))
-
       (lint-layout-message
        (format "[doc] line does not explain code that follows%s"
                (if (memq 'include type)
@@ -5669,18 +5698,21 @@ DATA is the full function content."
  *  <empty line>
  *  Long description.
  */"
-  (lint-layout-with-case
-    (unless (looking-at "^[ \t]*[*][ \t]*$\\|^[ \t]+[*]/")
-      (lint-layout-message
-       "[doc] no paragraph break after first line short description"
-       prefix
-       (+ 2 line))))
+  (when (lint-layout-check-doc-feature-p 'doc-description-has-paragraph-break)
+    (lint-layout-with-case
+     (unless (looking-at "^[ \t]*[*][ \t]*$\\|^[ \t]+[*]/")
+       (lint-layout-message
+	"[doc] no paragraph break after first line short description"
+	prefix
+       (+ 2 line)))))
   (lint-layout-min))
 
 (defun lint-layout-php-doc-examine-content-other--empty-line-tokens
   (line &optional type prefix)
   "Check empty line before @-tokens."
-  (when (re-search-forward "^[ \t]*[*][ \t]@" nil t)
+  (when (and (lint-layout-check-doc-feature-p
+	      'doc-has-empty-line-before-token)
+	     (re-search-forward "^[ \t]*[*][ \t]@" nil t))
     (forward-line -1)
     (unless (looking-at "^[ \t]*[*][ \t]*$")
       (lint-layout-message
@@ -6427,6 +6459,9 @@ See:
   (let (list)
     (dolist (file command-line-args-left)
       (cond
+       ;; Can't read /dev/fd/NN like in Bash statement: <(...command)
+       ((string-match "/dev/fd/" file)
+	(message (format "ERROR: cannot read %s file" file)))
        ((string-match "\\.lst$" file)
 	(dolist (elt (lint-layout-check-batch-generic-command-line-list-from-file file))
 	  (push elt list)))
