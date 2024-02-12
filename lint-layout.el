@@ -152,7 +152,7 @@
 (eval-when-compile
   (require 'cl-lib))
 
-(defconst lint-layout--version-time "2024.0212.0820"
+(defconst lint-layout--version-time "2024.0212.1015"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout--debug nil
@@ -1552,10 +1552,10 @@ displayed."
      "\\(?:" lint-layout--generic-access-modifier-regexp "\\)[ \t]+"
      "[^(=\r\n]*[ \t]+[^ (=\t\r\n]*[ \t]*([^=()]+[ \t])")
      "in method definition, extra whitespace before closing paren"))
-  "Checks for method definitions.
+  "Checks for method definitions. Method definitions.
 Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
-(defconst lint-layout--java-check-method-call-occur-list
+(defconst lint-layout--java-check-regexp-occur-method-call-list
   (list
    ;; funcall(...arg )
    '("\\<[_a-zA-Z][._a-zA-Z0-9]+([^)\r\n]*[ \t]+)[^{\r\n]*$"
@@ -1598,7 +1598,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
   "Checks for method calls.
 Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
-(defconst lint-layout--java-check-regexp-occur-list
+(defconst lint-layout--java-check-regexp-occur-keywords-list
   (list
    '("}while\\>"
      "in statement, no space after closing brace near keyword WHILE")
@@ -1607,8 +1607,13 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
      "in statement, no space before starting brace in keyword")
 
    '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)("
-     "in statement, no space between keyword and starting paren")
+     "in statement, no space between keyword and starting paren"))
+  "Generic checks for Java. Keywords while, do, if, else...
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
+See `lint-layout-generic-run-occur-list'.")
 
+(defconst lint-layout--java-check-regexp-occur-classdef-list
+  (list
    '("^[ \t]+class[ \t]+[^ \t\r\n]+[ \t\r\n]*{"
      "in classdef, keyword not at beginning of line")
 
@@ -1625,8 +1630,13 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
      (lambda ()
        (let ((identifier (match-string 1))
              case-fold-search)
-         (string-match "^[a-z]" identifier))))
+         (string-match "^[a-z]" identifier)))))
+  "Generic checks for Java. Class definitions.
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
+See `lint-layout-generic-run-occur-list'.")
 
+(defconst lint-layout--java-check-regexp-occur-variables-list
+  (list
    ;;  int var; String j;
    (list
     (concat
@@ -1657,8 +1667,13 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
      "^[ \t]+"
      lint-layout--generic-vartype-modifier-regexp
      "[ \t]+[^ \t;{}()\"]+\\[\\]")
-    "in variable definition, possibly misplaced array brackets")
+    "in variable definition, possibly misplaced array brackets"))
+  "Generic checks for Java. Variables.
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
+See `lint-layout-generic-run-occur-list'.")
 
+(defconst lint-layout--java-check-regexp-occur-methods-list
+  (list
    ;;  method(String [] args)
    (list
     (concat
@@ -1675,8 +1690,34 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
      "[ \t]*"
      "[ a-zA-Z0-0,]+, *[a-zA-Z0-9]+ +[a-zA-Z0-9]+"
      "\\[\\]")
-   "in method variable definition, possible misplaced array brackets")
+   "in method variable definition, possible misplaced array brackets"))
+  "Generic checks for Java. Methods.
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
+See `lint-layout-generic-run-occur-list'.")
 
+(defconst lint-layout--java-check-regexp-occur-keyword-block-list
+  (list
+   '("^[ \t]*}[ \t]*[\r\n][ \t]*\\<else\\>"
+     "in block, 'else' not at previous brace line '}'")
+   '("^[ \t]*}\\(else\\|catch\\|finally\\)\\>"
+     "in block, no space after brace '}'"))
+  "Generic checks for Java. Keywords: else, catch finally block.
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
+See `lint-layout-generic-run-occur-list'.")
+
+(defconst lint-layout--java-check-regexp-occur-assignment-list
+  (list
+   '("[a-zA-Z][a-zA-Z0-9_]*=[ \t]+[a-zA-Z0-9_\"\']"
+     "in assignment, no space at left of equal sign")
+
+   '("[a-zA-Z][a-zA-Z0-9_]*[ \t]+=[a-zA-Z0-9_\"'<]"
+     "in assignment, no space at right of equal sign"))
+  "Generic checks for Java. Assignment(=) checks.
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
+See `lint-layout-generic-run-occur-list'.")
+
+(defconst lint-layout--java-check-regexp-occur-misc-list
+  (list
    '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
      "in statement, no space before operator"
      ;; [EXCLUDE]
@@ -1704,26 +1745,21 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
    ;; '("\\<\\(if\\|else\\|foreach\\|for\\|while\\)[ \t]*([^ $)\t\r\n]"
    ;;   "in statement, no space after keyword and paren")
-
-   '("[a-zA-Z][a-zA-Z0-9_]*=[ \t]+[a-zA-Z0-9_\"\']"
-     "in assignment, no space at left of equal sign")
-
-   '("[a-zA-Z][a-zA-Z0-9_]*[ \t]+=[a-zA-Z0-9_\"'<]"
-     "in assignment, no space at right of equal sign")
-
-   '("^[ \t]*}[ \t]*[\r\n][ \t]*\\<else\\>"
-     "in block, 'else' not at previous brace line '}'")
-
-   '("^[ \t]*}\\(else\\|catch\\|finally\\)\\>"
-     "in block, no space after brace '}'"))
+   )
   "Generic checks for Java.
 Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
 See `lint-layout-generic-run-occur-list'.")
 
 (defvar lint-layout--java-check-regexp-occur-variable
   '(lint-layout--java-check-regexp-occur-funcdef-style-list
-    lint-layout--java-check-method-call-occur-list
-    lint-layout--java-check-regexp-occur-list
+    lint-layout--java-check-regexp-occur-method-call-list
+    lint-layout--java-check-regexp-occur-keywords-list
+    lint-layout--java-check-regexp-occur-classdef-list
+    lint-layout--java-check-regexp-occur-variables-list
+    lint-layout--java-check-regexp-occur-methods-list
+    lint-layout--java-check-regexp-occur-keyword-block-list
+    lint-layout--java-check-regexp-occur-assignment-list
+    lint-layout--java-check-regexp-occur-misc-list
     lint-layout--java-check-regexp-occur-camelcase-style-list)
   "*List of occur variable names.")
 
