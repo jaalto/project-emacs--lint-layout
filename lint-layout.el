@@ -152,7 +152,7 @@
 (eval-when-compile
   (require 'cl-lib))
 
-(defconst lint-layout--version-time "2024.0212.0806"
+(defconst lint-layout--version-time "2024.0212.0820"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout--debug nil
@@ -221,7 +221,7 @@ tokens could be lined up.")
 (defun lint-layout-make-word-sequence-regexp (list)
   "From LIST make regexp for word combinations.
 
- '(a b)  => (?:\b(a|b)\b[ \]*)?(?:\b(a|b)\b[ \]*)?"
+ \='(a b)  => (?:\b(a|b)\b[ \]*)?(?:\b(a|b)\b[ \]*)?"
   (let* ((len (length list))
          (i   0)
          (re  (concat
@@ -370,8 +370,8 @@ without brace requirement.")
     'words)
   "PHP functions that can be called without parens:
 
-  print('this');
-  print 'this';")
+  print(\='this\=');
+  print \='this\=';")
 
 (defconst lint-layout--php-function-call-keywords-generic
   (concat
@@ -604,7 +604,7 @@ An example:
     doc-layout-star-with-space
     doc-has-empty-line-before-token)
   "*List of documentation features to check.
-Feature 'all enables all checks.
+Feature \='all enables all checks.
 
 Possible symbols:
 
@@ -1276,7 +1276,7 @@ The submatches are as follows. Possible HH:MM:SS is included in (2).
                lint-layout--generic-control-statement-start-regexp)))
 
 (defsubst lint-layout-looking-at-continue-statement-p ()
-  "If `looking-at' continued statement, like 'else'."
+  "If `looking-at' continued statement, like \='else\='."
   (looking-at (concat
                "^[ \t]*"
                lint-layout--generic-control-statement-continue-regexp)))
@@ -1350,7 +1350,7 @@ The leading indent is in submatch 1 and text start indent in 2."
   (looking-at "^[ \t]*\\*"))
 
 (defun lint-layout-generic-comment-multiline-forward ()
-  "Search multiline comment. Return comment region points '(beg end).
+  "Search multiline comment. Return comment region points \='(beg end).
 /*
 
  */"
@@ -1368,7 +1368,7 @@ The leading indent is in submatch 1 and text start indent in 2."
 
 Return:
 
-  '(BEG END POINT)
+  \='(BEG END POINT)
 
   If there are problems return comment region BEG END and
   POINT of problematic line."
@@ -2062,8 +2062,8 @@ See `lint-layout-generic-run-occur-list'.")
 (defun lint-layout-php-check-multiline-print (&optional prefix)
   "Check long print statements, when there is no $var anywhere.
 
-print 'this' .
-      'and' .
+print \='this\=' .
+      \='and\=' .
       ....
       ;
 "
@@ -2259,7 +2259,7 @@ Return variable content string."
 
 (defun lint-layout-generic-put-text-property-invisible
   (re &optional submatch value)
-  "Search RE for SUBMATCH and `put-text-property' with 'invisible VALUE.
+  "Search RE for SUBMATCH and `put-text-property' with \='invisible VALUE.
 SUBMATCH defaults to 0."
   (or submatch
       (setq submatch 0))
@@ -2939,7 +2939,7 @@ else
 
 (defun lint-layout-generic-check-statement-continue-detach
   (str &optional prefix)
-  "At statement STR, like 'else', peek above line."
+  "At statement STR, like \='else\=', peek above line."
   (forward-line -1)
   (unless (looking-at "^[ \t]*}")
     (lint-layout-message
@@ -5942,7 +5942,7 @@ Return:
     point))
 
 (defun lint-layout-generic-function-region-at-point ()
-  "Return function '(beg end) points with indentation.
+  "Return function \='(beg end) points with indentation.
 Point must be at the beginning of function definition line."
   (save-excursion
     (lint-layout-bol)
@@ -6264,7 +6264,7 @@ Runs `lint-layout-output-mode-hook'."
         lint-layout--output-mode-font-lock-keywords)
   (if (or font-lock-mode
           global-font-lock-mode)
-      (font-lock-fontify-buffer)))
+      (font-lock-ensure)))
 
 ;;; ................................................ &java-interactive ...
 
@@ -6509,8 +6509,8 @@ See:
 	(message (format "ERROR: cannot read %s file" file)))
        ((string-match "\\.lst$" file)
 	(dolist (elt (lint-layout-check-batch-generic-command-line-list-from-file file))
-	  (push elt list)))
-       (push file list)))
+	  (push elt list))))
+      (push file list))
     (nreverse list)))
 
 (defun lint-layout-check-batch-generic-command-line ()
