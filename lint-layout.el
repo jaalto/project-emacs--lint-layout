@@ -152,7 +152,7 @@
 (eval-when-compile
   (require 'cl-lib))
 
-(defconst lint-layout--version-time "2024.0212.1015"
+(defconst lint-layout--version-time "2024.0212.1022"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout--debug nil
@@ -2525,8 +2525,8 @@ SUBMATCH defaults to 0."
       (setq str (lint-layout-current-line-string))
       ;;
       ;; In abstract classes, the documentation is found in
-      ;; top level, so the code is usually marked with
-      ;; @override tag (Eclipse):
+      ;; top level, so the code is usually marked with the
+      ;; @Override tag:
       ;;
       ;;      class Airplane implements Movable {
       ;;
@@ -2552,7 +2552,7 @@ SUBMATCH defaults to 0."
            prefix))
          ((lint-layout-type-statement-string-p str)
           (lint-layout-message
-           "[doc] variable possibly not documented"
+           "[doc] member variable possibly not documented"
            prefix)))))))
 
 (defun lint-layout-php-check-doc-missing (&optional prefix)
