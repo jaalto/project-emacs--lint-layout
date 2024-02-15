@@ -152,7 +152,7 @@
 (eval-when-compile
   (require 'cl-lib))
 
-(defconst lint-layout--version-time "2024.0215.0816"
+(defconst lint-layout--version-time "2024.0215.0822"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout--debug nil
@@ -792,7 +792,6 @@ Return nil or number of occurrances."
       "\\|\\<\\(float\\|double\\|int\\|long\\|public\\)[ \t]+[^=;]+[=;]"
       "\\|@author\\|@since\\|@version")
    nil t))
-
 
 (defsubst lint-layout-code-java-p (&optional filename)
   "Return non-nil if Java code. Optional check FILENAME."
@@ -1509,6 +1508,15 @@ displayed."
 
 ;;; ...................................................... &occur-java ...
 
+(defconst lint-layout--java-check-regexp-occur-import-list
+  (list
+   "^[ \t]*impport[ \t]+java.lang"
+    "in import, unecessary statement for Java core language"
+    nil
+    'case)
+  "Checks for import statements.
+Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
+
 (defconst lint-layout--java-check-regexp-occur-funcdef-style-list
   (list
    ;; function Capitalized()
@@ -1751,7 +1759,8 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
 See `lint-layout-generic-run-occur-list'.")
 
 (defvar lint-layout--java-check-regexp-occur-variable
-  '(lint-layout--java-check-regexp-occur-funcdef-style-list
+  '(lint-layout--java-check-regexp-occur-import-list
+    lint-layout--java-check-regexp-occur-funcdef-style-list
     lint-layout--java-check-regexp-occur-method-call-list
     lint-layout--java-check-regexp-occur-keywords-list
     lint-layout--java-check-regexp-occur-classdef-list
