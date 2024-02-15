@@ -152,7 +152,7 @@
 (eval-when-compile
   (require 'cl-lib))
 
-(defconst lint-layout--version-time "2024.0212.1022"
+(defconst lint-layout--version-time "2024.0215.0813"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout--debug nil
@@ -552,7 +552,7 @@ An example:
   "*List of generic lint functions.")
 
 (defconst lint-layout--check-php-code-functions
-  '(lint-layout-generic-class-count
+  '(lint-layout-generic-one-file-one-class
     lint-layout-generic-xml-tags-check-main
     lint-layout-php-check-xml-tags-lazy
     lint-layout-php-check-multiple-print
@@ -578,7 +578,7 @@ An example:
   "*List of PHP code check functions")
 
 (defconst lint-layout--check-java-code-functions
-  '(lint-layout-generic-class-count
+  '(lint-layout-generic-one-file-one-class
     lint-layout-generic-check-statement-end
     lint-layout-generic-check-statement-start-brace-end
     lint-layout-generic-check-comment-statements
@@ -2027,7 +2027,7 @@ See `lint-layout-generic-run-occur-list'.")
      ((or class iface)
       (goto-char (or class iface))))))
 
-(defun lint-layout-generic-class-count (&optional prefix)
+(defun lint-layout-generic-one-file-one-class (&optional prefix)
   "Count Classes and interfaces in one file"
   (let (count)
     (while (lint-layout-generic-class-forward)
@@ -6539,7 +6539,7 @@ See:
   (let (list)
     (dolist (file command-line-args-left)
       (cond
-       ;; Can't read /dev/fd/NN like in Bash statement: <(...command)
+b       ;; Can't read /dev/fd/NN like in Bash statement: <(...command)
        ;; Emacs would exhaust its memory for the never ending buffer.
        ((string-match "/dev/fd/" file)
 	(message (format "ERROR: cannot read %s file" file)))
