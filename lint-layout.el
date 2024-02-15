@@ -152,7 +152,7 @@
 (eval-when-compile
   (require 'cl-lib))
 
-(defconst lint-layout--version-time "2024.0215.0813"
+(defconst lint-layout--version-time "2024.0215.0816"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout--debug nil
@@ -2028,17 +2028,14 @@ See `lint-layout-generic-run-occur-list'.")
       (goto-char (or class iface))))))
 
 (defun lint-layout-generic-one-file-one-class (&optional prefix)
-  "Count Classes and interfaces in one file"
-  (let (count)
+  "Count Classes and interfaces in one file. Require only one."
+  (let ((count 0))
     (while (lint-layout-generic-class-forward)
       (unless (looking-at ".*PHPUnit\\|Exception")
-        (if count
-            (cl-incf count)
-          (setq count 1))))
-      (when (and count
-               (> count 1))
+        (cl-incf count)))
+    (when (> count 1)
       (lint-layout-message
-       (format "multiple classes or interfaces in same file: %d" count)
+       (format "multiple classes or interfaces in the same file: %d" count)
        prefix))))
 
 (defun lint-layout-conditional-above-p ()
