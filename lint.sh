@@ -84,7 +84,7 @@ EMACS_LINT_OPTIONS="--batch --no-site-file --no-site-lisp"
 # System variables
 
 PROGRAM=$(basename $0)
-VERSION="2024.0210.1454"   # YYYY.MMDD.HHMM of last edit
+VERSION="2024.0423.1402"   # YYYY.MMDD.HHMM of last edit
 
 # Run in clean environment
 
@@ -618,8 +618,7 @@ Main ()
     fi
 }
 
-trap 'AtExit' 0 1 2 3 15
-
+trap AtExit EXIT HUP INT QUIT TERM
 Main "$@"
 
 # End of file
