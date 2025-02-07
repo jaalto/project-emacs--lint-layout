@@ -21,7 +21,7 @@
 
 PROGRAM=$0
 
-unset test
+unset TEST
 
 Help ()
 {
@@ -46,6 +46,12 @@ OPTIONS
 
     -t, --test
         Run in test mode.
+
+    -v, --verbose
+        Display verbose messages.
+
+    -h, -help
+        Display help.
 
 DESCRIPTION
 
@@ -72,17 +78,25 @@ Die ()
     exit 1
 }
 
+Verbose ()
+{
+    [ "$VERBOSE" ] || return 0
+    echo "$*"
+}
+
 Install ()  # Run in a subshell
 {(
-    ${test:+echo} ln --force --symbolic --relative lint.sh "$1"
+    ${TEST:+echo} ln ${VERBOSE:+--verbose} --force --symbolic --relative lint.sh "$1"
 
-    ${test:+echo} cd "$1" &&
-    ${test:+echo} ln -s lint.sh javalint
+    Verbose "cd $1"
+
+    ${TEST:+echo} cd "$1" &&
+    ${TEST:+echo} ln ${VERBOSE:+--verbose} --symbolic lint.sh javalint
 )}
 
 Remove ()
 {
-    ${test:+echo} rm --force "$1/lint.sh" "$1/javalint"
+    ${TEST:+echo} rm ${VERBOSE:+--verbose} --force "$1/lint.sh" "$1/javalint"
 }
 
 Main ()
@@ -119,7 +133,11 @@ Main ()
                 shift
                 ;;
             -t | --test)
-                test="test"
+                TEST="test"
+                shift
+                ;;
+            -v | --verbose)
+                VERBOSE="verbose"
                 shift
                 ;;
             -h | --help)
