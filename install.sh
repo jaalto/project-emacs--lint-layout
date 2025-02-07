@@ -45,7 +45,7 @@ OPTIONS
 DESCRIPTION
 
     Install or remove lint.sh as a symbolic link.
-    In addition, make or remove symbolic link to 'javalint'."
+    In addition, make or remove symbolic link to 'javalint'.
 
 EXAMPLES
 
