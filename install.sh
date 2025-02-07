@@ -56,7 +56,11 @@ OPTIONS
 DESCRIPTION
 
     Install or remove lint.sh as a symbolic link.
-    In addition, make or remove symbolic link to 'javalint'.
+    In addition, make or remove symbolic link to:
+
+        javalint
+        phplint
+        sqllint
 
 EXAMPLES
 
@@ -89,9 +93,11 @@ Install ()  # Run in a subshell
     ${TEST:+echo} ln ${VERBOSE:+--verbose} --force --symbolic --relative lint.sh "$1"
 
     Verbose "cd $1"
+    ${TEST:+echo} cd "$1" || exit $?
 
-    ${TEST:+echo} cd "$1" &&
     ${TEST:+echo} ln ${VERBOSE:+--verbose} --symbolic lint.sh javalint
+    ${TEST:+echo} ln ${VERBOSE:+--verbose} --symbolic lint.sh phplint
+    ${TEST:+echo} ln ${VERBOSE:+--verbose} --symbolic lint.sh sqllint
 )}
 
 Remove ()
