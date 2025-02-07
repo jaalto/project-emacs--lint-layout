@@ -21,6 +21,8 @@
 
 PROGRAM=$0
 
+unset test
+
 Help ()
 {
     echo "\
@@ -41,6 +43,9 @@ OPTIONS
 
     -r, --remove
         Remove install
+
+    -t, --test
+        Run in test mode.
 
 DESCRIPTION
 
@@ -111,6 +116,10 @@ Main ()
                 ;;
             -r | --rm | --remove | --delete)
                 remove="remove"
+                shift
+                ;;
+            -t | --test)
+                test="test"
                 shift
                 ;;
             -h | --help)
