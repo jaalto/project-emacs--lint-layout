@@ -44,7 +44,13 @@ OPTIONS
 
 DESCRIPTION
 
-    Install or remove lint.sh and javalint symlink."
+    Install or remove lint.sh and javalint symlink.
+
+EXAMPLES
+
+    $PROGRAM --install --home
+    $PROGRAM --install --local
+    $PROGRAM --install --dest ~/bin"
 
     exit 0
 }
