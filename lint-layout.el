@@ -1,6 +1,6 @@
 ;;; lint-layout.el --- Coding layout lint utilities
 
-;; Copyright (C)    2006-2024 Jari Aalto <jari.aalto@cante.net>
+;; Copyright (C)    2006-2025 Jari Aalto <jari.aalto@cante.net>
 ;; Keywords:        extensions
 ;; Author:          Jari Aalto
 ;; Maintainer:      Jari Aalto

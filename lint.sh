@@ -4,7 +4,7 @@
 #
 #  Copyright
 #
-#       Copyright (C) 2009-2024 Jari Aalto
+#       Copyright (C) 2009-2025 Jari Aalto
 #
 #   License
 #
