@@ -44,13 +44,14 @@ OPTIONS
 
 DESCRIPTION
 
-    Install or remove lint.sh and javalint symlink.
+    Install or remove lint.sh as a symbolic link.
+    In addition, make or remove symbolic link to 'javalint'."
 
 EXAMPLES
 
-    $PROGRAM --install --home
-    $PROGRAM --install --local
-    $PROGRAM --install --dest ~/bin"
+    $PROGRAM --install --home  # ~/bin
+    $PROGRAM --install --local # /usr/local/bin
+    $PROGRAM --install --dest ~/other/path"
 
     exit 0
 }
