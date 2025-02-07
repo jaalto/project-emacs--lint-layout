@@ -34,6 +34,41 @@
 ;;   If you have any questions about this Emacs package:
 ;;
 ;;      M-x mail     Send question, feedback, bugs
+;;
+;; User callable functions with `M-x':
+;;
+;;      Normally functions start scanning from current point forward unless
+;;      buffer based command is used:
+;;
+;;          ;; Decides correct test set for a *.css, *.php, *.sql file
+;;          lint-layout-check-generic-buffer
+;;          lint-layout-check-generic-file
+;;          lint-layout-check-generic-directory
+;;
+;;          lint-layout-php-check-all-interactive
+;;          lint-layout-php-check-phpdoc-interactive
+;;          lint-layout-php-check-regexp-occur-buffer-interactive
+;;
+;;          lint-layout-java-check-all-interactive
+;;          lint-layout-java-check-phpdoc-interactive
+;;          lint-layout-java-check-regexp-occur-buffer-interactive
+;;
+;;          lint-layout-check-whitespace-buffer-interactive
+;;          lint-layout-check-line-length-buffer-interactive
+;;          lint-layout-check-eof-marker-interactive
+;;
+;;          lint-layout-css-check-buffer-interactive
+;;          lint-layout-sql-buffer-interactive
+;;
+;;      Look at results in `lint-layout-changelog-check-main' buffer which
+;;      by default is `lint-layout--buffer-name'.
+;;
+;; Batch command line usage
+;;
+;;      This Emacs lisp library can be called from command line with
+;;      list of files to check:
+;;
+;;          emacs -Q -q -l lint-layout.el -f <see function name above> <files>
 
 ;;; Commentary:
 
@@ -112,47 +147,13 @@
 ;;
 ;;      o   FIXME: <not yet documented>
 ;;
-;; User callable functions with `M-x':
-;;
-;;      Normally functions start scanning from current point foward, unless
-;;      "buffer" command is used:
-;;
-;;          ;; Decides correct test set for a *.css, *.php, *.sql file
-;;          lint-layout-check-generic-buffer
-;;          lint-layout-check-generic-file
-;;          lint-layout-check-generic-directory
-;;
-;;          lint-layout-php-check-all-interactive
-;;          lint-layout-php-check-phpdoc-interactive
-;;          lint-layout-php-check-regexp-occur-buffer-interactive
-;;
-;;          lint-layout-java-check-all-interactive
-;;          lint-layout-java-check-phpdoc-interactive
-;;          lint-layout-java-check-regexp-occur-buffer-interactive
-;;
-;;          lint-layout-check-whitespace-buffer-interactive
-;;          lint-layout-check-line-length-buffer-interactive
-;;          lint-layout-check-eof-marker-interactive
-;;
-;;          lint-layout-css-check-buffer-interactive
-;;          lint-layout-sql-buffer-interactive
-;;
-;;      Look at results in `lint-layout-changelog-check-main' buffer which
-;;      by default is `lint-layout--buffer-name'.
-;;
-;; Batch command line usage
-;;
-;;      This Emacs lisp library can be called from command line with
-;;      list of files to check:
-;;
-;;          emacs -Q -q -l lint-layout.el -f <see function name above> <files>
 
 (require 'regexp-opt)
 
 (eval-when-compile
   (require 'cl-lib))
 
-(defconst lint-layout--version-time "2024.0215.0822"
+(defconst lint-layout--version-time "2024.0305.0108"
   "*Version of last edit YYYY.MMDD.HHMM")
 
 (defvar lint-layout--debug nil
@@ -573,7 +574,7 @@ An example:
     lint-layout-generic-check-words
     lint-layout-php-check-keywords-main
     lint-layout-check-whitespace
-    lint-layout-check-eof-marker
+    ;; lint-layout-check-eof-marker
     lint-layout-check-line-length)
   "*List of PHP code check functions")
 
@@ -589,7 +590,7 @@ An example:
     lint-layout-java-check-regexp-occur-main
     lint-layout-generic-class-check-variables
     lint-layout-generic-check-words
-    ;; lint-layout-check-whitespace
+    lint-layout-check-whitespace
     ;; lint-layout-check-eof-marker
     lint-layout-check-line-length)
   "*List of Java code check functions")
@@ -1510,10 +1511,10 @@ displayed."
 
 (defconst lint-layout--java-check-regexp-occur-import-list
   (list
-   "^[ \t]*impport[ \t]+java.lang"
-    "in import, unecessary statement for Java core language"
-    nil
-    'case)
+   '("^[ \t]*import[ \t]+java\\.lang"
+     "in import, unecessary statement"
+     nil
+     'case))
   "Checks for import statements.
 Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
 
@@ -6545,7 +6546,7 @@ See:
   (let (list)
     (dolist (file command-line-args-left)
       (cond
-b       ;; Can't read /dev/fd/NN like in Bash statement: <(...command)
+       ;; Can't read /dev/fd/NN like in Bash statement: <(...command)
        ;; Emacs would exhaust its memory for the never ending buffer.
        ((string-match "/dev/fd/" file)
 	(message (format "ERROR: cannot read %s file" file)))
