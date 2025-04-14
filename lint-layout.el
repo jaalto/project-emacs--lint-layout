@@ -1625,7 +1625,7 @@ Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).")
    '("^[ \t]*do{"
      "in statement, no space before starting brace in keyword")
 
-   '("\\<\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)("
+   '("^[ \t]*\\(if\\|else\\|else[ \t]*if\\|for\\(?:each\\)?\\|while\\)("
      "in statement, no space between keyword and starting paren"))
   "Generic checks for Java. Keywords while, do, if, else...
 Format ((REGEXP MESSAGE [NOT-REGEXP] [CASE-SENSITIVE] [FUNC]) ..).
