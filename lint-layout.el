@@ -1738,7 +1738,7 @@ See `lint-layout-generic-run-occur-list'.")
 (defconst lint-layout--java-check-regexp-occur-misc-list
   (list
    '("[a-z0-9]\\([&][&]\\|[|][|]\\|[><]=?\\|[!=]=\\)"
-     "in statement, no space before operator"
+     "in statement, possibly no space before operator"
      ;; [EXCLUDE]
      ;;
      ;; <address@example.com>
