@@ -1112,6 +1112,16 @@ The comment marker, if any, is in (match-string 2)."
    (t
     (error "Unkown file type for buffer %s" (buffer-name)))))
 
+(defsubst lint-layout-generic-function-extract-param-list (str)
+  "From string \"<defs>fn(...)\" extract input parameter definition list."
+  (let (list)
+    (when (and str
+	       (string-match "[(][ \t\r\n]*\\([^)]*?\\)[ \t\r\n]*[)]" str))
+      (setq str (match-string-no-properties 1 str))
+      ;; Clean up Template definitions
+      ;; T<String, String> => T<String...>
+      (setq str (replace-regexp-in-string "<[ \t\r\n]*\\([^>,]+\\)[, \t\r\n]+[^>]+>" "<\\1..>" str)))))
+
 (defsubst lint-layout-type-function-string-p (str)
   (string-match
    (lint-layout-generic-function-regexp)
