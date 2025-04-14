@@ -5487,13 +5487,15 @@ The DATA contains full function content as string."
           (and data
                (string-match "^[ \t]*return\\>[ \t\r\n]*[^; \t\r\n]" data)))
          (need-param-p
+	  ;; Set variable to: "<defs> function(....)"
           (and data
-               (string-match
-                (concat
-                 (lint-layout-generic-function-regexp)
-                 "[ \t]*[^);=]+)")
-                data)
-               (match-string 0 data)))
+		(string-match
+                 (concat
+                  (lint-layout-generic-function-regexp)
+                  "[ \t]*[^);=]+)")
+                 data)
+		(lint-layout-generic-function-extract-param-list
+		 (match-string-no-properties 0 data))))
          (need-throw-p
           (and data
                (string-match
